@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "全国高体連バドミントン 写真送り修正",
+  "version": "1.0.0",
+  "description": "全国高体連バドミントン専門部サイトの写真を、ページ上の並び順どおりに1枚ずつ表示します。",
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.zenkoku-koutairen-bad.com/*",
+        "https://zenkoku-koutairen-bad.com/*"
+      ],
+      "js": ["content.js"],
+      "css": ["viewer.css"],
+      "run_at": "document_start"
+    }
+  ]
+}

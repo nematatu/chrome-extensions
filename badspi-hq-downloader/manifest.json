@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "バドスピ 高画質画像ダウンローダー",
+  "version": "1.1.1",
+  "description": "バドスピの画像を高画質で開き、拡大表示にダウンロードボタンを追加します。",
+  "permissions": ["downloads"],
+  "host_permissions": ["https://www.badspi.jp/*"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": ["https://www.badspi.jp/*"],
+      "js": ["quality-core.js", "content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

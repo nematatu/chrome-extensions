@@ -1,0 +1,50 @@
+img.instagram-hq-image {
+  image-rendering: auto !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+}
+
+.instagram-hq-download {
+  position: fixed;
+  z-index: 2147483647;
+  display: grid;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+  background: rgba(20, 20, 20, 0.72);
+  color: #fff;
+  cursor: pointer;
+  opacity: 0.9;
+}
+
+.instagram-hq-download:hover {
+  background: rgba(20, 20, 20, 0.88);
+  opacity: 1;
+}
+
+.instagram-hq-download:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.instagram-hq-download[hidden] {
+  display: none;
+}
+
+.instagram-hq-download.is-downloading {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.instagram-hq-download svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}

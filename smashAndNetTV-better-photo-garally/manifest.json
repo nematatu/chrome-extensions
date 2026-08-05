@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "SMASH and NET. TV Photo Gallery Plus",
+  "version": "2.0.1",
+  "description": "SMASH and NET. TV のフォトギャラリーをキーボード操作・背景クリック・直接ダウンロードに対応させます。",
+  "permissions": ["downloads"],
+  "host_permissions": [
+    "https://www.smash-net.tv/*",
+    "https://smash-net.tv/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.smash-net.tv/photo/*",
+        "https://smash-net.tv/photo/*"
+      ],
+      "js": ["content.js", "viewer.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

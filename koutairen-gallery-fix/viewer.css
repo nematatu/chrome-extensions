@@ -1,0 +1,141 @@
+.kgf-viewer-open {
+  overflow: hidden !important;
+}
+
+.kgf-overlay {
+  position: fixed;
+  z-index: 2147483647;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  padding: 64px 88px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.94);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.kgf-overlay[hidden],
+.kgf-arrow[hidden],
+.kgf-caption[hidden] {
+  display: none !important;
+}
+
+.kgf-stage {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.kgf-image {
+  display: block;
+  grid-row: 1;
+  max-width: 100%;
+  max-height: calc(100vh - 150px);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.kgf-caption {
+  overflow: hidden;
+  grid-row: 2;
+  max-width: min(80vw, 900px);
+  margin-top: 12px;
+  color: #eee;
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kgf-counter {
+  position: fixed;
+  top: 20px;
+  left: 24px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.5);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.kgf-arrow,
+.kgf-close {
+  position: fixed;
+  z-index: 1;
+  border: 0;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+}
+
+.kgf-arrow {
+  top: 50%;
+  width: 64px;
+  height: 96px;
+  border-radius: 8px;
+  font: 300 72px/80px Arial, sans-serif;
+  transform: translateY(-50%);
+}
+
+.kgf-arrow:hover,
+.kgf-arrow:focus-visible,
+.kgf-close:hover,
+.kgf-close:focus-visible {
+  background: rgba(255, 255, 255, 0.2);
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.kgf-previous {
+  left: 12px;
+}
+
+.kgf-next {
+  right: 12px;
+}
+
+.kgf-close {
+  top: 12px;
+  right: 16px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  font: 300 40px/44px Arial, sans-serif;
+}
+
+@media (max-width: 700px) {
+  .kgf-overlay {
+    padding: 64px 12px 72px;
+  }
+
+  .kgf-image {
+    max-height: calc(100vh - 170px);
+  }
+
+  .kgf-arrow {
+    top: auto;
+    bottom: 10px;
+    width: 72px;
+    height: 52px;
+    font-size: 48px;
+    line-height: 44px;
+    transform: none;
+  }
+
+  .kgf-previous {
+    left: calc(50% - 82px);
+  }
+
+  .kgf-next {
+    right: calc(50% - 82px);
+  }
+}

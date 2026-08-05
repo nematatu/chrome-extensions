@@ -1,0 +1,72 @@
+.r2-preview-cell {
+  width: 120px;
+  max-width: 120px;
+}
+
+.r2-preview-wrapper {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.r2-preview-img {
+  max-width: 100%;
+  max-height: 96px;
+  object-fit: contain;
+  border-radius: 6px;
+  background: #f3f4f6;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.r2-preview-fallback {
+  font-size: 11px;
+  color: #6b7280;
+  text-align: center;
+  padding: 6px 4px;
+}
+
+.r2-preview-hidden {
+  display: none !important;
+}
+
+.r2-preview-hover .r2-preview-wrapper {
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.r2-preview-hover:hover .r2-preview-wrapper {
+  opacity: 1;
+}
+
+.r2-clipboard-toast {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.92);
+  color: #f8fafc;
+  font-size: 12px;
+  line-height: 1.4;
+  max-width: min(320px, calc(100vw - 32px));
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.2);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 180ms ease, transform 180ms ease;
+  z-index: 2147483647;
+  pointer-events: none;
+}
+
+.r2-clipboard-toast.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.r2-clipboard-toast[data-status="error"] {
+  background: rgba(185, 28, 28, 0.92);
+}
+
+.r2-clipboard-toast[data-status="ok"] {
+  background: rgba(22, 163, 74, 0.92);
+}

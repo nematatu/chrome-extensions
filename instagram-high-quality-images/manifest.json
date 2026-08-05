@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Instagram High Quality Images",
+  "version": "1.1.0",
+  "description": "Instagramの投稿画像を、ページ内で取得できる最大解像度で表示します。",
+  "permissions": ["storage", "activeTab", "downloads"],
+  "host_permissions": [
+    "https://www.instagram.com/*",
+    "https://*.cdninstagram.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Instagram High Quality Images",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.instagram.com/*"],
+      "js": ["quality-core.js", "content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

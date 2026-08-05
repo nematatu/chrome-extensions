@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>R2 Image Preview 設定</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header>
+        <h1>R2 Image Preview</h1>
+        <p>Cloudflare R2の一覧で画像をプレビュー表示するための設定です。</p>
+      </header>
+
+      <form id="options-form" class="card">
+        <label class="field">
+          <span>プレビューURLテンプレート</span>
+          <input
+            type="text"
+            id="baseUrlTemplate"
+            placeholder="https://{bucket}.{accountId}.r2.cloudflarestorage.com/{key}"
+          />
+          <small>利用可能: {bucket}, {accountId}, {key}</small>
+        </label>
+
+        <div class="row">
+          <label class="field">
+            <span>最大幅 (px)</span>
+            <input type="number" id="maxWidth" min="40" max="320" />
+          </label>
+          <label class="field">
+            <span>最大高さ (px)</span>
+            <input type="number" id="maxHeight" min="40" max="320" />
+          </label>
+        </div>
+
+        <label class="field checkbox">
+          <input type="checkbox" id="hoverOnly" />
+          <span>ホバー時のみ表示</span>
+        </label>
+
+        <label class="field checkbox">
+          <input type="checkbox" id="showNonImages" />
+          <span>画像以外も表示（説明テキスト）</span>
+        </label>
+
+        <button type="submit">保存</button>
+        <p id="status" class="status" aria-live="polite"></p>
+      </form>
+
+      <section class="hint">
+        <h2>ヒント</h2>
+        <p>プレビューURLは「公開バケット」または「公開ドメイン」を前提にしています。</p>
+        <p>うまく表示されない場合は、カスタムドメインのURLに置き換えてください。</p>
+      </section>
+    </main>
+
+    <script src="options.js"></script>
+  </body>
+</html>
