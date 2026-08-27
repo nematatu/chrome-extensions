@@ -2,6 +2,25 @@ const STORAGE_KEY = "hashtags";
 const EDITOR_SELECTOR = '[data-testid="tweetTextarea_0"][contenteditable="true"]';
 const handledComposers = new WeakSet();
 
+function isReplyComposer(editor) {
+  if (editor.closest('article[data-testid="tweet"]')) return true;
+
+  const dialog = editor.closest('[role="dialog"]');
+  if (!dialog) return false;
+
+  const submitButton = dialog.querySelector(
+    '[data-testid="tweetButton"], [data-testid="tweetButtonInline"]'
+  );
+  const label = `${submitButton?.textContent ?? ""} ${submitButton?.getAttribute("aria-label") ?? ""}`
+    .trim()
+    .toLowerCase();
+
+  if (/(^|\s)reply($|\s)|返信/.test(label)) return true;
+
+  // 返信モーダルには返信元のポストが同じダイアログ内に表示される。
+  return Boolean(dialog.querySelector('article[data-testid="tweet"]'));
+}
+
 function normalizeHashtags(value) {
   return [...new Set(
     String(value ?? "")
@@ -38,7 +57,7 @@ function afterRender() {
 }
 
 async function fillEditor(editor) {
-  if (!editor.isConnected) return;
+  if (!editor.isConnected || isReplyComposer(editor)) return;
   const composer = editor.closest('[role="dialog"]') ?? editor;
 
   const { [STORAGE_KEY]: stored = "" } = await chrome.storage.sync.get(STORAGE_KEY);
@@ -79,6 +98,8 @@ async function fillEditor(editor) {
 }
 
 function scheduleEditor(editor) {
+  if (isReplyComposer(editor)) return;
+
   // 入力時にeditor自体は再生成されるため、安定している投稿モーダルで管理する。
   const composer = editor.closest('[role="dialog"]') ?? editor;
   if (handledComposers.has(composer)) return;
