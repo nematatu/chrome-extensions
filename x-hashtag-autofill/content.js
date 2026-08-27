@@ -52,19 +52,25 @@ async function fillEditor(editor) {
     return;
   }
 
-  // 最初の文字入力はX自身が作った入力位置で行う。
+  const textToInsert = `\n\n${hashtagText}`;
+
+  // XのDraft.jsへpasteイベントとして渡し、改行も内部状態へ登録する。
+  // insertParagraphによるDOM操作は、次の入力時にReactから破棄されるため使わない。
   editor.focus({ preventScroll: true });
-  const inserted = document.execCommand("insertText", false, hashtagText);
-  if (!inserted) return;
+  const clipboardData = new DataTransfer();
+  clipboardData.setData("text/plain", textToInsert);
+  const pasteEvent = new ClipboardEvent("paste", {
+    bubbles: true,
+    cancelable: true,
+    composed: true,
+    clipboardData
+  });
+  const handledByX = !editor.dispatchEvent(pasteEvent);
 
-  await afterRender();
-  editor = composer.querySelector?.(EDITOR_SELECTOR) ?? editor;
-  if (!editor.isConnected) return;
-
-  // 管理されたテキストの先頭で段落を2つ作り、タグを末尾へ送る。
-  moveCaretToStart(editor);
-  document.execCommand("insertParagraph", false);
-  document.execCommand("insertParagraph", false);
+  // pasteを処理しない環境ではブラウザ標準の入力処理へフォールバックする。
+  if (!handledByX) {
+    document.execCommand("insertText", false, textToInsert);
+  }
 
   await afterRender();
   editor = composer.querySelector?.(EDITOR_SELECTOR) ?? editor;
