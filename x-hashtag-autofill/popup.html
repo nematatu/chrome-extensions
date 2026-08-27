@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ハッシュタグ設定</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main>
+      <h1>自動挿入するハッシュタグ</h1>
+      <label for="hashtags">スペースまたは改行で複数指定できます</label>
+      <textarea id="hashtags" rows="4" placeholder="#test_hashtag"></textarea>
+      <button id="save" type="button">保存</button>
+      <p id="status" role="status" aria-live="polite"></p>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

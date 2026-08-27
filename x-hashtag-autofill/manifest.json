@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "X Hashtag Autofill",
+  "version": "1.0.0",
+  "description": "X の投稿画面に指定したハッシュタグを自動挿入します。",
+  "permissions": ["storage"],
+  "host_permissions": ["https://x.com/*", "https://twitter.com/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "ハッシュタグ設定"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://x.com/*", "https://twitter.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

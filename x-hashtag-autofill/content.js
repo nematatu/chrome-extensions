@@ -1,0 +1,100 @@
+const STORAGE_KEY = "hashtags";
+const EDITOR_SELECTOR = '[data-testid="tweetTextarea_0"][contenteditable="true"]';
+const handledComposers = new WeakSet();
+
+function normalizeHashtags(value) {
+  return [...new Set(
+    String(value ?? "")
+      .split(/[\s,、]+/)
+      .map((tag) => tag.trim())
+      .filter(Boolean)
+      .map((tag) => (tag.startsWith("#") ? tag : `#${tag}`))
+  )];
+}
+
+function moveCaretToStart(editor) {
+  const firstLeaf = editor.querySelector("[data-text='true']");
+  if (!firstLeaf) return;
+
+  editor.focus({ preventScroll: true });
+  const range = document.createRange();
+  const textNode = [...firstLeaf.childNodes].find(
+    (node) => node.nodeType === Node.TEXT_NODE
+  );
+
+  // 先頭が空段落（<br>のみ）でも、その段落内の先頭へ配置する。
+  range.setStart(textNode ?? firstLeaf, 0);
+  range.collapse(true);
+
+  const selection = window.getSelection();
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
+
+function afterRender() {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  });
+}
+
+async function fillEditor(editor) {
+  if (!editor.isConnected) return;
+  const composer = editor.closest('[role="dialog"]') ?? editor;
+
+  const { [STORAGE_KEY]: stored = "" } = await chrome.storage.sync.get(STORAGE_KEY);
+  const hashtags = normalizeHashtags(stored);
+  if (!hashtags.length || !editor.isConnected) return;
+
+  const hashtagText = hashtags.join(" ");
+  const currentText = editor.innerText.replace(/\u200B/g, "");
+  if (hashtags.every((tag) => currentText.includes(tag))) {
+    moveCaretToStart(editor);
+    return;
+  }
+
+  // 最初の文字入力はX自身が作った入力位置で行う。
+  editor.focus({ preventScroll: true });
+  const inserted = document.execCommand("insertText", false, hashtagText);
+  if (!inserted) return;
+
+  await afterRender();
+  editor = composer.querySelector?.(EDITOR_SELECTOR) ?? editor;
+  if (!editor.isConnected) return;
+
+  // 管理されたテキストの先頭で段落を2つ作り、タグを末尾へ送る。
+  moveCaretToStart(editor);
+  document.execCommand("insertParagraph", false);
+  document.execCommand("insertParagraph", false);
+
+  await afterRender();
+  editor = composer.querySelector?.(EDITOR_SELECTOR) ?? editor;
+  if (!editor.isConnected) return;
+  moveCaretToStart(editor);
+}
+
+function scheduleEditor(editor) {
+  // 入力時にeditor自体は再生成されるため、安定している投稿モーダルで管理する。
+  const composer = editor.closest('[role="dialog"]') ?? editor;
+  if (handledComposers.has(composer)) return;
+  handledComposers.add(composer);
+
+  // モーダル表示直後のDraft.js初期化が終わるまで待つ。
+  setTimeout(() => void fillEditor(editor), 300);
+}
+
+function scan(root = document) {
+  if (root instanceof Element && root.matches(EDITOR_SELECTOR)) {
+    scheduleEditor(root);
+  }
+  root.querySelectorAll?.(EDITOR_SELECTOR).forEach(scheduleEditor);
+}
+
+scan();
+
+new MutationObserver((mutations) => {
+  for (const mutation of mutations) {
+    mutation.addedNodes.forEach((node) => {
+      if (node instanceof Element) scan(node);
+    });
+  }
+}).observe(document.documentElement, { childList: true, subtree: true });

@@ -16,6 +16,7 @@
 | [`birdcore-popup`](./birdcore-popup) | Birdscore Popup |
 | [`r2-image-preview`](./r2-image-preview) | R2 Image Preview |
 | [`sushida-log`](./sushida-log) | Sushida Log |
+| [`x-hashtag-autofill`](./x-hashtag-autofill) | X Hashtag Autofill |
 
 ## ローカルでの読み込み
 
