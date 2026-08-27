@@ -2,6 +2,10 @@ const STORAGE_KEY = "hashtags";
 const EDITOR_SELECTOR = '[data-testid="tweetTextarea_0"][contenteditable="true"]';
 const handledComposers = new WeakSet();
 
+function isNewPostPage() {
+  return /^\/compose\/post\/?$/.test(window.location.pathname);
+}
+
 function isReplyComposer(editor) {
   if (editor.closest('article[data-testid="tweet"]')) return true;
 
@@ -57,7 +61,7 @@ function afterRender() {
 }
 
 async function fillEditor(editor) {
-  if (!editor.isConnected || isReplyComposer(editor)) return;
+  if (!isNewPostPage() || !editor.isConnected || isReplyComposer(editor)) return;
   const composer = editor.closest('[role="dialog"]') ?? editor;
 
   const { [STORAGE_KEY]: stored = "" } = await chrome.storage.sync.get(STORAGE_KEY);
@@ -98,7 +102,7 @@ async function fillEditor(editor) {
 }
 
 function scheduleEditor(editor) {
-  if (isReplyComposer(editor)) return;
+  if (!isNewPostPage() || isReplyComposer(editor)) return;
 
   // 入力時にeditor自体は再生成されるため、安定している投稿モーダルで管理する。
   const composer = editor.closest('[role="dialog"]') ?? editor;
