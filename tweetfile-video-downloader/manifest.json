@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "Tweetfile 動画一括ダウンローダー",
+  "version": "1.1.0",
+  "description": "ページ内の動画をサムネイルから選択して一括保存。フォルダは除外します。",
+  "minimum_chrome_version": "116",
+  "permissions": [
+    "downloads",
+    "offscreen"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://tweetfile.com/*",
+        "https://*.tweetfile.com/*"
+      ],
+      "js": [
+        "page-bridge.js"
+      ],
+      "world": "MAIN",
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://tweetfile.com/*",
+        "https://*.tweetfile.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ]
+}
