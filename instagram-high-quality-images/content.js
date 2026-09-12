@@ -4,10 +4,15 @@
   const core = globalThis.InstagramHighQualityCore;
   const originals = new WeakMap();
   const upgraded = new WeakSet();
+  const rotatedLiveVideos = new WeakSet();
   const mediaInfoRequests = new Map();
   const imageRequestKeys = new WeakMap();
   const highQualityCandidates = new Map();
+  const liveArchiveRequests = new Map();
+  const liveArchiveDetectionPending = new WeakSet();
+  const liveArchiveVideos = new WeakSet();
   let enabled = true;
+  let rotateLive = true;
   let upgradedCount = 0;
   let scanQueued = false;
   let downloadTarget = null;
@@ -186,12 +191,77 @@
     image.classList.remove("instagram-hq-image");
   }
 
+  function isPortraitVideo(video) {
+    if (!(video instanceof HTMLVideoElement)) return false;
+    return core.isPortraitVideo(
+      video.videoWidth || video.clientWidth,
+      video.videoHeight || video.clientHeight,
+    );
+  }
+
+  function mediaPageShortcode() {
+    return location.pathname.match(/^\/(?:p|reel)\/([^/?]+)/)?.[1] || null;
+  }
+
+  function applyLiveVideoRotation(video) {
+    video.classList.add("instagram-hq-live-video");
+    rotatedLiveVideos.add(video);
+  }
+
+  function requestLiveArchiveDetection(video, shortcode) {
+    if (liveArchiveVideos.has(video) || liveArchiveDetectionPending.has(video)) return;
+    liveArchiveDetectionPending.add(video);
+
+    let request = liveArchiveRequests.get(shortcode);
+    if (!request) {
+      request = fetchMediaInfo(shortcode)
+        .then((data) => core.isLiveArchiveMedia(data))
+        .catch(() => false);
+      liveArchiveRequests.set(shortcode, request);
+    }
+
+    request.then((isArchive) => {
+      if (!isArchive || !rotateLive || !video.isConnected || !isPortraitVideo(video)) return;
+      liveArchiveVideos.add(video);
+      applyLiveVideoRotation(video);
+    });
+  }
+
+  function rotateLiveVideo(video) {
+    const portrait = isPortraitVideo(video);
+    const livePath = core.isInstagramLivePath(location.pathname);
+    const liveStream = core.isLiveStreamVideo(video.duration);
+    const shortcode = mediaPageShortcode();
+    const isLiveArchive = liveArchiveVideos.has(video);
+
+    if (rotateLive && portrait && (livePath || liveStream || isLiveArchive)) {
+      applyLiveVideoRotation(video);
+      return;
+    }
+
+    if (rotateLive && portrait && shortcode) {
+      requestLiveArchiveDetection(video, shortcode);
+    }
+
+    if ((!rotateLive || !portrait || (!livePath && !isLiveArchive)) && rotatedLiveVideos.has(video)) {
+      video.classList.remove("instagram-hq-live-video");
+      rotatedLiveVideos.delete(video);
+    }
+  }
+
+  function scanLiveVideos() {
+    for (const video of document.querySelectorAll("video")) {
+      rotateLiveVideo(video);
+    }
+  }
+
   function scan() {
     scanQueued = false;
     for (const image of document.images) {
       if (enabled) upgrade(image);
       else restore(image);
     }
+    scanLiveVideos();
     updateDownloadButton();
   }
 
@@ -273,14 +343,17 @@
     requestAnimationFrame(scan);
   }
 
-  chrome.storage.sync.get({ enabled: true }, (settings) => {
+  chrome.storage.sync.get({ enabled: true, rotateLive: true }, (settings) => {
     enabled = settings.enabled;
+    rotateLive = settings.rotateLive !== false;
     queueScan();
   });
 
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area !== "sync" || !changes.enabled) return;
-    enabled = changes.enabled.newValue;
+    if (area !== "sync") return;
+    if (changes.enabled) enabled = changes.enabled.newValue;
+    if (changes.rotateLive) rotateLive = changes.rotateLive.newValue !== false;
+    if (!changes.enabled && !changes.rotateLive) return;
     queueScan();
   });
 
@@ -303,6 +376,21 @@
     attributes: true,
     attributeFilter: ["src", "srcset", "sizes"],
   });
+
+  document.addEventListener(
+    "loadedmetadata",
+    (event) => {
+      if (event.target instanceof HTMLVideoElement) queueScan();
+    },
+    true,
+  );
+  document.addEventListener(
+    "durationchange",
+    (event) => {
+      if (event.target instanceof HTMLVideoElement) queueScan();
+    },
+    true,
+  );
 
   window.addEventListener("resize", queueScan, { passive: true });
   window.addEventListener("scroll", queueScan, { passive: true });

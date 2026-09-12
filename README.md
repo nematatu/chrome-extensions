@@ -7,6 +7,7 @@
 | Directory | Extension |
 | --- | --- |
 | [`instagram-high-quality-images`](./instagram-high-quality-images) | Instagram High Quality Images |
+| [`gofile-bulk-video-downloader`](./gofile-bulk-video-downloader) | Gofile 動画一括ダウンローダー |
 | [`badspi-hq-downloader`](./badspi-hq-downloader) | バドスピ 高画質画像ダウンローダー |
 | [`koutairen-gallery-fix`](./koutairen-gallery-fix) | 全国高体連バドミントン 写真送り修正 |
 | [`inhigh-tv-skip-extension`](./inhigh-tv-skip-extension) | インハイTV スキップ操作 |

@@ -1,4 +1,5 @@
 const checkbox = document.querySelector("#enabled");
+const rotateLiveCheckbox = document.querySelector("#rotate-live");
 const status = document.querySelector("#status");
 
 function setStatus(text, active = true) {
@@ -6,13 +7,22 @@ function setStatus(text, active = true) {
   status.style.color = active ? "#159447" : "#737373";
 }
 
-chrome.storage.sync.get({ enabled: true }, ({ enabled }) => {
+chrome.storage.sync.get({ enabled: true, rotateLive: true }, ({ enabled, rotateLive }) => {
   checkbox.checked = enabled;
+  rotateLiveCheckbox.checked = rotateLive;
 });
 
 checkbox.addEventListener("change", () => {
   chrome.storage.sync.set({ enabled: checkbox.checked });
   setStatus(checkbox.checked ? "高画質表示を有効にしました" : "高画質表示を停止しました", checkbox.checked);
+});
+
+rotateLiveCheckbox.addEventListener("change", () => {
+  chrome.storage.sync.set({ rotateLive: rotateLiveCheckbox.checked });
+  setStatus(
+    rotateLiveCheckbox.checked ? "Liveの横向き表示を有効にしました" : "Liveの横向き表示を停止しました",
+    rotateLiveCheckbox.checked,
+  );
 });
 
 chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {

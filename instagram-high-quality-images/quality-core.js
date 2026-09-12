@@ -102,11 +102,34 @@
     }, null);
   }
 
+  function isInstagramLivePath(pathname) {
+    return /(?:^|\/)live(?:\/|$)/.test(String(pathname || ""));
+  }
+
+  function isPortraitVideo(width, height) {
+    const videoWidth = Number(width);
+    const videoHeight = Number(height);
+    return videoWidth > 0 && videoHeight > 0 && videoHeight > videoWidth;
+  }
+
+  function isLiveStreamVideo(duration) {
+    return duration === Infinity;
+  }
+
+  function isLiveArchiveMedia(data) {
+    const media = data?.items?.[0];
+    return media?.is_post_live === true || String(media?.media_product_type || "").toUpperCase() === "LIVE";
+  }
+
   return {
     parseSrcset,
     largestCandidate,
     buildFilename,
     shortcodeToMediaId,
     highestMediaCandidate,
+    isInstagramLivePath,
+    isPortraitVideo,
+    isLiveStreamVideo,
+    isLiveArchiveMedia,
   };
 });

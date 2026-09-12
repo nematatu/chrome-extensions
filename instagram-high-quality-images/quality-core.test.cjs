@@ -10,6 +10,10 @@ vm.runInNewContext(source, context);
 const {
   buildFilename,
   highestMediaCandidate,
+  isInstagramLivePath,
+  isLiveArchiveMedia,
+  isLiveStreamVideo,
+  isPortraitVideo,
   largestCandidate,
   parseSrcset,
   shortcodeToMediaId,
@@ -82,4 +86,30 @@ test("カルーセル内の対象画像から最大候補を選ぶ", () => {
     width: 1440,
     height: 959,
   });
+});
+
+test("Liveページのパスだけを判定する", () => {
+  assert.equal(isInstagramLivePath("/account/live/"), true);
+  assert.equal(isInstagramLivePath("/account/live"), true);
+  assert.equal(isInstagramLivePath("/account/live/replay/"), true);
+  assert.equal(isInstagramLivePath("/reel/ABC123/"), false);
+  assert.equal(isInstagramLivePath("/"), false);
+});
+
+test("縦長動画だけを判定する", () => {
+  assert.equal(isPortraitVideo(1080, 1920), true);
+  assert.equal(isPortraitVideo(1920, 1080), false);
+  assert.equal(isPortraitVideo(0, 1920), false);
+});
+
+test("再生時間が無限大の動画をLiveストリームとして判定する", () => {
+  assert.equal(isLiveStreamVideo(Infinity), true);
+  assert.equal(isLiveStreamVideo(3600), false);
+  assert.equal(isLiveStreamVideo(NaN), false);
+});
+
+test("Liveアーカイブのメディア情報を判定する", () => {
+  assert.equal(isLiveArchiveMedia({ items: [{ is_post_live: true }] }), true);
+  assert.equal(isLiveArchiveMedia({ items: [{ media_product_type: "LIVE" }] }), true);
+  assert.equal(isLiveArchiveMedia({ items: [{ product_type: "clips" }] }), false);
 });

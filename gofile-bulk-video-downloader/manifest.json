@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Gofile 動画一括ダウンローダー",
+  "version": "1.0.0",
+  "description": "Gofileの共有ページにある動画を、プレビュー付き進捗表示からまとめて安全に保存します。",
+  "minimum_chrome_version": "102",
+  "permissions": ["downloads", "scripting", "storage", "unlimitedStorage"],
+  "host_permissions": ["https://gofile.io/*"],
+  "incognito": "not_allowed",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://gofile.io/d/*"],
+      "js": ["core.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

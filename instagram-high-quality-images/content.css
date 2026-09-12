@@ -4,6 +4,12 @@ img.instagram-hq-image {
   object-position: center center !important;
 }
 
+video.instagram-hq-live-video {
+  transform: rotate(90deg) !important;
+  transform-origin: center center !important;
+  object-fit: contain !important;
+}
+
 .instagram-hq-download {
   position: fixed;
   z-index: 2147483647;

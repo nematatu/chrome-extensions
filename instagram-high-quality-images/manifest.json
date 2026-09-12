@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Instagram High Quality Images",
-  "version": "1.1.0",
-  "description": "Instagramの投稿画像を、ページ内で取得できる最大解像度で表示します。",
+  "version": "1.2.0",
+  "description": "Instagramの投稿画像を高画質で表示し、Liveの縦動画を横向きに表示します。",
   "permissions": ["storage", "activeTab", "downloads"],
   "host_permissions": [
     "https://www.instagram.com/*",
