@@ -1,12 +1,18 @@
 {
   "manifest_version": 3,
   "name": "Instagram High Quality Images",
-  "version": "1.2.0",
-  "description": "Instagramの投稿画像を高画質で表示し、Liveの縦動画を横向きに表示します。",
-  "permissions": ["storage", "activeTab", "downloads"],
+  "version": "2.2.0",
+  "description": "Instagramの高画質表示と、投稿・ストーリー・アカウント全体の画像／MP4保存。",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "downloads",
+    "offscreen"
+  ],
   "host_permissions": [
     "https://www.instagram.com/*",
-    "https://*.cdninstagram.com/*"
+    "https://*.cdninstagram.com/*",
+    "https://*.fbcdn.net/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -17,10 +23,33 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://www.instagram.com/*"],
-      "js": ["quality-core.js", "content.js"],
-      "css": ["content.css"],
+      "matches": [
+        "https://www.instagram.com/*"
+      ],
+      "js": [
+        "instagram-capture.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://www.instagram.com/*"
+      ],
+      "js": [
+        "quality-core.js",
+        "download-core.js",
+        "instagram-api.js",
+        "content.js",
+        "vendor/toastify-js/toastify.js",
+        "download-ui.js"
+      ],
+      "css": [
+        "vendor/toastify-js/toastify.css",
+        "content.css"
+      ],
       "run_at": "document_idle"
     }
-  ]
+  ],
+  "minimum_chrome_version": "116"
 }

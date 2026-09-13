@@ -1,0 +1,10 @@
+{
+  "name": "instagram-high-quality-images",
+  "version": "2.2.0",
+  "private": true,
+  "scripts": {
+    "test": "node --test quality-core.test.cjs tests/*.test.cjs",
+    "test:browser": "node tests/browser.cjs"
+  },
+  "devDependencies": { "playwright": "1.63.0" }
+}
