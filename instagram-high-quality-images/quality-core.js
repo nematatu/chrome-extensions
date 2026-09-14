@@ -38,68 +38,20 @@
     });
   }
 
-  function safeFilenamePart(value, fallback) {
-    const safe = String(value || "")
-      .normalize("NFKC")
-      .replace(/[^a-zA-Z0-9._-]+/g, "_")
-      .replace(/^[_\.]+|[_\.]+$/g, "")
-      .slice(0, 60);
-    return safe || fallback;
-  }
-
-  function buildFilename({ username, shortcode, index = 1 }) {
-    const user = safeFilenamePart(username, "post");
-    const post = safeFilenamePart(shortcode, "image");
-    const number = String(Math.max(1, Number(index) || 1)).padStart(2, "0");
-    return `instagram_${user}_${post}_${number}.jpg`;
-  }
-
-  function shortcodeToMediaId(shortcode) {
-    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-    let mediaId = 0n;
-    for (const character of String(shortcode || "")) {
-      const value = alphabet.indexOf(character);
-      if (value < 0) return null;
-      mediaId = mediaId * 64n + BigInt(value);
+  function isInstagramMediaUrl(value) {
+    try {
+      const url = new URL(value);
+      return (
+        url.protocol === "https:" &&
+        !url.username &&
+        !url.password &&
+        ["cdninstagram.com", "fbcdn.net"].some(
+          (host) => url.hostname === host || url.hostname.endsWith(`.${host}`),
+        )
+      );
+    } catch {
+      return false;
     }
-    return shortcode ? mediaId.toString() : null;
-  }
-
-  function highestMediaCandidate(data, mediaId, index = 1) {
-    const post = data?.items?.[0];
-    if (!post) return null;
-    const items = post.carousel_media?.length ? post.carousel_media : [post];
-    const selected =
-      items.find((item) => String(item.pk) === String(mediaId || "")) ||
-      items[Math.max(0, Number(index || 1) - 1)] ||
-      items[0];
-    const candidates = (selected?.image_versions2?.candidates || []).filter(
-      (candidate) => candidate?.url && candidate.width > 0 && candidate.height > 0,
-    );
-    const originalWidth = Number(selected?.original_width);
-    const originalHeight = Number(selected?.original_height);
-    const originalAspect = originalWidth > 0 && originalHeight > 0 ? originalWidth / originalHeight : 0;
-    const matchingAspect = originalAspect
-      ? candidates.filter((candidate) => {
-          const candidateAspect = candidate.width / candidate.height;
-          return Math.abs(candidateAspect - originalAspect) / originalAspect <= 0.01;
-        })
-      : [];
-    const closestAspect =
-      originalAspect && !matchingAspect.length
-        ? candidates.reduce((closest, candidate) => {
-            if (!closest) return candidate;
-            const difference = Math.abs(candidate.width / candidate.height - originalAspect);
-            const closestDifference = Math.abs(closest.width / closest.height - originalAspect);
-            return difference < closestDifference ? candidate : closest;
-          }, null)
-        : null;
-    const eligible = matchingAspect.length ? matchingAspect : closestAspect ? [closestAspect] : candidates;
-    return eligible.reduce((best, candidate) => {
-      if (!candidate?.url) return best;
-      if (!best) return candidate;
-      return candidate.width * candidate.height > best.width * best.height ? candidate : best;
-    }, null);
   }
 
   function isInstagramLivePath(pathname) {
@@ -116,20 +68,12 @@
     return duration === Infinity;
   }
 
-  function isLiveArchiveMedia(data) {
-    const media = data?.items?.[0];
-    return media?.is_post_live === true || String(media?.media_product_type || "").toUpperCase() === "LIVE";
-  }
-
   return {
     parseSrcset,
     largestCandidate,
-    buildFilename,
-    shortcodeToMediaId,
-    highestMediaCandidate,
+    isInstagramMediaUrl,
     isInstagramLivePath,
     isPortraitVideo,
     isLiveStreamVideo,
-    isLiveArchiveMedia,
   };
 });

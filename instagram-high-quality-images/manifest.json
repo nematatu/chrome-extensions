@@ -1,22 +1,12 @@
 {
   "manifest_version": 3,
   "name": "Instagram High Quality Images",
-  "version": "2.2.0",
-  "description": "Instagramの高画質表示と、投稿・ストーリー・アカウント全体の画像／MP4保存。",
+  "version": "2.3.0",
+  "description": "Instagramの投稿画像を最大解像度で表示し、縦長のInstagram Liveを横向き表示します。",
   "permissions": [
     "storage",
-    "activeTab",
-    "downloads",
-    "offscreen"
+    "activeTab"
   ],
-  "host_permissions": [
-    "https://www.instagram.com/*",
-    "https://*.cdninstagram.com/*",
-    "https://*.fbcdn.net/*"
-  ],
-  "background": {
-    "service_worker": "background.js"
-  },
   "action": {
     "default_title": "Instagram High Quality Images",
     "default_popup": "popup.html"
@@ -27,25 +17,10 @@
         "https://www.instagram.com/*"
       ],
       "js": [
-        "instagram-capture.js"
-      ],
-      "run_at": "document_start",
-      "world": "MAIN"
-    },
-    {
-      "matches": [
-        "https://www.instagram.com/*"
-      ],
-      "js": [
         "quality-core.js",
-        "download-core.js",
-        "instagram-api.js",
-        "content.js",
-        "vendor/toastify-js/toastify.js",
-        "download-ui.js"
+        "content.js"
       ],
       "css": [
-        "vendor/toastify-js/toastify.css",
         "content.css"
       ],
       "run_at": "document_idle"

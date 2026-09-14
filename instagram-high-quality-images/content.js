@@ -9,12 +9,11 @@
   let rotateLive = true;
   let upgradedCount = 0;
   let scanQueued = false;
-  let clickedPostShortcode = null;
 
   function isPostImage(image) {
     if (!(image instanceof HTMLImageElement)) return false;
     if (image.closest("header, nav")) return false;
-    if (!globalThis.InstagramDownloadCore.allowedMediaUrl(image.currentSrc || image.src)) {
+    if (!core.isInstagramMediaUrl(image.currentSrc || image.src)) {
       return false;
     }
 
@@ -46,28 +45,6 @@
     return srcsets;
   }
 
-  function postShortcode(image) {
-    const routeMatch = location.pathname.match(/\/(?:p|reel)\/([^/?]+)/);
-    if (routeMatch) return routeMatch[1];
-
-    const container = image.closest('[role="dialog"]') || image.closest("article");
-    const postLink = container?.querySelector('a[href*="/p/"], a[href*="/reel/"]');
-    return (
-      postLink?.getAttribute("href")?.match(/\/(?:p|reel)\/([^/?]+)/)?.[1] ||
-      clickedPostShortcode
-    );
-  }
-
-  function imageMediaId(image) {
-    try {
-      const cacheKey = new URL(image.currentSrc || image.src).searchParams.get("ig_cache_key");
-      if (!cacheKey) return null;
-      return atob(cacheKey.split(".")[0]);
-    } catch {
-      return null;
-    }
-  }
-
   function upgrade(image) {
     if (!enabled || !isPostImage(image)) return;
 
@@ -83,7 +60,7 @@
       availableSrcsets(image),
       image.currentSrc || image.src,
     );
-    if (!candidate?.url) return;
+    if (!candidate?.url || !core.isInstagramMediaUrl(candidate.url)) return;
     if (image.src !== candidate.url || image.hasAttribute("srcset")) {
       image.removeAttribute("srcset");
       image.removeAttribute("sizes");
@@ -116,27 +93,21 @@
     );
   }
 
-  function mediaPageShortcode() {
-    return location.pathname.match(/^\/(?:p|reel)\/([^/?]+)/)?.[1] || null;
-  }
-
   function applyLiveVideoRotation(video) {
     video.classList.add("instagram-hq-live-video");
     rotatedLiveVideos.add(video);
   }
 
   function rotateLiveVideo(video) {
-    const portrait = isPortraitVideo(video);
-    const livePath = core.isInstagramLivePath(location.pathname);
-    const liveStream = core.isLiveStreamVideo(video.duration);
-    const isLiveArchive = false;
-
-    if (rotateLive && portrait && (livePath || liveStream || isLiveArchive)) {
+    const shouldRotate =
+      rotateLive &&
+      isPortraitVideo(video) &&
+      (core.isInstagramLivePath(location.pathname) || core.isLiveStreamVideo(video.duration));
+    if (shouldRotate) {
       applyLiveVideoRotation(video);
       return;
     }
-
-    if ((!rotateLive || !portrait || (!livePath && !isLiveArchive)) && rotatedLiveVideos.has(video)) {
+    if (rotatedLiveVideos.has(video)) {
       video.classList.remove("instagram-hq-live-video");
       rotatedLiveVideos.delete(video);
     }
@@ -171,18 +142,6 @@
       .filter(({ area }) => area > 0)
       .sort((a, b) => b.area - a.area)[0]?.image || null;
   }
-
-  globalThis.InstagramHQPage = {isPostImage, postShortcode, imageMediaId};
-
-  document.addEventListener(
-    "click",
-    (event) => {
-      const link = event.target.closest?.('a[href*="/p/"], a[href*="/reel/"]');
-      const shortcode = link?.getAttribute("href")?.match(/\/(?:p|reel)\/([^/?]+)/)?.[1];
-      if (shortcode) clickedPostShortcode = shortcode;
-    },
-    true,
-  );
 
   function queueScan() {
     if (scanQueued) return;

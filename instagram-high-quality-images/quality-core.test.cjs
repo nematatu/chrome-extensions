@@ -5,18 +5,15 @@ const path = require("node:path");
 const vm = require("node:vm");
 
 const source = fs.readFileSync(path.join(__dirname, "quality-core.js"), "utf8");
-const context = { globalThis: {} };
+const context = { globalThis: {}, URL };
 vm.runInNewContext(source, context);
 const {
-  buildFilename,
-  highestMediaCandidate,
+  isInstagramMediaUrl,
   isInstagramLivePath,
-  isLiveArchiveMedia,
   isLiveStreamVideo,
   isPortraitVideo,
   largestCandidate,
   parseSrcset,
-  shortcodeToMediaId,
 } =
   context.globalThis.InstagramHighQualityCore;
 const localValue = (value) => JSON.parse(JSON.stringify(value));
@@ -44,48 +41,17 @@ test("srcsetがなければ現在のURLを維持する", () => {
   });
 });
 
-test("投稿情報から確認不要の保存ファイル名を作る", () => {
-  assert.equal(
-    buildFilename({ username: "badminton_baj", shortcode: "DbUihqMGqmJ", index: 1 }),
-    "instagram_badminton_baj_DbUihqMGqmJ_01.jpg",
-  );
-});
-
-test("投稿ショートコードをMedia IDへ変換する", () => {
-  assert.equal(shortcodeToMediaId("DbUihqMGqmJ"), "3950934619735107977");
-  assert.equal(shortcodeToMediaId("invalid!"), null);
-});
-
-test("カルーセル内の対象画像から最大候補を選ぶ", () => {
-  const data = {
-    items: [
-      {
-        carousel_media: [
-          {
-            pk: "one",
-            image_versions2: { candidates: [{ url: "one.jpg", width: 640, height: 640 }] },
-          },
-          {
-            pk: "two",
-            original_width: 3000,
-            original_height: 2000,
-            image_versions2: {
-              candidates: [
-                { url: "two-small.jpg", width: 640, height: 426 },
-                { url: "two-large.jpg", width: 1440, height: 959 },
-                { url: "two-cropped.jpg", width: 1800, height: 1800 },
-              ],
-            },
-          },
-        ],
-      },
-    ],
-  };
-  assert.deepEqual(localValue(highestMediaCandidate(data, "two", 1)), {
-    url: "two-large.jpg",
-    width: 1440,
-    height: 959,
-  });
+test("Instagram配信元の画像URLだけを対象にする", () => {
+  assert.equal(isInstagramMediaUrl("https://scontent.cdninstagram.com/image.jpg"), true);
+  assert.equal(isInstagramMediaUrl("https://scontent.fbcdn.net/image.jpg"), true);
+  for (const value of [
+    "https://example.com/image.jpg",
+    "https://cdninstagram.com.example.com/image.jpg",
+    "http://scontent.cdninstagram.com/image.jpg",
+    "https://user:pass@scontent.cdninstagram.com/image.jpg",
+  ]) {
+    assert.equal(isInstagramMediaUrl(value), false);
+  }
 });
 
 test("Liveページのパスだけを判定する", () => {
@@ -106,10 +72,4 @@ test("再生時間が無限大の動画をLiveストリームとして判定す�
   assert.equal(isLiveStreamVideo(Infinity), true);
   assert.equal(isLiveStreamVideo(3600), false);
   assert.equal(isLiveStreamVideo(NaN), false);
-});
-
-test("Liveアーカイブのメディア情報を判定する", () => {
-  assert.equal(isLiveArchiveMedia({ items: [{ is_post_live: true }] }), true);
-  assert.equal(isLiveArchiveMedia({ items: [{ media_product_type: "LIVE" }] }), true);
-  assert.equal(isLiveArchiveMedia({ items: [{ product_type: "clips" }] }), false);
 });
