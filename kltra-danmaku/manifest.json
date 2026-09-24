@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "KLTRA 弾幕チャット",
+  "version": "1.0.0",
+  "description": "KLTRATV の Cbox チャットとステッカーを配信画面に弾幕表示し、日本語に翻訳します。",
+  "permissions": ["storage"],
+  "host_permissions": ["https://translate.googleapis.com/*"],
+  "background": { "service_worker": "background.js" },
+  "action": {
+    "default_title": "KLTRA 弾幕設定",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://kltratv13.blogspot.com/p/galaxy.html"],
+      "css": ["danmaku.css"],
+      "js": ["translation.js", "page.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www3.cbox.ws/box/*"],
+      "js": ["chat.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ]
+}

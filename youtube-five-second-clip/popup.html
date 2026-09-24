@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<title>YouTube MP4クリップ</title>
+<style>
+    body {
+        width: 350px;
+        margin: 16px;
+        font: 13px/1.6 system-ui, sans-serif;
+        color: #202020;
+    }
+
+    h1 {
+        font-size: 17px;
+        margin: 0 0 8px;
+    }
+
+    p {
+        margin: 6px 0;
+    }
+
+    article {
+        border-top: 1px solid #ddd;
+        padding: 10px 0;
+        overflow-wrap: anywhere;
+    }
+
+    button {
+        font: inherit;
+        cursor: pointer;
+    }
+
+    .name {
+        font-weight: 600;
+    }
+</style>
+<h1>YouTube MP4クリップ</h1>
+<p>保存先：ダウンロード先の YouTube-Clips</p>
+<p>動画の「範囲を指定して保存」から追加できます。</p>
+<div id="jobs" role="status" aria-live="polite"></div>
+<script src="popup.js"></script>
+
+</html>

@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube 範囲指定MP4クリップ",
+  "version": "3.0.0",
+  "description": "YouTubeの指定範囲を、再生を止めずバックグラウンドでMP4としてダウンロードします。",
+  "minimum_chrome_version": "116",
+  "permissions": [
+    "offscreen",
+    "downloads",
+    "storage"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "YouTube MP4クリップの保存状況"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.youtube.com/*"
+      ],
+      "js": [
+        "stream-cache.js",
+        "collector.js"
+      ],
+      "world": "MAIN",
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://www.youtube.com/*"
+      ],
+      "js": [
+        "clip.js",
+        "content.js"
+      ],
+      "run_at": "document_start"
+    }
+  ]
+}
