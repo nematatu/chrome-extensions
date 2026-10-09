@@ -1,0 +1,16 @@
+{
+  "name": "@tokagemushi/manga-viewer",
+  "version": "0.6.0",
+  "repository": "https://github.com/tokagemushi999/manga-viewer",
+  "commit": "db5d7c8174c00db839795e3cf8b477a0d6431430",
+  "upstream_source_url": "https://raw.githubusercontent.com/tokagemushi999/manga-viewer/db5d7c8174c00db839795e3cf8b477a0d6431430/src/manga-viewer.js",
+  "upstream_license_url": "https://raw.githubusercontent.com/tokagemushi999/manga-viewer/db5d7c8174c00db839795e3cf8b477a0d6431430/LICENSE",
+  "license": "MIT",
+  "upstream_source_sha256": "3decc6fc9959c1a80e17e244cec051d062110c1a4e944dd780609d646eab8be3",
+  "classic_bundle_sha256": "ee7746e5f2c6ae1836cf94a5c45cb0dd35d7e3dbcd961457cd6bd5aa41e79444",
+  "changes": [
+    "Skip absent optional DOM targets in _setupEvents bind helper; upstream throws when bookmarks are disabled or bookmark header button is omitted.",
+    "Replace the two ESM export declarations with a local class and constant, wrap in a strict IIFE, and expose frozen globalThis.MomonijiMangaViewer = { MangaViewer, icons } for Chrome content_scripts."
+  ],
+  "runtime_dependencies": []
+}

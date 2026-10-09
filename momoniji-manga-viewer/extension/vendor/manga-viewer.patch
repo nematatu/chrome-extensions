@@ -1,0 +1,10 @@
+--- upstream/src/manga-viewer.js
++++ patched/src/manga-viewer.js
+@@ -3804,6 +3804,7 @@
+   // ─── Events ───
+   _setupEvents() {
+     const bind = (target, evt, fn, opts) => {
++      if (!target || typeof target.addEventListener !== 'function') return;
+       const bound = fn.bind(this);
+       target.addEventListener(evt, bound, opts);
+       if (!this._bound._list) this._bound._list = [];

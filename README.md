@@ -8,6 +8,7 @@
 | --- | --- |
 | [`kltra-danmaku`](./kltra-danmaku) | KLTRA 弾幕チャット |
 | [`youtube-five-second-clip`](./youtube-five-second-clip) | YouTube 範囲指定MP4クリップ |
+| [`momoniji-manga-viewer`](./momoniji-manga-viewer) | Momoniji 漫画ビューア・一括保存 |
 | [`tweetfile-video-downloader`](./tweetfile-video-downloader) | Tweetfile 動画一括ダウンローダー |
 | [`instagram-high-quality-images`](./instagram-high-quality-images) | Instagram High Quality Images |
 | [`gofile-bulk-video-downloader`](./gofile-bulk-video-downloader) | Gofile 動画一括ダウンローダー |

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>後で読む · Momoniji</title>
+  <link rel="stylesheet" href="popup.css">
+  <script src="library-core.js" defer></script>
+  <script src="popup.js" defer></script>
+</head>
+<body>
+  <header class="header">
+    <svg class="bookmark" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4V3Z"/></svg>
+    <h1>後で読む</h1>
+    <span class="local-note">このブラウザに保存</span>
+  </header>
+  <main>
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
+      <input id="search" type="search" placeholder="作品を検索" aria-label="保存した作品を検索" autocomplete="off" maxlength="300">
+    </div>
+    <div class="filters" role="tablist" aria-label="保存した作品の種類">
+      <button id="tab-unread" role="tab" aria-selected="true" aria-controls="library-panel" data-filter="unread">未読 <span id="count-unread">0</span></button>
+      <button id="tab-read" role="tab" aria-selected="false" aria-controls="library-panel" data-filter="read" tabindex="-1">読了 <span id="count-read">0</span></button>
+      <button id="tab-downloaded" role="tab" aria-selected="false" aria-controls="library-panel" data-filter="downloaded" tabindex="-1">ダウンロード済み <span id="count-downloaded">0</span></button>
+    </div>
+    <p id="error" class="error" role="alert" hidden></p>
+    <section id="library-panel" role="tabpanel" aria-labelledby="tab-unread" aria-busy="true">
+      <p id="result-count" class="result-count" aria-live="polite">読み込み中…</p>
+      <div id="library-list" class="library-list"></div>
+      <button id="load-more" class="load-more" type="button" hidden>さらに表示</button>
+      <div id="empty" class="empty" hidden>
+        <svg class="bookmark" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4V3Z"/></svg>
+        <p id="empty-title">後で読む作品はありません</p>
+        <p id="empty-description">漫画や作品リンクを右クリックして<br>「後で読むに保存」を選んでください。</p>
+      </div>
+    </section>
+  </main>
+  <div id="notice" class="notice" role="status" hidden>
+    <span id="notice-text"></span><button id="undo" type="button" hidden>元に戻す</button>
+  </div>
+  <footer>
+    <p id="current-title" class="current-title"></p>
+    <button id="current-save" class="current-save" type="button" disabled><span id="current-save-icon" aria-hidden="true">＋</span><span id="current-save-label">現在の作品を保存</span></button>
+    <p id="current-description" class="current-description">作品ページを確認しています…</p>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Momoniji 漫画ビューア・一括保存",
+  "version": "1.1.0",
+  "description": "Momoniji の漫画ビューア、作品別一括保存、右クリックから後で読むに登録して保存済みを確認できます。",
+  "minimum_chrome_version": "120",
+  "permissions": ["downloads", "storage", "alarms", "contextMenus"],
+  "host_permissions": ["https://momoniji.com/*", "https://www.momoniji.com/*"],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_title": "Momoniji・後で読む", "default_popup": "popup.html" },
+  "content_scripts": [{
+    "matches": ["https://momoniji.com/*", "https://www.momoniji.com/*"],
+    "js": ["vendor/manga-viewer.js", "extract.js", "library-core.js", "library-content.js", "content.js"],
+    "run_at": "document_idle"
+  }]
+}
