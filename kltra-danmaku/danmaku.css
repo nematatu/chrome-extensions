@@ -38,3 +38,16 @@
 @keyframes kltra-danmaku-move {
   to { transform: translateX(var(--kltra-distance)); }
 }
+
+.kltra-original-toggle {
+  margin-left: 6px;
+  padding: 1px 5px;
+  border: 1px solid #94a3b8;
+  border-radius: 3px;
+  background: #334155;
+  color: #e2e8f0;
+  font: 11px system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.kltra-original-text { color: #475569; }

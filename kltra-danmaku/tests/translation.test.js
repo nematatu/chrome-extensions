@@ -7,7 +7,7 @@ const vm = require("node:vm");
 const script = fs.readFileSync(path.join(__dirname, "../translation.js"), "utf8");
 
 function managerWith(api) {
-  const context = { ...api };
+  const context = { setTimeout, clearTimeout, ...api };
   context.globalThis = context;
   vm.runInNewContext(script, context);
   return context.KltraTranslation.createTranslation();

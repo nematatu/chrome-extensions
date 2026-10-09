@@ -348,6 +348,11 @@ try {
       await sleep(50);
     }
     assert.ok(translated, "翻訳結果が移動中の弾幕に反映されませんでした");
+    assert.equal(await evaluate(`document.querySelector('.msg[data-id="999999999999005"] .kltra-original-text')?.hidden`, chatSession),
+      true, "各メッセージの原文が初期状態で隠れていません");
+    await evaluate(`document.querySelector('.msg[data-id="999999999999005"] .kltra-original-toggle')?.click()`, chatSession);
+    assert.equal(await evaluate(`document.querySelector('.msg[data-id="999999999999005"] .kltra-original-text')?.textContent`, chatSession),
+      " [原文] Pertandingan sudah dimulai", "メッセージ単位の原文表示が動作しませんでした");
     assert.ok(await evaluate(`!![...document.querySelectorAll('.kltra-danmaku-item')]
       .find(x => x.textContent === 'E2E: 試合開始' && x.querySelector('img.kltra-danmaku-sticker'))`),
       "翻訳後に投稿ステッカーが消えました");

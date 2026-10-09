@@ -22,7 +22,7 @@
     try {
       const url = new URL(value, location.href);
       const host = url.hostname.toLowerCase();
-      if (url.protocol !== "https:" || url.username || url.password || url.port ||
+      if (url.protocol !== "https:" || url.href.includes("@") || url.port ||
           !(host === "cbox.im" || host.endsWith(".cbox.ws")) || url.href.length > 2048) return null;
       return url.href;
     } catch {
@@ -104,6 +104,54 @@
     }).observe(document.documentElement, { childList: true, subtree: true });
     return true;
   }
+
+  function replaceMessageText(message, translated, original) {
+    const body = message.querySelector(":scope > .body");
+    if (!body || typeof translated !== "string" || translated.length > 800) return;
+    let replaced = false;
+    const textNodes = [];
+    const walkText = (node) => {
+      if (node.nodeType === Node.TEXT_NODE) { textNodes.push(node); return; }
+      if (node.nodeType !== Node.ELEMENT_NODE || node.matches(".emote, .emote *")) return;
+      node.childNodes.forEach(walkText);
+    };
+    walkText(body);
+    for (const node of textNodes) {
+      if (!replaced) {
+        node.textContent = original ? `${translated}\n[原文] ${original}` : translated;
+        replaced = true;
+      } else {
+        node.remove();
+      }
+    }
+    if (!replaced) body.insertBefore(document.createTextNode(translated), body.firstChild);
+    body.querySelector(":scope > .kltra-original-toggle")?.remove();
+    body.querySelector(":scope > .kltra-original-text")?.remove();
+    if (original) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "kltra-original-toggle";
+      button.textContent = "原文を表示";
+      const originalNode = document.createElement("span");
+      originalNode.className = "kltra-original-text";
+      originalNode.textContent = ` [原文] ${original}`;
+      originalNode.hidden = true;
+      button.addEventListener("click", () => {
+        originalNode.hidden = !originalNode.hidden;
+        button.textContent = originalNode.hidden ? "原文を表示" : "原文を隠す";
+      });
+      body.append(" ", button, originalNode);
+    }
+  }
+
+  window.addEventListener?.("message", (event) => {
+    if (event.origin !== PAGE_ORIGIN || event.source !== window.parent) return;
+    const data = event.data;
+    if (!data || data.channel !== CHANNEL || data.type !== "TRANSLATED" ||
+        typeof data.id !== "string" || !/^\d{1,16}$/.test(data.id)) return;
+    const message = document.querySelector(`.msg[data-id="${data.id}"]`);
+    if (message) replaceMessageText(message, data.text, typeof data.original === "string" ? data.original : "");
+  });
 
   if (!start()) {
     const observer = new MutationObserver(() => {

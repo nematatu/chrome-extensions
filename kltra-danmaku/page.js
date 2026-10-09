@@ -20,7 +20,7 @@
     try {
       const url = new URL(value);
       const host = url.hostname.toLowerCase();
-      if (url.protocol !== "https:" || url.username || url.password || url.port ||
+      if (url.protocol !== "https:" || url.href.includes("@") || url.port ||
           !(host === "cbox.im" || host.endsWith(".cbox.ws")) || url.href.length > 2048) return null;
       return url.href;
     } catch {
@@ -36,7 +36,7 @@
         ? values.translationEnabled : DEFAULTS.translationEnabled,
       translationSource: ["auto", "id", "en"].includes(values.translationSource)
         ? values.translationSource : DEFAULTS.translationSource,
-      translationEngine: ["online", "local"].includes(values.translationEngine)
+    translationEngine: ["online", "local"].includes(values.translationEngine)
         ? values.translationEngine : DEFAULTS.translationEngine,
     };
     for (const [key, [min, max]] of Object.entries(LIMITS)) {
@@ -139,6 +139,13 @@
     return { item, lane: chosen, slots, name, textNode };
   }
 
+  function updateChat(id, translated, original) {
+    if (typeof translated !== "string" || !translated || translated.length > 500) return;
+    const frame = document.querySelector("#chat .chat-iframe");
+    frame?.contentWindow?.postMessage({ channel: CHANNEL, type: "TRANSLATED", id, text: translated,
+      original }, CHAT_ORIGIN);
+  }
+
   window.addEventListener("message", (event) => {
     const frame = document.querySelector("#chat .chat-iframe");
     if (event.origin !== CHAT_ORIGIN || event.source !== frame?.contentWindow) return;
@@ -160,7 +167,10 @@
     // 翻訳が終わるまで弾幕を作らない。ステッカーだけの投稿は即時表示する。
     Promise.resolve(settings.translationEnabled && data.text
       ? translation.translateText(data.text) : data.text)
-      .then((translated) => show(data.name, translated, stickers));
+      .then((translated) => {
+        if (settings.translationEnabled && data.text && translated !== data.text) updateChat(data.id, translated, data.text);
+        show(data.name, translated, stickers);
+      });
   });
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
