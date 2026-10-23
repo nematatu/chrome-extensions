@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Stripchat ライブ・ホバープレビュー",
+  "version": "1.0.1",
+  "description": "Stripchatの一覧カード内で、ホバー中の公開ライブを無音でプレビューします。",
+  "minimum_chrome_version": "116",
+  "content_scripts": [
+    {
+      "matches": ["https://ja.stripchat.com/*"],
+      "js": ["core.js", "native-preview.js"],
+      "world": "MAIN",
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://ja.stripchat.com/*"],
+      "js": ["core.js", "content.js"],
+      "css": ["content.css"],
+      "run_at": "document_start"
+    }
+  ]
+}

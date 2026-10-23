@@ -1,0 +1,12 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gofile - TestSamples</title>
+<style>body{margin:0;padding:26px;background:#080d19;color:#e2e8f0;font:14px/1.55 system-ui}main{max-width:1100px;margin:auto}h1{font-size:21px;margin:0}p{color:#94a3b8}section,.panel{border:1px solid #27344c;background:#111a2b;border-radius:12px;padding:14px;margin:14px 0}.toolbar-panel{display:flex;align-items:center;gap:9px}.spacer{flex:1}.file-name{font-weight:600}button{font:inherit;color:#e2e8f0;border:1px solid #334155;border-radius:7px;background:#1e293b;padding:7px 11px;cursor:pointer}.fm-row{display:flex;gap:15px;align-items:center;padding:12px;border-bottom:1px solid #25334a}.fm-row:last-child{border:0}.preview{width:100px;height:60px;object-fit:cover;border-radius:6px}a{color:#93c5fd}.controls{display:flex;gap:8px;flex-wrap:wrap}.badge{color:#94a3b8;font-size:12px}#fl{padding:0}.info{min-width:0}@media(max-width:520px){body{padding:10px}.toolbar-panel{gap:5px}.fm-row{padding:10px}.preview{width:70px;height:45px}}</style>
+</head><body><main><section class="folder-hdr"><h1>TestSamples</h1><span class="badge">3 items · 合成素材</span></section>
+<p>Gofile版と同じ一覧上のボタンと、右下のページ内進捗パネルです。保存ワーカーは製品版を使用し、Chrome APIだけを検証用に置き換えています。実際のダウンロードは行いません。</p>
+<div class="toolbar-sticky"><div class="panel toolbar-panel"><button type="button">全選択</button><span class="spacer"></span><button type="button">検索</button><button type="button">並べ替え</button></div></div>
+<div class="panel fl-panel" id="fl">
+<div class="fm-row"><img class="preview" src="/fixtures/geometry.png" alt="合成動画のプレビュー"><div class="info"><div class="file-name">sample.webm</div><span class="badge">合成動画 · WebM</span></div></div>
+<div class="fm-row"><img class="preview" src="/fixtures/geometry.png" alt="幾何学模様"><div class="info"><div class="file-name">geometry.png</div><span class="badge">合成画像 · PNG</span></div></div>
+<div class="fm-row"><img class="preview" src="/fixtures/colors.jpg" alt="カラーバー"><div class="info"><div class="file-name">colors.jpg</div><span class="badge">合成画像 · JPEG</span></div></div>
+</div>
+<section><p>以下は検証画面専用の操作です。</p><div class="controls"><button id="progress-demo">途中の進捗を再現</button><button id="fail-demo">通信失敗を再現</button><button id="complete-demo">全件完了を再現</button><button id="scan-error-demo">次の一覧取得を失敗させる</button></div></section>
+</main><script src="/mock-chrome.js"></script><script src="/fixture-core.js"></script><script src="/fixture-content.js"></script></body></html>

@@ -135,6 +135,72 @@ test("フィルター表示中はAPIから未フィルターのページを取�
   assert.deepEqual(calls[0], ["folder-id", "", 1, 1000, "createTime", -1]);
 });
 
+test("現行ES modules構成で100件表示のページングを1000件に揃え、画像も収集する", async () => {
+  const fixture = setupVm(null);
+  const visible = response({ visible: file("visible") }, 2, 200);
+  visible.metadata.pageSize = 100;
+  fixture.context.document = { getElementById: (id) => ["fm-root", "fm-list"].includes(id) ? {} : null };
+  const calls = [];
+  fixture.context.__gofileBulkPageBridge = {
+    version: 1,
+    current: () => ({ response: visible, filtered: true }),
+    getPage: async (...args) => {
+      calls.push(args);
+      return response({
+        video: file("video"),
+        image: file("image", { name: "photo.JPG", mimetype: "image/jpeg" }),
+        audio: file("audio", { name: "track.mp3", mimetype: "audio/mpeg" }),
+      });
+    },
+  };
+  const result = await fixture.collect("https://gofile.io/d/TestCode");
+  assert.equal(result.ok, true);
+  assert.deepEqual(Array.from(result.videos, (item) => item.id), ["video", "image"]);
+  assert.deepEqual(calls, [["folder-id", 1, 1000]]);
+  assert.equal(result.totalPages, 1);
+  assert.equal(result.scannedItems, 3);
+});
+
+test("現行ブリッジのレート制限・認証切れ・別ページ遷移を区別する", async () => {
+  for (const [status, expected] of [["error-rateLimit", "RATE_LIMITED"], ["error-token", "AUTH_REQUIRED"], ["error-pageChanged", "PAGE_CHANGED"]]) {
+    const fixture = setupVm(null);
+    fixture.context.__gofileBulkPageBridge = {
+      version: 1,
+      current: () => ({ response: response({}), filtered: false }),
+      getPage: async () => ({ status }),
+    };
+    const result = await fixture.collect("https://gofile.io/d/TestCode");
+    assert.equal(result.ok, false);
+    assert.equal(result.error, expected);
+  }
+});
+
+test("観測ブリッジが存在しても、旧ページのmainContentとgetContentを維持する", async () => {
+  const fixture = setupVm(response({ legacy: file("legacy") }));
+  fixture.context.__gofileBulkPageBridge = {
+    version: 1,
+    current: () => null,
+    getPage: async () => assert.fail("旧ページでは現行APIブリッジを使わない"),
+  };
+  const result = await fixture.collect("https://gofile.io/d/TestCode");
+  assert.equal(result.ok, true);
+  assert.deepEqual(Array.from(result.videos, item => item.id), ["legacy"]);
+});
+
+test("現行DOMでは古いappdataが残っていても現行ブリッジの一覧を採用する", async () => {
+  const fixture = setupVm(response({ stale: file("stale") }));
+  fixture.context.document = { getElementById: id => ["fm-root", "fm-list"].includes(id) ? {} : null };
+  const current = response({ fresh: file("fresh") });
+  fixture.context.__gofileBulkPageBridge = {
+    version: 1,
+    current: () => ({ response: current, filtered: false }),
+    getPage: async () => current,
+  };
+  const result = await fixture.collect("https://gofile.io/d/TestCode");
+  assert.equal(result.ok, true);
+  assert.deepEqual(Array.from(result.videos, item => item.id), ["fresh"]);
+});
+
 test("パスワード未解除・非公開ページでは処理を開始しない", async () => {
   const current = response({});
   current.data.canAccess = false;

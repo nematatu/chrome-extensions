@@ -288,6 +288,20 @@ test("1クリックで全件を登録し、4本ずつ安全に開始する", asy
   assert.equal("url" in status.batch.items[0], false);
 });
 
+test("動画と画像を同じ保存キューでサブフォルダへ保存し、非メディアは除外する", async () => {
+  const harness = createHarness({ videos: [
+    video(1),
+    video(2, { name: "photo.JPG", mimetype: "image/jpeg" }),
+    video(3, { name: "notes.txt", mimetype: "text/plain" }),
+  ] });
+  const result = await harness.send({ type: "gofile-bulk:start" });
+  assert.equal(result.ok, true);
+  assert.equal(result.batch.summary.total, 2);
+  assert.equal(result.batch.skippedCount, 1);
+  assert.deepEqual(harness.downloadCalls.map(call => call.filename), ["Gofile/Test folder/video-1.mp4", "Gofile/Test folder/photo.JPG"]);
+  assert.ok(harness.downloadCalls.every(call => call.saveAs === false && call.conflictAction === "uniquify"));
+});
+
 test("非Gofileページやサブフレームからの開始要求を拒否する", async () => {
   const harness = createHarness();
   const evilSender = {
@@ -318,6 +332,39 @@ test("実行中バッチの残りをキャンセルしても完了済みファ�
   assert.equal(response.batch.status, "completed_with_errors");
   assert.equal(typeof harness.chrome.downloads.removeFile, "undefined");
   assert.equal(typeof harness.chrome.downloads.erase, "undefined");
+});
+
+test("復元した待機キューの古い保存先を使わず、サブフォルダー内へ保存する", async () => {
+  for (const storedFilename of ["video-5.mp4", "../video-5.mp4", "/Downloads/video-5.mp4"]) {
+    const harness = createHarness();
+    const started = await harness.send({type: "gofile-bulk:start"});
+    const batch = harness.getCachedState().batches[started.batch.id];
+    batch.items[4].filename = storedFilename;
+    await harness.persistCachedState();
+    harness.resetWorkerCache();
+    Object.assign(harness.downloads.get(1), {state: "complete", bytesReceived: 100});
+    const restored = await harness.send({type: "gofile-bulk:status"});
+    assert.equal(restored.ok, true);
+    assert.equal(harness.downloadCalls.length, 5);
+    assert.equal(harness.downloadCalls[4].filename, "Gofile/Test folder/video-5.mp4");
+    assert.equal(harness.downloadCalls[4].saveAs, false);
+    assert.equal(harness.getCachedState().batches[started.batch.id].items[4].filename,
+      "Gofile/Test folder/video-5.mp4");
+  }
+});
+
+test("失敗分の再試行もサブフォルダー内へ保存する", async () => {
+  const harness = createHarness({videos: [video(1)]});
+  harness.setFailNextDownload(true);
+  const started = await harness.send({type: "gofile-bulk:start"});
+  harness.getCachedState().batches[started.batch.id].items[0].filename = "video-1.mp4";
+  await harness.persistCachedState();
+  harness.resetWorkerCache();
+  const retried = await harness.send({type: "gofile-bulk:retry", batchId: started.batch.id});
+  assert.equal(retried.ok, true);
+  assert.equal(harness.downloadCalls.length, 2);
+  assert.equal(harness.downloadCalls[1].filename, "Gofile/Test folder/video-1.mp4");
+  assert.equal(harness.downloadCalls[1].saveAs, false);
 });
 
 test("開始失敗した動画だけを再試行できる", async () => {

@@ -11,7 +11,9 @@
 | [`momoniji-manga-viewer`](./momoniji-manga-viewer) | Momoniji 漫画ビューア・一括保存 |
 | [`tweetfile-video-downloader`](./tweetfile-video-downloader) | Tweetfile 動画一括ダウンローダー |
 | [`instagram-high-quality-images`](./instagram-high-quality-images) | Instagram High Quality Images |
-| [`gofile-bulk-video-downloader`](./gofile-bulk-video-downloader) | Gofile 動画一括ダウンローダー |
+| [`stripchat-live-hover`](./stripchat-live-hover) | Stripchat ライブ・ホバープレビュー |
+| [`gofile-bulk-video-downloader`](./gofile-bulk-video-downloader) | Gofile 動画・画像一括ダウンローダー |
+| [`page-media-bulk-downloader`](./page-media-bulk-downloader) | ページ動画・画像 一括保存 |
 | [`badspi-hq-downloader`](./badspi-hq-downloader) | バドスピ 高画質画像ダウンローダー |
 | [`koutairen-gallery-fix`](./koutairen-gallery-fix) | 全国高体連バドミントン 写真送り修正 |
 | [`inhigh-tv-skip-extension`](./inhigh-tv-skip-extension) | インハイTV スキップ操作 |

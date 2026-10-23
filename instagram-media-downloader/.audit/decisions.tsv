@@ -1,0 +1,24 @@
+ts	phase	decision	why	evidence	result
+2026-10-22T00:00:00+09:00	frame	独立したMV3拡張として作成する	既存拡張はダウンロード非対応を仕様とテストで保証している	../instagram-high-quality-images/README.md;../instagram-high-quality-images/tests/browser.cjs	設計採用
+2026-10-22T03:06:08+00:00	audit	最初の行の時刻と証拠参照を訂正する	最初の時刻は仮置きで実測値ではない。初期判断の正確な実施時刻は不明。証拠はリポジトリルート基準のパスとして読む	instagram-high-quality-images/README.md;instagram-high-quality-images/tests/browser.cjs	初期判断自体は証拠で確認済み
+2026-10-22T03:06:08+00:00	design	独立overlayで描画領域にボタンを配置する	親要素の枠と画像の実際の領域はobject-fitの余白で異なる	instagram-media-downloader/core.js;instagram-media-downloader/tests/core.test.cjs	座標テスト成功
+2026-10-22T03:06:08+00:00	source	旧media info APIからPolaris読み取りクエリに切り替える	公開された仕様変更事例を確認した	https://github.com/hoaianle/Instagram-Downloader/pull/39/files	実APIの読み取り確認も成功
+2026-10-22T03:06:08+00:00	queue	downloads完了通知と実状態の照合で件数を数える	開始通知を完了扱いすると保存失敗を見逃す	instagram-media-downloader/background.js;instagram-media-downloader/tests/background.test.cjs	単体テスト成功
+2026-10-22T03:06:08+00:00	browser	一時ブラウザーからだけローカルHTTPS検証配信を許可する	sandboxのlisten制限とChromiumのloopbackアクセス拒否を確認した	instagram-media-downloader/tests/browser.cjs	再現CDNからの実ファイル保存成功
+2026-10-22T03:06:08+00:00	visual	Shadow DOM内の文字と記号の色を白に設定する	初回の生成画面で文字と記号が黒く表示された	instagram-media-downloader/tests/browser.cjs;instagram-media-downloader/test-results/post.png	目視とcomputedStyle確認成功
+2026-10-22T03:06:08+00:00	review	情報取得段階から中止とSPA遷移検出を適用する	独立レビューで保存準備中の中止不可と旧ページ保存を指摘された	instagram-media-downloader/content.js;instagram-media-downloader/tests/browser.cjs	中止と画面遷移の回帰テスト成功
+2026-10-22T03:06:08+00:00	review	プロフィール動画サムネイルの画像フォールバックを拒否する	取得失敗時に動画の代わりに静止画が保存される経路があった	instagram-media-downloader/content.js;instagram-media-downloader/tests/browser.cjs	回帰テスト成功
+2026-10-22T03:06:08+00:00	verification	単体16件とChromium統合20項目を実行する	実装だけでは保存完了や座標追随を証明できない	instagram-media-downloader/VERIFICATION.md;instagram-media-downloader/test-results/verification.json	成功。最新変更後の最終再実行は別途記録する
+2026-10-22T03:06:08+00:00	live	認証済み実Instagramで投稿・リール・検索・ストーリーの読み取りクエリを確認する	再現ページだけではクエリIDの現時点の適合が不明だった	instagram-media-downloader/VERIFICATION.md	HTTP200。新拡張の実サイト全操作は未検証
+2026-10-22T03:06:08+00:00	dependencies	既存の同一バージョンのlockfileを新拡張の名前とバージョンに合わせて複製する	offline npmのregistryキャッシュがなく、既存のPlaywright1.63.0の検証済み固定情報を再利用した	instagram-media-downloader/package-lock.json;instagram-high-quality-images/package-lock.json	開発依存のみ。実行時依存なし
+2026-10-22T03:10:06+00:00	review	保存開始の引き渡し中の中止を応答後のジョブに反映する	最終独立レビューでAbortControllerだけでは開始済みジョブへ中止が届かない競合を指摘された	instagram-media-downloader/content.js;instagram-media-downloader/tests/browser.cjs	保存開始を実際に遅延させた回帰テストが成功
+2026-10-22T03:10:06+00:00	verification	最終版の単体16件とブラウザー21項目を再実行する	object-positionの追加と中止競合の修正後の状態を検証した	instagram-media-downloader/test-results/verification.json;instagram-media-downloader/VERIFICATION.md	成功。新拡張の実Instagram上での保存全操作は未検証
+2026-10-22T03:11:02+00:00	verification	引き渡し中止テストの判定を訂正する	先の21項目成功のうち引き渡し中止は古いジョブと取得中止文言で成功できることを独立レビューが指摘した	instagram-media-downloader/tests/browser.cjs	先の当該1項目の成功判定を取り消し。新ジョブIDを直接待機する検証へ変更
+2026-10-22T03:13:06+00:00	verification	今回の新規ジョブIDを検査する21項目のテストを再実行する	前回ジョブを誤検査する経路を除いた	instagram-media-downloader/test-results/verification.json;instagram-media-downloader/tests/browser.cjs	全21項目成功
+2026-10-22T03:13:06+00:00	verification	中止修正だけを外した一時コピーで同じ回帰テストを実行する	テストが不具合のあるコードを失敗として検出できることを確認する	instagram-media-downloader/test-results/handoff-regression.json;instagram-media-downloader/VERIFICATION.md	Accepted job did not receive cancellation during start handoffで失敗。製品本体は変更なし
+2026-10-22T03:13:47+00:00	review	最終の中止修正と新ジョブを対象とした回帰判定を独立レビューで再確認する	テストの誤判定経路が残らないことを実装者以外も確認する	instagram-media-downloader/tests/browser.cjs;instagram-media-downloader/VERIFICATION.md	gpt-6-astraの限定範囲レビューで残る具体的不備なし。最終21件成功と負の対照失敗は実装者が実行確認。実サイトE2Eは未検証
+2026-10-22T03:25:49+00:00	live	利用者の許可を受けて認証済みChromeへ新拡張を読み込む	前回残した実サイトUIと実ファイル保存の検証を行う	instagram-media-downloader/.audit/live-verification.todo.md	Chromeの読み込み通知と拡張名・有効状態を確認した。保存は検証中
+2026-10-22T07:52:15.597317+00:00	実サイト修正と保存検証	実DOMで透明操作レイヤーとmainなしストーリー、text/javascript応答を確認	座標・検出・応答形式とアカウント付きURLを修正。左下固定ボタンを削除	単体17件・隔離ブラウザー22項目成功。実サイト投稿・カルーセル・リール・ストーリー個別と25件一括保存、39ファイル全体デコードと追加画像デコード成功
+2026-10-22T08:32:39.949570+00:00	プロフィール保存モードと長い投稿ID・再投稿ストーリー	実メディアのcode39文字が20文字制限で失われる。中央の小さな内部操作要素を遮蔽と誤判定	codeを最大80文字の文字列で保持。共通メディアコンテナの境界で判定。プロフィール右上を投稿全件保存に変更	実サイト2件・9件・11件保存と全体デコード成功。ホームからの遷移とリロード後のボタン確認。単体17件・ブラウザー27項目成功
+2026-10-22T10:17:50.196607+00:00	保存済み履歴とチェック表示	個別の実完了と投稿全件の完了を分離	localへ識別子と照合ハッシュを永続化。全件の保存完了後だけ全件キーを作成。既存の本拡張のChrome完了履歴を取り込み	単体28件・隔離ブラウザー34項目成功。追加機能の実Chrome反映・実サイト確認はMacロックで未実施
+2026-10-23T04:08:12.459594+00:00	保存履歴の実サイト検証とプレビュー上書き修正	カルーセル全件情報が同一親IDの単一カバーへ置換され個別チェックが消えることを実画面と一時診断で再現	完全な複数項目と親IDだけのカバーを区別してキャッシュを保持。一時診断を除去	単体28件・隔離ブラウザー35項目成功。修正前コピーは Expected saved=true, got false。独立レビュー追加不備なし。実Chromeで投稿3件・個別画像・ストーリー画像と動画全2件・リールの完了と緑色チェックを確認

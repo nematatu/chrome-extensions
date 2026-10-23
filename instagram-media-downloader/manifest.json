@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Instagram Media Downloader",
+  "version": "1.0.0",
+  "description": "Instagramの投稿・ストーリー・リールを個別または一括で保存します。",
+  "minimum_chrome_version": "116",
+  "permissions": ["downloads", "storage", "alarms"],
+  "host_permissions": ["https://*.cdninstagram.com/*", "https://*.fbcdn.net/*"],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_title": "Instagram Media Downloader", "default_popup": "popup.html" },
+  "content_scripts": [
+    { "matches": ["https://www.instagram.com/*"], "js": ["core.js", "bridge.js"], "world": "MAIN", "run_at": "document_start" },
+    { "matches": ["https://www.instagram.com/*"], "js": ["core.js", "instagram-api.js", "content.js"], "run_at": "document_idle" }
+  ]
+}

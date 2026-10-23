@@ -1,0 +1,62 @@
+{
+  "manifest_version": 3,
+  "name": "ページ動画・画像 一括保存",
+  "version": "1.8.2",
+  "description": "対象サイトの一覧ツールバーから動画・画像を一括保存し、ページ内で進捗・キャンセル・再試行を確認します。",
+  "minimum_chrome_version": "111",
+  "permissions": [
+    "downloads",
+    "scripting",
+    "storage",
+    "unlimitedStorage",
+    "offscreen"
+  ],
+  "host_permissions": [
+    "https://video.twimg.news/*",
+    "https://twfiles.com/*",
+    "https://video.twimg1.com/*",
+    "https://gofile.run/*",
+    "https://gofile.ing/*",
+    "https://video.twimg-film.com/*",
+    "https://gofile.es/*",
+    "https://cdn4.file-photo.com/*",
+    "https://gofile.guru/*",
+    "https://cdn.twimg-image.com/*",
+    "https://gofile.pl/*",
+    "https://video.twimg-com.com/*",
+    "https://rwzugqnp.fun800.click/*",
+    "https://vid.fun800.click/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://video.twimg.news/d/*",
+        "https://twfiles.com/*",
+        "https://video.twimg1.com/*",
+        "https://gofile.run/*",
+        "https://gofile.ing/*",
+        "https://video.twimg-film.com/*",
+        "https://gofile.es/*",
+        "https://cdn4.file-photo.com/*",
+        "https://gofile.guru/*",
+        "https://cdn.twimg-image.com/*",
+        "https://gofile.pl/*",
+        "https://video.twimg-com.com/*"
+      ],
+      "js": [
+        "core.js",
+        "content.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false,
+      "world": "ISOLATED"
+    }
+  ],
+  "incognito": "not_allowed",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'"
+  }
+}

@@ -28,22 +28,24 @@
 
   const ERROR_MESSAGES = Object.freeze({
     ACCESS_REQUIRED: "先にGofile上でパスワード解除またはアクセス確認を完了してから、もう一度お試しください。",
+    AUTH_REQUIRED: "Gofileの認証が期限切れ、または拒否されました。Gofileの更新ボタンかページ再読み込みで一覧を取り直してからお試しください。",
+    RATE_LIMITED: "Gofileのアクセス回数制限に達しました。時間を置いてからお試しください。",
     BATCH_ACTIVE: "現在の一括保存が進行中です。進捗パネルをご確認ください。",
     BATCH_NOT_FOUND: "保存状況を復元できませんでした。ページを再読み込みしてからお試しください。",
-    DOWNLOAD_NOT_FOUND: "Chromeの保存履歴から対象を確認できませんでした。対象の動画を再試行してください。",
+    DOWNLOAD_NOT_FOUND: "Chromeの保存履歴から対象を確認できませんでした。対象の動画・画像を再試行してください。",
     FILE_NO_SPACE: "保存先の空き容量が不足しています。空き容量を確保してから再試行してください。",
-    INJECTION_FAILED: "Gofileの動画情報を確認できませんでした。ページを再読み込みしてからお試しください。",
+    INJECTION_FAILED: "Gofileの動画・画像情報を確認できませんでした。ページを再読み込みしてからお試しください。",
     INTERNAL_ERROR: "処理中にエラーが発生しました。少し待ってからもう一度お試しください。",
     NOT_FOUND: "このGofileページは存在しないか、すでに期限切れです。",
-    NOTHING_TO_RETRY: "再試行できる動画はありません。",
+    NOTHING_TO_RETRY: "再試行できる動画・画像はありません。",
     PAGE_CHANGED: "確認中にページが移動しました。現在のページでもう一度お試しください。",
     PAGE_NOT_READY: "Gofileの一覧が読み込み終わってから、もう一度お試しください。",
-    SCAN_FAILED: "動画一覧の確認に失敗しました。ページを再読み込みしてからお試しください。",
+    SCAN_FAILED: "動画・画像一覧の確認に失敗しました。ページを再読み込みしてからお試しください。",
     SITE_CHANGED: "Gofileのページ構成が更新されています。ページを再読み込みしてからお試しください。",
-    START_STATE_LOST: "Chromeで保存開始状態を確認できませんでした。対象の動画を再試行してください。",
-    TOO_MANY_PAGES: "動画数が非常に多いため、安全のため処理を停止しました。フォルダを分けてからお試しください。",
+    START_STATE_LOST: "Chromeで保存開始状態を確認できませんでした。対象の動画・画像を再試行してください。",
+    TOO_MANY_PAGES: "動画・画像数が非常に多いため、安全のため処理を停止しました。フォルダを分けてからお試しください。",
     TOO_MANY_ACTIVE_BATCHES: "同時に処理中のGofileページが多すぎます。いずれかの一括保存が終わってからお試しください。",
-    TOO_MANY_VIDEOS: "動画数が10,000本を超えているため、安全のため処理を停止しました。フォルダを分けてからお試しください。",
+    TOO_MANY_VIDEOS: "動画・画像数が10,000件を超えているため、安全のため処理を停止しました。フォルダを分けてからお試しください。",
     UNTRUSTED_PAGE: "Gofileの共有ページでのみ一括保存を開始できます。",
   });
 
@@ -71,9 +73,9 @@
     NETWORK_INVALID_REQUEST: "保存リクエストが拒否されました",
     NETWORK_SERVER_DOWN: "保存先サーバーに接続できません",
     NETWORK_TIMEOUT: "ネットワークがタイムアウトしました",
-    SERVER_BAD_CONTENT: "サーバーから正しい動画を受信できませんでした",
+    SERVER_BAD_CONTENT: "サーバーから正しい動画・画像を受信できませんでした",
     SERVER_CERT_PROBLEM: "サーバー証明書を確認できませんでした",
-    SERVER_CONTENT_LENGTH_MISMATCH: "受信した動画サイズが一致しません",
+    SERVER_CONTENT_LENGTH_MISMATCH: "受信した動画・画像サイズが一致しません",
     SERVER_CROSS_ORIGIN_REDIRECT: "安全でないリダイレクトが拒否されました",
     SERVER_FAILED: "Gofileサーバーで保存に失敗しました",
     SERVER_FORBIDDEN: "Gofileサーバーに保存を拒否されました",
@@ -105,6 +107,7 @@
   }
 
   function isFileManagerReady() {
+    if (document.getElementById("fm-root")) return Boolean(document.getElementById("fm-list"));
     const mainContent = document.getElementById("filemanager_maincontent");
     if (!mainContent) return false;
     const loading = document.getElementById("filemanager_loading");
@@ -148,11 +151,11 @@
           button { font-size: 12px; padding: 7px 9px; }
         }
       </style>
-      <button type="button" aria-label="このGofileページの動画を一括保存">
+      <button type="button" aria-label="このGofileページの動画・画像を一括保存">
         <svg aria-hidden="true" viewBox="0 0 24 24">
           <path d="M12 3v11m0 0 4-4m-4 4-4-4M5 18v2h14v-2" />
         </svg>
-        <span>動画を一括保存</span>
+        <span>動画・画像を一括保存</span>
       </button>
     `;
     button = shadow.querySelector("button");
@@ -170,8 +173,10 @@
       return;
     }
 
-    const header = document.getElementById("index_header");
+    const modernToolbar = document.getElementById("fm-toolbar");
+    const header = modernToolbar?.firstElementChild || document.getElementById("index_header");
     if (!header) return;
+    if (modernToolbar) header.style.flexWrap = "wrap";
     if (!buttonHost) createButtonHost();
     if (!buttonHost.isConnected) header.append(buttonHost);
     updateButton();
@@ -188,34 +193,34 @@
     };
 
     if (!pageReady) {
-      setButtonText("一覧を準備中…", "Gofileの動画一覧を準備中");
+      setButtonText("一覧を準備中…", "Gofileの動画・画像一覧を準備中");
       return;
     }
 
     if (scanning) {
-      setButtonText("動画を確認中…", "動画を確認中です。進捗を表示");
+      setButtonText("動画・画像を確認中…", "動画・画像を確認中です。進捗を表示");
       return;
     }
     if (isActiveBatch(currentBatch)) {
       const summary = currentBatch.summary;
       const visibleText = currentBatch.cancelRequested
         ? "キャンセルを確認中…"
-        : `${summary.percent}%（${summary.completed}/${summary.total}本）`;
+        : `${summary.percent}%（${summary.completed}/${summary.total}件）`;
       const accessibleName = currentBatch.cancelRequested
         ? "キャンセル状態を確認中です。進捗を表示"
-        : `保存進捗 ${summary.percent}%、${summary.completed} / ${summary.total} 本。進捗を表示`;
+        : `保存進捗 ${summary.percent}%、${summary.completed} / ${summary.total} 件。進捗を表示`;
       setButtonText(visibleText, accessibleName);
       return;
     }
     if (currentBatch?.status === "complete") {
-      setButtonText("もう一度一括保存", "保存完了。もう一度このページの動画を一括保存");
+      setButtonText("もう一度一括保存", "保存完了。もう一度このページの動画・画像を一括保存");
       return;
     }
     if (currentBatch?.status === "completed_with_errors" && currentBatch.summary.failed > 0) {
       setButtonText("保存結果を確認", "保存結果とエラー内容を表示");
       return;
     }
-    setButtonText("動画を一括保存", "このGofileページの動画を一括保存");
+    setButtonText("動画・画像を一括保存", "このGofileページの動画・画像を一括保存");
   }
 
   function createPanelHost() {
@@ -309,23 +314,23 @@
         }
         @media (prefers-reduced-motion: reduce) { .bar, .mini-bar { transition: none; } }
       </style>
-      <section class="panel" role="region" aria-label="Gofile動画一括保存の進捗">
+      <section class="panel" role="region" aria-label="Gofile一括保存の進捗">
         <header class="header">
           <div class="header-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 18v2h14v-2" /></svg>
           </div>
           <div class="heading">
-            <h2 class="title">Gofile 動画一括保存</h2>
+            <h2 class="title">Gofile 一括保存</h2>
             <p class="subtitle">準備中</p>
           </div>
           <button class="icon-button" type="button" data-action="close" aria-label="進捗を閉じる">×</button>
         </header>
         <div class="body">
-          <div class="progress-head"><strong class="percent">0%</strong><span class="count">0 / 0 本</span></div>
-          <div class="track" role="progressbar" aria-label="動画の一括保存進捗" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0%、動画を確認中"><div class="bar"></div></div>
-          <p class="summary" aria-live="polite">動画を確認しています…</p>
+          <div class="progress-head"><strong class="percent">0%</strong><span class="count">0 / 0 件</span></div>
+          <div class="track" role="progressbar" aria-label="動画・画像の一括保存進捗" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0%、動画・画像を確認中"><div class="bar"></div></div>
+          <p class="summary" aria-live="polite">動画・画像を確認しています…</p>
           <p class="meta"></p>
-          <div class="list"><div class="empty-list">動画情報を読み込んでいます…</div></div>
+          <div class="list"><div class="empty-list">動画・画像情報を読み込んでいます…</div></div>
         </div>
         <footer class="footer">
           <button class="action cancel" type="button" data-action="cancel" hidden>残りをキャンセル</button>
@@ -401,16 +406,16 @@
     renderedBatchId = "";
     renderedItemKey = "";
     itemRows.clear();
-    panel.title.textContent = "Gofile 動画一括保存";
+    panel.title.textContent = "Gofile 一括保存";
     panel.subtitle.textContent = "全ページを確認中";
-    panel.count.textContent = "— / — 本";
-    setProgress(0, "0%、動画を確認中");
-    setTextIfChanged(panel.summary, "このフォルダの動画を安全に確認しています…");
+    panel.count.textContent = "— / — 件";
+    setProgress(0, "0%、動画・画像を確認中");
+    setTextIfChanged(panel.summary, "このフォルダの動画・画像を安全に確認しています…");
     panel.meta.textContent = "認証情報やパスワードは拡張機能に保存しません。";
     panel.list.replaceChildren();
     const loading = document.createElement("div");
     loading.className = "empty-list";
-    loading.textContent = "動画情報を読み込んでいます…";
+    loading.textContent = "動画・画像情報を読み込んでいます…";
     panel.list.append(loading);
     panel.cancel.hidden = true;
     panel.retry.hidden = true;
@@ -424,9 +429,9 @@
     renderedBatchId = "";
     renderedItemKey = "";
     itemRows.clear();
-    panel.title.textContent = "Gofile 動画一括保存";
+    panel.title.textContent = "Gofile 一括保存";
     panel.subtitle.textContent = "確認が必要です";
-    panel.count.textContent = "0 / 0 本";
+    panel.count.textContent = "0 / 0 件";
     setProgress(0, "0%、処理を開始できませんでした");
     setTextIfChanged(
       panel.summary,
@@ -501,7 +506,7 @@
     if (reason === "frozen") return "Gofile側で凍結中";
     if (reason === "overloaded") return "Gofile側で一時利用不可";
     if (reason === "unsafe-link") return "安全なGofile保存URLではないため除外";
-    if (reason === "invalid-metadata") return "動画情報を安全に確認できないため除外";
+    if (reason === "invalid-metadata") return "動画・画像情報を安全に確認できないため除外";
     return "ダウンロードリンクなし";
   }
 
@@ -516,7 +521,7 @@
     };
     return Object.entries(labels)
       .filter(([reason]) => Number(reasons[reason]) > 0)
-      .map(([reason, label]) => `${label} ${Number(reasons[reason])}本`)
+      .map(([reason, label]) => `${label} ${Number(reasons[reason])}件`)
       .join("・");
   }
 
@@ -600,12 +605,12 @@
     if (counts.totalCount === 0) {
       const empty = document.createElement("div");
       empty.className = "empty-list";
-      empty.textContent = "このフォルダに動画はありません（0本）。";
+      empty.textContent = "このフォルダに動画・画像はありません（0件）。";
       fragment.append(empty);
     } else if (counts.omittedCount > 0) {
       const more = document.createElement("div");
       more.className = "more";
-      more.textContent = `ほか ${counts.omittedCount} 本は一覧表示を省略しています。保存処理には影響しません。`;
+      more.textContent = `ほか ${counts.omittedCount} 件は一覧表示を省略しています。保存処理には影響しません。`;
       fragment.append(more);
     }
 
@@ -655,47 +660,47 @@
     const counts = batchCounts(batch, entries.length);
     const skippedCount = counts.skippedCount;
 
-    panel.title.textContent = batch.folderName || "Gofile 動画一括保存";
+    panel.title.textContent = batch.folderName || "Gofile 一括保存";
     panel.subtitle.textContent = batch.cancelRequested
       ? "キャンセル状態を確認中"
       : batch.retryRequested
         ? "再試行キューを復元中"
         : batch.status === "active"
-      ? "動画をまとめて保存中"
+      ? "動画・画像をまとめて保存中"
       : batch.status === "complete"
-        ? skippedCount > 0 ? "保存可能な動画を保存しました" : "すべて保存しました"
+        ? skippedCount > 0 ? "保存可能な動画・画像を保存しました" : "すべて保存しました"
         : batch.status === "empty"
-          ? "動画はありません"
+          ? "動画・画像はありません"
           : "保存処理が終了しました";
-    panel.count.textContent = `${summary.completed} / ${summary.total} 本`;
-    setProgress(summary.percent, `${summary.percent}%、${summary.completed} / ${summary.total} 本保存済み`);
+    panel.count.textContent = `${summary.completed} / ${summary.total} 件`;
+    setProgress(summary.percent, `${summary.percent}%、${summary.completed} / ${summary.total} 件保存済み`);
 
     let summaryText;
     if (batch.cancelRequested) {
       summaryText = "キャンセル済みかどうかをChromeの保存履歴と照合しています…";
     } else if (batch.retryRequested) {
-      summaryText = "失敗した動画の再試行キューを安全に復元しています…";
+      summaryText = "失敗した動画・画像の再試行キューを安全に復元しています…";
     } else if (batch.status === "complete") {
       summaryText = skippedCount > 0
-        ? `${summary.total} 本を保存しました。安全上またはGofile側の理由で ${skippedCount} 本は対象外です。`
-        : `${summary.total} 本の動画をすべて保存しました。`;
+        ? `${summary.total} 件を保存しました。安全上またはGofile側の理由で ${skippedCount} 件は対象外です。`
+        : `${summary.total} 件の動画・画像をすべて保存しました。`;
     } else if (batch.status === "empty") {
       summaryText = skippedCount > 0
-        ? `保存可能な動画は0本です（安全上またはGofile側の理由で対象外: ${skippedCount}本）。`
-        : "このフォルダに動画はありません（0本）。";
+        ? `保存可能な動画・画像は0件です（安全上またはGofile側の理由で対象外: ${skippedCount}件）。`
+        : "このフォルダに動画・画像はありません（0件）。";
     } else if (batch.status === "completed_with_errors") {
-      summaryText = `${summary.completed} / ${summary.total} 本を保存しました。失敗 ${summary.failed} 本、キャンセル ${summary.canceled} 本です。`;
+      summaryText = `${summary.completed} / ${summary.total} 件を保存しました。失敗 ${summary.failed} 件、キャンセル ${summary.canceled} 件です。`;
     } else {
-      summaryText = `${summary.completed} / ${summary.total} 本保存済み・保存中 ${summary.downloading} 本・待機中 ${summary.queued} 本`;
+      summaryText = `${summary.completed} / ${summary.total} 件保存済み・保存中 ${summary.downloading} 件・待機中 ${summary.queued} 件`;
     }
     setTextIfChanged(panel.summary, summaryText);
 
     const byteText = summary.totalBytes > 0
-      ? `${core.formatBytes(summary.bytesReceived)} / ${core.formatBytes(summary.totalBytes)}`
+      ? `受信量 ${core.formatBytes(summary.bytesReceived)} / ${core.formatBytes(summary.totalBytes)}`
       : "サイズを確認中";
     const reasonText = skippedReasonSummary(batch.skippedReasons);
     panel.meta.textContent = skippedCount > 0
-      ? `${byteText}・対象外 ${skippedCount} 本${reasonText ? `（${reasonText}）` : ""}`
+      ? `${byteText}・対象外 ${skippedCount} 件${reasonText ? `（${reasonText}）` : ""}`
       : byteText;
 
     if (renderedBatchId !== batch.id || renderedItemKey !== itemKey) {

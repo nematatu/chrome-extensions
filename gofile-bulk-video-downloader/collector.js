@@ -13,6 +13,10 @@
       "3g2", "3gp", "avi", "flv", "m2ts", "m4v", "mkv", "mov", "mp4",
       "mpe", "mpeg", "mpg", "mts", "ogv", "ts", "webm", "wmv",
     ]);
+    const IMAGE_EXTENSIONS = new Set([
+      "avif", "bmp", "gif", "heic", "heif", "ico", "jfif", "jpeg", "jpg",
+      "png", "svg", "tif", "tiff", "webp",
+    ]);
     const GENERIC_MIME_TYPES = new Set(["", "application/octet-stream", "binary/octet-stream"]);
 
     function failure(code) {
@@ -38,9 +42,18 @@
       };
     }
 
-    function mainContent() {
+    function legacyMainContent() {
       if (typeof appdata === "undefined") return null;
       return appdata?.fileManager?.mainContent || null;
+    }
+
+    function mainContent() {
+      const modernRoot = typeof document !== "undefined" && document.getElementById("fm-root");
+      const legacy = legacyMainContent();
+      if (!modernRoot && legacy) return legacy;
+      const bridge = globalThis.__gofileBulkPageBridge;
+      if (bridge?.version === 1 && typeof bridge.current === "function") return bridge.current()?.response || null;
+      return modernRoot ? null : legacy;
     }
 
     function folderIdentity(content) {
@@ -54,6 +67,8 @@
 
     function fileManagerDomReady() {
       if (typeof document === "undefined") return true;
+      const modernRoot = document.getElementById("fm-root");
+      if (modernRoot) return Boolean(document.getElementById("fm-list"));
       const main = document.getElementById("filemanager_maincontent");
       if (!main) return false;
       const loading = document.getElementById("filemanager_loading");
@@ -63,13 +78,23 @@
       return style.display === "none" || style.visibility === "hidden" || Number(style.opacity) === 0;
     }
 
-    function isVideo(item) {
+    function isMedia(item) {
       if (!item || item.type !== "file") return false;
       const mime = typeof item.mimetype === "string" ? item.mimetype.trim().toLowerCase() : "";
-      if (mime.startsWith("video/")) return true;
+      if (mime.startsWith("video/") || mime.startsWith("image/")) return true;
       if (!GENERIC_MIME_TYPES.has(mime)) return false;
       const match = String(item.name || "").toLowerCase().match(/\.([a-z0-9]{2,5})$/);
-      return Boolean(match && VIDEO_EXTENSIONS.has(match[1]));
+      return Boolean(match && (VIDEO_EXTENSIONS.has(match[1]) || IMAGE_EXTENSIONS.has(match[1])));
+    }
+
+    function responseError(response) {
+      if (response?.status === "error-rateLimit") return "RATE_LIMITED";
+      if (["error-token", "error-wrongToken", "error-accountId"].includes(response?.status)) return "AUTH_REQUIRED";
+      if (response?.status === "error-notFound") return "NOT_FOUND";
+      if (response?.status === "error-pageChanged") return "PAGE_CHANGED";
+      if (response?.status === "error-siteChanged") return "SITE_CHANGED";
+      if (response?.data?.canAccess === false) return "ACCESS_REQUIRED";
+      return "SCAN_FAILED";
     }
 
     function safeItem(item) {
@@ -134,7 +159,7 @@
         if (visibleFolderId) observedFolderId = visibleFolderId;
         const domReady = fileManagerDomReady();
 
-        if (domReady && current?.status === "error-notFound") return failure("NOT_FOUND");
+        if (current && current.status !== "ok" && current.status !== "loading") return failure(responseError(current));
         if (domReady && current?.status === "ok" && current?.data?.canAccess === false) {
           return failure("ACCESS_REQUIRED");
         }
@@ -173,11 +198,16 @@
       const folderId = typeof current.data.id === "string" ? current.data.id : "";
       if (!folderId || current.data.type !== "folder") return failure("SITE_CHANGED");
 
-      let totalPages = Math.max(1, Number(current.metadata?.totalPages) || 1);
+      const bridge = globalThis.__gofileBulkPageBridge;
+      const modern = current !== legacyMainContent() && bridge?.version === 1 && typeof bridge.getPage === "function";
+      const currentHasPageSize = Number(current.metadata?.pageSize) === PAGE_SIZE;
+      let totalPages = modern || !currentHasPageSize ? 1 : Math.max(1, Number(current.metadata?.totalPages) || 1);
       if (totalPages > MAX_PAGES) return failure("TOO_MANY_PAGES");
 
       const currentPage = Math.max(1, Number(current.metadata?.page) || 1);
-      const currentIsUnfiltered = String(appdata.fileManager.contentFilter || "") === "";
+      const currentIsUnfiltered = modern
+        ? bridge.current()?.filtered === false
+        : String(appdata.fileManager.contentFilter || "") === "";
       const settledPathname = location.pathname;
       const videos = [];
       const skipped = [];
@@ -190,7 +220,9 @@
         }
 
         let response;
-        if (page === currentPage && currentIsUnfiltered) {
+        if (modern) {
+          response = await bridge.getPage(folderId, page, PAGE_SIZE);
+        } else if (page === currentPage && currentIsUnfiltered && currentHasPageSize) {
           response = current;
         } else {
           if (typeof getContent !== "function") return failure("SITE_CHANGED");
@@ -202,7 +234,7 @@
         }
 
         if (response?.status !== "ok" || !response.data || response.data.canAccess !== true) {
-          return failure(response?.data?.canAccess === false ? "ACCESS_REQUIRED" : "SCAN_FAILED");
+          return failure(responseError(response));
         }
         if (response.data.type !== "folder" || response.data.id !== folderId) {
           return failure("SCAN_FAILED");
@@ -218,7 +250,7 @@
         scannedItems += children.length;
 
         for (const item of children) {
-          if (!isVideo(item)) continue;
+          if (!isMedia(item)) continue;
           const safe = safeItem(item);
           if (!safe.id || seenIds.has(safe.id)) continue;
           seenIds.add(safe.id);

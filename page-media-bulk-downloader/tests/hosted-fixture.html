@@ -1,0 +1,11 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Generated scenes</title>
+<style>body{margin:0;background:#f3f4f7;color:#222;font:14px/1.55 system-ui}main{max-width:760px;margin:auto;padding:24px}h1{font-size:22px}h2{font-size:18px}p{color:#5c6470}.content-list{background:#fff;border-radius:12px;padding:16px}.list-heading{display:flex;align-items:center;gap:10px}.video-row{display:flex;align-items:center;gap:16px;border:0;background:transparent;border-bottom:1px solid #eee;width:100%;padding:16px 0;text-align:left}.video-row img{width:96px;height:64px;object-fit:cover;border-radius:8px}.video-copy{display:flex;flex-direction:column}.controls{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap}.controls button{padding:8px;border:1px solid #aaa;border-radius:6px;background:#fff}@media(max-width:520px){main{padding:10px}.content-list{padding:10px}.list-heading{gap:6px}.video-row{gap:10px}.video-row img{width:75px;height:50px}}</style>
+</head><body><div id="app"><div class="app-page app-page--content"><main class="landing-content"><h1>Generated scenes</h1>
+<p>追加3サイトの公開UIと同じDOM構造を使った合成画面です。保存キューは製品版、Chrome APIは代替処理です。実ファイルは保存しません。</p>
+<section class="content-list"><!-- list-heading -->
+<button class="video-row" type="button"><img src="/fixtures/geometry.png" alt="合成動画のプレビュー"><span class="video-copy"><strong>sample.webm</strong><span>合成動画 · WebM</span></span></button>
+<button class="video-row" type="button"><img src="/fixtures/geometry.png" alt="幾何学模様"><span class="video-copy"><strong>geometry.png</strong><span>合成画像 · PNG</span></span></button>
+<button class="video-row" type="button"><img src="/fixtures/colors.jpg" alt="カラーバー"><span class="video-copy"><strong>colors.jpg</strong><span>合成画像 · JPEG</span></span></button>
+</section>
+<div class="controls"><button id="progress-demo">途中の進捗を再現</button><button id="fail-demo">通信失敗を再現</button><button id="complete-demo">全件完了を再現</button><button id="scan-error-demo">次の一覧取得を失敗させる</button></div>
+</main></div></div><script src="/mock-chrome.js"></script><script src="/fixture-core.js"></script><script src="/fixture-content.js"></script></body></html>

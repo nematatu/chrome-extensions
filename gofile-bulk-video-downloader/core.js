@@ -26,6 +26,10 @@
     "webm",
     "wmv",
   ]);
+  const GENERIC_IMAGE_EXTENSIONS = new Set([
+    "avif", "bmp", "gif", "heic", "heif", "ico", "jfif", "jpeg", "jpg",
+    "png", "svg", "tif", "tiff", "webp",
+  ]);
   const GENERIC_MIME_TYPES = new Set(["", "application/octet-stream", "binary/octet-stream"]);
   const ACTIVE_STATUSES = new Set(["queued", "starting", "downloading"]);
   const FAILURE_STATUSES = new Set(["failed", "interrupted"]);
@@ -82,6 +86,16 @@
     const name = typeof item.name === "string" ? item.name : "";
     const match = name.toLowerCase().match(/\.([a-z0-9]{2,5})$/);
     return Boolean(match && GENERIC_VIDEO_EXTENSIONS.has(match[1]));
+  }
+
+  function isMediaItem(item) {
+    if (isVideoItem(item)) return true;
+    if (!item || item.type !== "file") return false;
+    const mime = typeof item.mimetype === "string" ? item.mimetype.trim().toLowerCase() : "";
+    if (mime.startsWith("image/")) return true;
+    if (!GENERIC_MIME_TYPES.has(mime)) return false;
+    const match = String(item.name || "").toLowerCase().match(/\.([a-z0-9]{2,5})$/);
+    return Boolean(match && GENERIC_IMAGE_EXTENSIONS.has(match[1]));
   }
 
   function utf8Length(value) {
@@ -157,7 +171,7 @@
 
     for (const candidate of input) {
       if (output.length >= maximum) break;
-      if (!candidate || typeof candidate !== "object" || !isVideoItem(candidate)) continue;
+      if (!candidate || typeof candidate !== "object" || !isMediaItem(candidate)) continue;
 
       const id = typeof candidate.id === "string" ? candidate.id.slice(0, 160) : "";
       const url = typeof candidate.link === "string" ? candidate.link : "";
@@ -209,9 +223,6 @@
       totalBytes: 0,
     };
 
-    let everySizeKnown = safeItems.length > 0;
-    let progressSum = 0;
-
     for (const item of safeItems) {
       const status = item?.status;
       if (status === "complete") summary.completed += 1;
@@ -227,21 +238,14 @@
       if (expected > 0) {
         summary.totalBytes += expected;
         summary.bytesReceived += Math.min(received, expected);
-      } else {
-        everySizeKnown = false;
       }
-      progressSum += itemProgress(item);
     }
 
-    if (summary.total === 0) {
-      summary.percent = 0;
-    } else if (summary.completed === summary.total) {
-      summary.percent = 100;
-    } else if (everySizeKnown && summary.totalBytes > 0) {
-      summary.percent = clamp(Math.floor((summary.bytesReceived / summary.totalBytes) * 100), 0, 99);
-    } else {
-      summary.percent = clamp(Math.floor(progressSum / summary.total), 0, 99);
-    }
+    // Received bytes can belong to failed or unfinished downloads. Only files
+    // confirmed as saved contribute to the batch's completion percentage.
+    summary.percent = summary.total > 0
+      ? Math.floor((summary.completed / summary.total) * 100)
+      : 0;
 
     return summary;
   }
@@ -273,6 +277,7 @@
     isAllowedThumbnailUrl,
     isFailureStatus,
     isGofilePageUrl,
+    isMediaItem,
     isVideoItem,
     itemProgress,
     normalizeVideos,

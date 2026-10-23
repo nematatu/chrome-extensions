@@ -821,6 +821,10 @@ async function startQueuedItem(state, batch, item) {
     return false;
   }
 
+  // Rebuild before every start, including restored queues and retries.
+  const filename = core.buildDownloadPath(batch.folderName, item.name, item.id);
+  item.filename = filename;
+
   item.status = "starting";
   item.error = null;
   item.retryable = true;
@@ -834,7 +838,7 @@ async function startQueuedItem(state, batch, item) {
   try {
     const downloadId = await chrome.downloads.download({
       url: item.url,
-      filename: item.filename,
+      filename,
       conflictAction: "uniquify",
       saveAs: false,
     });

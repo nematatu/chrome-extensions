@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<title>Stripchat ライブ・ホバープレビュー — 動作検証</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../content.css">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 40px; color: #e9edf2; background: #15181e; font: 15px/1.6 system-ui, sans-serif; }
+  main { max-width: 1000px; margin: auto; }
+  h1 { font-size: 25px; font-weight: 600; margin: 0 0 12px; }
+  p { color: #aeb7c5; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin: 28px 0; }
+  [data-model-list-root] { border-radius: 9px; overflow: hidden; background: #202630; }
+  .thumb { position: relative; }
+  a { display: block; position: relative; height: 170px; text-decoration: none; color: inherit; }
+  .poster { position: absolute; inset: 0; display: grid; place-items: center; background: linear-gradient(135deg, #315f94, #485384 60%, #57828d); font-size: 18px; }
+  .meta { padding: 12px; }
+  .live-thumb { position: absolute; inset: 0; background: #18202a; }
+  video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+  button { padding: 10px 14px; border: 1px solid #536176; border-radius: 7px; color: #e9edf2; background: #293344; cursor: pointer; font: inherit; }
+  button:focus-visible { outline: 3px solid #8fbdff; }
+  #results { color: #a5d8b1; white-space: pre-wrap; padding: 20px 0; font: 13px/1.8 ui-monospace, monospace; }
+  .note { font-size: 13px; }
+</style>
+<script src="../core.js"></script>
+<script src="../native-preview.js"></script>
+<script src="./fixture-native.js"></script>
+<script defer src="../content.js"></script>
+<body>
+<main>
+  <h1>ライブ・ホバープレビューの動作検証</h1>
+  <p>サムネイル内で無音再生し、離れると停止します。この画面は合成動画と検証用プレイヤーを使用しています。</p>
+  <div class="grid" id="grid">
+    <article data-model-list-root="item" data-testid="model-list-item">
+      <div class="thumb"><a href="https://ja.stripchat.com/demo-a" data-model-list-link="true" data-model-id="10001"><span class="poster">プレビュー A</span></a></div>
+      <div class="meta">公開配信の検証用カード A</div>
+    </article>
+    <article data-model-list-root="item" data-testid="model-list-item">
+      <div class="thumb"><a href="https://ja.stripchat.com/demo-b" data-model-list-link="true" data-model-id="10002"><span class="poster">プレビュー B</span></a></div>
+      <div class="meta">公開配信の検証用カード B</div>
+    </article>
+    <article data-model-list-root="item" data-testid="model-list-item" data-unavailable="true">
+      <div class="thumb"><a href="https://ja.stripchat.com/demo-unavailable" data-model-list-link="true" data-model-id="10003"><span class="poster">視聴不可</span></a></div>
+      <div class="meta">プライベート配信の検証用カード</div>
+    </article>
+  </div>
+  <div class="buttons">
+    <button id="start-a">カード A にホバー（検証）</button>
+    <button id="start-b">カード B にホバー（検証）</button>
+    <button id="leave">ホバーを解除（検証）</button>
+    <button id="unavailable">視聴不可カードにホバー（検証）</button>
+    <button id="add">動的カードを追加（検証）</button>
+    <button id="late">遅い応答を検証</button>
+    <button id="checks">検証状態を表示</button>
+  </div>
+  <div id="results" role="status">未開始</div>
+  <p class="note">これはローカル検証です。実サイトのライブ再生、拡張機能としての読み込み、年齢確認後の操作はこの画面の検証対象に含まれません。</p>
+</main>
+<script src="./fixture-controls.js"></script>
+</body>
+</html>
