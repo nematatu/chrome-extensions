@@ -115,6 +115,18 @@
   function validHistoryKey(value) {
     return typeof value === "string" && /^(?:m:\d{1,30}:\d{1,30}:(?:image|video)|g:\d{1,30}|[fup]:[a-f0-9]{64})$/.test(value);
   }
+  function validateHistory(records) {
+    if (!records || typeof records !== "object" || Array.isArray(records)) throw new Error("保存履歴の形式が不正です。");
+    const prototype = Object.getPrototypeOf(records);
+    if (prototype !== null && (Object.getPrototypeOf(prototype) !== null ||
+        !Object.hasOwn(prototype, "constructor") || Function.prototype.toString.call(prototype.constructor) !== Function.prototype.toString.call(Object))) {
+      throw new Error("保存履歴の形式が不正です。");
+    }
+    const entries = Object.entries(records), latest = Date.now() + 24 * 60 * 60 * 1000;
+    if (entries.some(([key, time]) => !validHistoryKey(key) ||
+        !Number.isFinite(time) || time <= 0 || time > latest)) throw new Error("保存履歴の内容が不正です。");
+    return Object.fromEntries(entries);
+  }
   function validateItems(items) {
     if (!Array.isArray(items) || !items.length || items.length > MAX_BATCH) throw new Error("保存件数は1〜500件です。");
     return items.map(value => {
@@ -175,5 +187,5 @@
     return { left: Math.max(rect.left, left), top: Math.max(rect.top, top), right, bottom,
       width: Math.max(0, right - Math.max(rect.left, left)), height: Math.max(0, bottom - Math.max(rect.top, top)) };
   }
-  return { MAX_BATCH, mediaURL, identity, best, item, groups, shortcodeID, safePart, filename, validateItems, drawnRect, mediaKey, groupKey, filenameHistoryKey, urlHistoryKey, postHistoryKey, historyKeys, validHistoryKey };
+  return { MAX_BATCH, mediaURL, identity, best, item, groups, shortcodeID, safePart, filename, validateItems, drawnRect, mediaKey, groupKey, filenameHistoryKey, urlHistoryKey, postHistoryKey, historyKeys, validHistoryKey, validateHistory };
 });

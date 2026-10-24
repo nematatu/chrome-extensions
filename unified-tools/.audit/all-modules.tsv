@@ -1,0 +1,11 @@
+phase	decision	evidence	result
+Frame	User clarified all repository extensions, not only Instagram and Gofile	User request 2026-10-23	Expand scope; preserve existing uncommitted two-module work
+Ground	Inventory manifests, storage, workers, resources before edits	Three read-only agents plus root source reads	In progress
+Implement	Exclude invalid windows manifest permission while preserving windows API	Official Chrome windows API and permissions list, 2026-10-24	Builder test asserts no invalid permission
+Verify	Separate shared MAIN/ISOLATED asset URLs	Fresh Chromium Stripchat probe core true/false before, true/true with visible hover badge after	Fixed real generated-extension injection defect; independent build review4 passed
+Verify	Common bulk button uses trusted root management source	Actual common UI button produced an additional byte-exact MP4 in isolated browser	Passed 17 baseline checks
+Verify	Use separated audio/video fixture and native default download behavior	Actual Chromium capability probe true/true; original converters produced three MP4s with AV streams and ffmpeg decode	All21 module browser checks passed without converter mocks
+Implement	Track original download filename in shared native listener	Actual regular Chrome behavior ignored options.filename once common listener existed	Same-URL starts serialized to ID; trusted popup download IPC; real21 check confirms three expected names
+Review	Independent reviewer checked final filename adapter and authorization	24 client/runtime tests independently passed; prior build4 independently passed	No remaining concrete findings
+Delivery	Keep all original sources and current Chrome configuration	Final all21 browser checks and baseline17 passed; source415 plus combined34 unit tests passed	Generated My Tools2.0.0 includes all19; no new commit/push; live-services limitations documented
+Install	Prepare regular Chrome profile for unified extension	UI source path verified for existing Instagram extension and dist/my-tools selected in load dialog	Await required action-time approval before local extension permission grant

@@ -88,6 +88,11 @@ async function main() {
     await context.grantPermissions(['local-network-access'], { origin: 'https://www.instagram.com' });
     const worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
     const extensionId = new URL(worker.url()).host;
+    await worker.evaluate(async () => {
+      await chrome.storage.local.setAccessLevel({ accessLevel: 'TRUSTED_CONTEXTS' });
+      await chrome.storage.local.set({ unrelatedSecret: 'fixture-signed-url-canary' });
+    });
+    checks.push('履歴表示をローカルストレージの信頼済みコンテキスト制限下で検証');
     const page = await context.newPage(); page.setDefaultTimeout(15000);
     const errors = []; page.on('pageerror', error => errors.push(error.message));
     page.on('requestfailed', request => { if (request.url().startsWith(cdn)) console.error('Fixture network failure:', request.failure()?.errorText); });
@@ -420,6 +425,21 @@ async function main() {
     await page.evaluate(() => { document.querySelector('main').innerHTML = ''; });
     await page.waitForFunction(() => document.querySelector('#igmd-root').shadowRoot.querySelectorAll('.tools').length === 0); checks.push('DOM削除時のボタン除去');
     const popup = await context.newPage(); await popup.goto(`chrome-extension://${extensionId}/popup.html`);
+    const exportButton = popup.getByRole('button', { name: '移行用に保存履歴を書き出す', exact: true });
+    await exportButton.waitFor();
+    const exportDownload = popup.waitForEvent('download');
+    await exportButton.click();
+    const exported = await exportDownload;
+    assert.equal(exported.suggestedFilename(), 'my-tools-instagram-history.json');
+    const transfer = JSON.parse(fs.readFileSync(await exported.path(), 'utf8'));
+    assert.deepEqual(Object.keys(transfer).sort(), ['format', 'instagram', 'version']);
+    assert.equal(transfer.format, 'nematatu-tools'); assert.equal(transfer.version, 1);
+    assert.deepEqual(Object.keys(transfer.instagram), ['savedMedia']);
+    assert.deepEqual(transfer.instagram.savedMedia, await worker.evaluate(() => globalThis.IGMediaHistory.read()));
+    c.validateHistory(transfer.instagram.savedMedia);
+    assert.equal(JSON.stringify(transfer).includes('fixture-signed-url-canary'), false);
+    assert.equal(JSON.stringify(transfer).includes('https://'), false);
+    checks.push('旧単独版ポップアップから安全な履歴JSONだけを書き出す');
     await popup.locator('body').screenshot({ path: path.join(output, 'popup.png') });
     assert.deepEqual(errors, []);
     fs.writeFileSync(path.join(output, 'verification.json'), JSON.stringify({ surface: 'isolated Chromium with synthetic Instagram and local CDN', liveInstagram: 'not verified', checks }, null, 2));

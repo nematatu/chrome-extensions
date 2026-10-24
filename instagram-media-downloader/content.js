@@ -89,6 +89,7 @@
     return response;
   }
   chrome.runtime.onMessage.addListener(msg => {
+    if (msg?.type === "ig-download-history-changed") { void refreshHistory(); }
     if (msg?.type === "ig-download-progress" && msg.job) progress(msg.job);
     if (msg?.type === "ig-download-page") { void start({ kind: "page" }); }
   });
@@ -386,11 +387,14 @@
     savedMedia = Object.fromEntries(Object.entries(value || {}).filter(([key, at]) => c.validHistoryKey(key) && Number.isFinite(at) && at > 0));
     historyLoaded = true; schedule(); loadStoryHistory();
   }
-  chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === "local" && changes.savedMedia) { historyRevision++; readSaved(changes.savedMedia.newValue); }
-  });
-  const initialRevision = historyRevision;
-  chrome.storage.local.get("savedMedia").then(result => { if (initialRevision === historyRevision) readSaved(result.savedMedia); }).catch(() => {});
+  async function refreshHistory() {
+    const revision = ++historyRevision;
+    try {
+      const result = await command("ig-download-history");
+      if (revision === historyRevision) readSaved(result.savedMedia);
+    } catch {}
+  }
+  void refreshHistory();
   const entries = new Map();
   function clippedRect(el) {
     const box = el.getBoundingClientRect();

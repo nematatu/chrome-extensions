@@ -115,7 +115,7 @@ function background(initial = {}) {
   const store = clone(initial), notices = [], badges = [], menus = [], id = 'reading-test-extension'; let reads = 0, writes = 0, resolveWork;
   const onMessage = event(), onClicked = event();
   const chrome = {
-    runtime: { id, onMessage, onStartup: event(), onInstalled: event(), async sendMessage() {} },
+    runtime: { id, getURL: path => `chrome-extension://${id}/${path}`, onMessage, onStartup: event(), onInstalled: event(), async sendMessage() {} },
     storage: { local: {
       async get(key) { reads++; return { [key]: clone(store[key]) }; },
       async set(value) { writes++; Object.assign(store, clone(value)); }, async setAccessLevel() {}

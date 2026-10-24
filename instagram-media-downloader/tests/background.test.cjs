@@ -13,11 +13,12 @@ function harness(previous = {}, options = {}) {
   let failWrites = false;
   const chrome = {
     storage: {
+      onChanged: { addListener: fn => listeners.storage = fn },
       session: { get: async () => structuredClone(state), set: async data => Object.assign(state, structuredClone(data)) },
       local: { get: async () => structuredClone(local), set: async data => { if (failWrites) throw new Error('fixture quota'); Object.assign(local, structuredClone(data)); } },
     },
     runtime: { id: 'fixture', getURL: path => `chrome-extension://fixture/${path}`, onMessage: { addListener: fn => listeners.message = fn } },
-    tabs: { sendMessage: async () => {} },
+    tabs: { query: async () => [{ id: 7 }, { id: 8 }], sendMessage: async (id, message) => { if (message.type === "ig-download-history-changed") calls.push({ notification: message, id }); } },
     alarms: { create: async () => {}, clear: async () => {}, onAlarm: { addListener: fn => listeners.alarm = fn } },
     downloads: {
       search: async ({ id }) => id === undefined ? structuredClone(options.previousDownloads || []) : downloads.has(id) ? [downloads.get(id)] : [],
@@ -29,10 +30,11 @@ function harness(previous = {}, options = {}) {
       onChanged: { addListener: fn => listeners.change = fn },
     },
   };
-  vm.runInNewContext(fs.readFileSync(require.resolve('../background.js'), 'utf8'), { chrome, crypto, URL, importScripts() {}, IGMediaCore: core });
+  const context = { chrome, crypto, URL, importScripts() {}, IGMediaCore: core };
+  vm.runInNewContext(fs.readFileSync(require.resolve('../background.js'), 'utf8'), context);
   const sender = { url: 'https://www.instagram.com/p/BA/', tab: { id: 7 } };
   const send = (message, from = sender) => new Promise(resolve => listeners.message(message, from, resolve));
-  return { send, calls, downloads, state, listeners, local, failWrites: value => failWrites = value };
+  return { send, calls, downloads, state, listeners, local, history: context.IGMediaHistory, failWrites: value => failWrites = value };
 }
 const item = n => ({ url: `https://scontent.cdninstagram.com/${n}.jpg`, filename: `Instagram/alice/BA_0${n}.jpg` });
 test('queue counts actual completions and serializes downloads', async () => {
@@ -222,4 +224,50 @@ test('individual saves accumulate into durable all-media markers across worker r
   await restored.send({ type: 'ig-download-status' });
   assert.deepEqual(restored.local.savedMedia, second.local.savedMedia);
   assert.equal(restored.calls.length, 0);
+});
+
+test('history RPC allows only Instagram and exact popup, with hash-only snapshot', async () => {
+  const h = harness({}, { local: { savedMedia: { 'g:64': 1 }, secret: 'signed-url' } });
+  assert.equal(JSON.stringify(await h.send({ type: 'ig-download-history' })), JSON.stringify({ ok: true, savedMedia: { 'g:64': 1 } }));
+  for (const url of ['https://evil.test/', 'chrome-extension://fixture/options.html', 'chrome-extension://fixture/popup.html?x']) {
+    assert.equal((await h.send({ type: 'ig-download-history' }, { url })).ok, false);
+  }
+  const response = await h.send({ type: 'ig-download-history' }, { url: 'chrome-extension://fixture/popup.html' });
+  assert.equal(response.ok, true);
+  assert.equal(JSON.stringify(response).includes('signed-url'), false);
+});
+test('history merge max-merges atomically, preserves downloads, and rejects a whole invalid import', async () => {
+  const h = harness({}, { local: { savedMedia: { 'g:63': 2 }, savedHistoryMigratedV1: true } });
+  await h.send({ type: 'ig-download-start', items: [historyItem(1)] });
+  h.downloads.set(1, { id: 1, state: 'complete' });
+  await Promise.all([h.history.merge({ 'g:63': 1, 'g:65': 3 }), h.send({ type: 'ig-download-status' })]);
+  assert.equal(h.local.savedMedia['g:63'], 2);
+  assert.equal(h.local.savedMedia['g:65'], 3);
+  assert.ok(h.local.savedMedia['m:64:1:image']);
+  const before = structuredClone(h.local);
+  await assert.rejects(h.history.merge({ 'g:66': 4, bad: 5 }));
+  assert.deepEqual(h.local, before);
+  assert.equal((await h.history.merge({ 'g:65': 3 })).count, Object.keys(h.local.savedMedia).length);
+});
+test('history change notifications carry no storage values to tabs', async () => {
+  const h = harness();
+  h.listeners.storage({ savedMedia: { newValue: { secret: 'sensitive' } } }, 'local');
+  await new Promise(resolve => setTimeout(resolve, 0));
+  assert.equal(h.calls.length, 2);
+  assert.equal(JSON.stringify(h.calls.map(call => call.notification)), JSON.stringify([{ type: 'ig-download-history-changed' }, { type: 'ig-download-history-changed' }]));
+});
+
+
+test('history remains readable after downloads grow beyond 100000 records', async () => {
+  const records = Object.fromEntries(Array.from({ length: 100000 }, (_, i) => [`g:${i}`, 1]));
+  const h = harness({}, { local: { savedMedia: records, savedHistoryMigratedV1: true } });
+  assert.equal((await h.send({ type: 'ig-download-start', items: [historyItem(1)] })).ok, true);
+  h.downloads.set(1, { id: 1, state: 'complete' });
+  await h.send({ type: 'ig-download-status' });
+  const result = await h.send({ type: 'ig-download-history' });
+  assert.equal(result.ok, true);
+  assert.ok(result.savedMedia['m:64:1:image']);
+  assert.ok(Object.keys(result.savedMedia).length > 100000);
+  const restored = harness({}, { local: h.local });
+  assert.equal((await restored.send({ type: 'ig-download-history' })).ok, true);
 });

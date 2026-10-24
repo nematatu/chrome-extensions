@@ -65,3 +65,13 @@ test('history uses stable IDs, rejects missing IDs, and keeps URL aliases typed 
   assert.equal(await c.postHistoryKey('../bad'), null);
   assert.ok(c.validHistoryKey(await c.postHistoryKey('BA')));
 });
+
+test('history transfer validates the entire plain map without limiting durable history', () => {
+  assert.deepEqual(c.validateHistory({ 'g:64': 1 }), { 'g:64': 1 });
+  for (const value of [[], null, new Date(), { bad: 1 }, { 'g:64': 0 }, { 'g:64': Infinity },
+    { 'g:64': Date.now() + 2 * 86400000 }, JSON.parse('{"__proto__":1}')]) {
+    assert.throws(() => c.validateHistory(value));
+  }
+  const oversized = Object.fromEntries(Array.from({ length: 100001 }, (_, i) => [`g:${i}`, 1]));
+  assert.equal(Object.keys(c.validateHistory(oversized)).length, 100001);
+});

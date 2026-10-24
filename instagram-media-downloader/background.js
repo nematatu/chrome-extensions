@@ -8,9 +8,7 @@ let savedMedia = {}, historyLoaded = false, historyMigrated = false;
 async function loadHistory() {
   const value = await chrome.storage.local.get(["savedMedia", "savedHistoryMigratedV1"]);
   const records = value.savedMedia === undefined ? {} : value.savedMedia;
-  if (!records || typeof records !== "object" || Array.isArray(records) || Object.entries(records).some(([key, time]) =>
-      !core.validHistoryKey(key) || !Number.isFinite(time) || time <= 0)) throw new Error("Invalid history storage");
-  savedMedia = { ...records };
+  savedMedia = core.validateHistory(records);
   historyMigrated = value.savedHistoryMigratedV1 === true;
   historyLoaded = true;
 }
@@ -37,6 +35,22 @@ function run(work) {
   serial = result.catch(() => {});
   return result;
 }
+globalThis.IGMediaHistory = {
+  read: () => run(async () => {
+    await loadHistory();
+    return { ...savedMedia };
+  }),
+  merge: records => run(async () => {
+    const incoming = core.validateHistory(records);
+    await loadHistory();
+    const merged = { ...savedMedia };
+    for (const [key, time] of Object.entries(incoming)) merged[key] = Math.max(merged[key] || 0, time);
+    const validated = core.validateHistory(merged);
+    await chrome.storage.local.set({ savedMedia: validated });
+    savedMedia = validated;
+    return { count: Object.keys(savedMedia).length };
+  }),
+};
 async function reconcile(job) {
   for (const item of job.items) {
     if (item.state === "starting") { item.state = "failed"; item.error = "保存開始を確認できませんでした。元のボタンから再実行してください。"; }
@@ -150,12 +164,16 @@ function isInstagram(sender) {
   catch { return false; }
 }
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
-  if (!message || !["ig-download-start", "ig-download-status", "ig-download-pause", "ig-download-cancel"].includes(message.type)) return;
+  if (!message || !["ig-download-start", "ig-download-status", "ig-download-pause", "ig-download-cancel", "ig-download-history"].includes(message.type)) return;
   const popup = sender.url === chrome.runtime.getURL("popup.html");
-  if (!isInstagram(sender) && !(popup && message.type === "ig-download-status")) {
+  if (!isInstagram(sender) && !(popup && ["ig-download-status", "ig-download-history"].includes(message.type))) {
     respond({ ok: false, error: "Instagramのタブから操作してください。" }); return;
   }
   run(async () => {
+    if (message.type === "ig-download-history") {
+      await loadHistory();
+      return { ok: true, savedMedia: { ...savedMedia } };
+    }
     const tabId = sender.tab?.id;
     if (message.type === "ig-download-status") {
       await pump();
@@ -209,3 +227,9 @@ chrome.alarms.onAlarm.addListener(alarm => {
   if (alarm.name === "ig-download-queue") void run(pump).catch(() => {});
 });
 void run(pump).catch(() => {});
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== "local" || !changes.savedMedia) return;
+  void chrome.tabs.query({}).then(tabs => Promise.all(tabs.filter(tab => Number.isInteger(tab.id)).map(tab =>
+    chrome.tabs.sendMessage(tab.id, { type: "ig-download-history-changed" }).catch(() => {})))).catch(() => {});
+});

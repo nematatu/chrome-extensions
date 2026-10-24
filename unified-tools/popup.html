@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>My Tools</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+<main>
+  <header><div class="mark" aria-hidden="true">MT</div><div><h1>My Tools</h1><p>このリポジトリの拡張機能を、ひとつに。</p></div><button id="options" class="subtle" type="button" aria-label="設定を大きな画面で開く">↗</button></header>
+  <p id="status" role="status" aria-live="polite">設定を読み込み中…</p>
+  <p id="diagnostics" role="alert" hidden></p>
+  <section id="module-panel" hidden aria-labelledby="module-title"><div class="panel-header"><button id="module-back" type="button">← 一覧へ</button><h2 id="module-title"></h2></div><iframe id="module-frame" title="機能の設定" hidden></iframe></section>
+  <section id="features" aria-labelledby="features-title">
+    <div class="section-header"><h2 id="features-title">使う機能</h2><span id="module-count" class="note"></span></div>
+    <label class="search-label" for="search">機能を探す</label><input id="search" type="search" placeholder="名前で検索" autocomplete="off">
+    <div id="modules"></div><p id="no-results" hidden>一致する機能はありません。</p>
+    <p class="note">切り替え後は、対象ページを再読み込みしてください。開始済みの保存は続きます。</p>
+  </section>
+  <section aria-labelledby="save-title"><h2 id="save-title">Instagramのページ一括保存</h2><p>Instagramを開いているタブで使えます。</p><button id="save" type="button" disabled>表示済みの投稿を一括保存</button></section>
+  <section aria-labelledby="transfer-title"><h2 id="transfer-title">ブラウザを引っ越す</h2><p>全機能のON/OFF、対応する個別設定、Instagramの保存済み履歴をJSONで移せます。</p><p id="history-count" class="note"></p><div class="actions"><button id="export" type="button" disabled>設定・履歴を書き出す</button><label class="file-button" for="import-file">読み込む<input type="file" id="import-file" accept="application/json,.json" disabled></label></div><p class="note">読み込みでは既存の履歴を残して追加します。元のInstagram拡張から書き出した履歴も使えます。</p></section>
+  <footer>進行中の保存・ログイン情報・保存済みファイル本体は移行されません。</footer>
+</main>
+<script src="config.js"></script>
+<script src="portable.js"></script>
+<script src="modules/instagram/core.js"></script>
+<script src="transfer.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>

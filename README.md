@@ -6,6 +6,8 @@
 
 | Directory | Extension |
 | --- | --- |
+| [`unified-tools`](./unified-tools) | My Tools・リポジトリ内19拡張の統合ビルド |
+| [`instagram-media-downloader`](./instagram-media-downloader) | Instagram 投稿・ストーリー・リール保存 |
 | [`kltra-danmaku`](./kltra-danmaku) | KLTRA 弾幕チャット |
 | [`youtube-five-second-clip`](./youtube-five-second-clip) | YouTube 範囲指定MP4クリップ |
 | [`momoniji-manga-viewer`](./momoniji-manga-viewer) | Momoniji 漫画ビューア・一括保存 |
