@@ -57,7 +57,8 @@ test('all 19 modules build deterministically with valid manifest and complete re
  const manifest=JSON.parse(await fs.readFile(path.join(a,'manifest.json'))),config=configuration(a);
  assert.equal(config.modules.length,19);assert.equal(manifest.manifest_version,3);assert.equal(manifest.content_scripts,undefined);assert.equal(manifest.incognito,'not_allowed');assert.equal(manifest.minimum_chrome_version,'120');
  for(const permission of ['scripting','alarms','offscreen','contextMenus','webRequest'])assert.ok(manifest.permissions.includes(permission));
- assert.ok(manifest.optional_host_permissions.includes('https://raw.githubusercontent.com/*'));
+ assert.ok(manifest.host_permissions.includes('https://*/*'));
+ assert.equal(manifest.optional_host_permissions,undefined);
  assert.equal(manifest.permissions.includes('windows'),false);
  assert.ok(manifest.commands['birdscore-open']);assert.equal(manifest.commands._execute_action,undefined);
  for(const file of[manifest.background.service_worker,manifest.action.default_popup,manifest.options_ui.page,...manifest.web_accessible_resources.flatMap(item=>item.resources)])assert.ok(list.includes(file));

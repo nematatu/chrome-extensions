@@ -73,7 +73,7 @@ Google Photos のアルバム一覧、Momoniji の後で読む一覧・保存履
 - `activeTab`・`tabs`・`webRequest`: 元拡張の対象タブ操作と寿司打の結果取得。
 - Birdscore のウィンドウ表示には `chrome.windows` API を使います。独立した `windows` 権限は宣言しません。元manifestのこの無効な権限名は生成時に除外します。[Chrome Windows API](https://developer.chrome.com/docs/extensions/reference/api/windows) と [権限一覧](https://developer.chrome.com/docs/extensions/reference/permissions-list) に従います。
 - 対象サイト・取得先のホスト権限: 元拡張の許可対象を合算します。Tweetfile が元から持つHTTP/HTTPSの広いホスト権限も含みます。機能のOFFはChromeの許可そのものの取り消しではありません。
-- Birdscore の任意ホスト権限: 元画面から利用者が許可する流れを維持します。
+- 元拡張の任意ホスト権限が必須のHTTP/HTTPS権限に含まれる場合は、重複する宣言を生成しません。Birdscoreの既存の権限確認操作は維持しますが、統合版では既に許可された範囲になります。
 
 全ローカル保存領域は `TRUSTED_CONTEXTS` に制限します。各機能のlocal・sync・sessionのキーと変更通知を分離します。Google Photos と KLTRA のページには許可した自機能のlocalキーだけを専用通信で返し、Instagram ページには検証済みの保存済み識別子を返します。設定の変更と履歴のインポート・エクスポートは、共通設定画面からのみ受け付けます。
 
@@ -102,7 +102,11 @@ NODE_PATH=../instagram-high-quality-images/node_modules node tests/all-browser-r
 - 生成した拡張を隔離 Chromium に読み込み、全19機能の切り替え、元の10設定画面、検索、保存領域の分離、16機能の模擬ページ動作を含む21項目が成功しました。
 - Tweetfile HLS・ページメディア HLS・YouTube MP4変換を同時実行し、3本すべてを指定した保存名で保存しました。3本とも映像・音声のstreamとデコードを確認し、YouTubeは指定した0.4秒の区間の長さも確認しました。
 - Instagram・Gofileの実ファイル保存、共通一括保存、保存済み表示、JSONの実書き出し・読み込み、再起動後の保持も、別の隔離ブラウザ検証で確認しています。
-- 実際の外部サイト、利用中のChromeへの導入、Birdscoreのスコア取得とキーボード起動、外部翻訳、Google Photosのアルバム操作、Badspi・Smashnetの写真ファイル保存は今回未検証です。模擬ページの成功を実サイト動作の保証として扱っていません。
+- 利用中のChromeへMy Toolsを導入し、19/19有効を確認しました。元Instagram拡張の保存済み識別情報481件を取り込み、統合バックアップJSONの保存完了を確認してから元拡張を無効化しました。元拡張とそのデータは残しています。
+- 実際のInstagramでプロフィール右上から投稿3画像を保存し、各1440×1080の画像として確認しました。保存済み投稿の緑チェック表示も確認しました。長い投稿URLに対して通常のコードで応答が返るケースを修正し、指定URLからの個別保存完了と画像サイズ1179×1013を確認しました。
+- 実際のリール画面で保存ボタンを確認し、MP4を保存しました。ホームから開いたストーリーで個別保存と一括保存2/2件が完了しました。リール・ストーリーのMP4はいずれも720×1280のH.264映像とAAC音声を持ち、ffmpegの全体デコードが成功しました。
+- 最終修正後は統合単体34件、Instagram単体33件、Instagram隔離ブラウザ39項目が成功しています。保存履歴や配信URLは検証成果物に記録しません。
+- Instagram以外の実サイト、Birdscoreのスコア取得とキーボード起動、外部翻訳、Google Photosのアルバム操作、Badspi・Smashnetの写真ファイル保存は今回未検証です。模擬ページの成功を実サイト動作の保証として扱っていません。
 
 生成物の保存名イベントは各機能の提案を1つのChrome listenerで集約します。提案がない場合も元のdownload要求のfilenameを保ち、同じURLの開始だけをID確定まで直列化します。MAINとISOLATEDで共用するスクリプトは別URLに生成し、同時document_start登録で片側が実行されない現象を回避しています。
 

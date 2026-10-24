@@ -243,6 +243,12 @@ async function main() {
     assert.equal((await worker.evaluate(id => chrome.downloads.search({ id }), jobs.at(-1).items[2].downloadId))[0].url, `${cdn}clip.mp4`);
     assert.equal(await page.getByText('投稿IDが不正です。', { exact: true }).count(), 0);
     checks.push('長い投稿コードの個別保存とカルーセル全件保存');
+    posts[longCode] = { ...posts.BA };
+    await page.reload(); await single().waitFor(); await single().click(); await done(1);
+    jobs = await state(); assert.ok(jobs.at(-1).items[0].filename.includes('BA_01'));
+    await all().click(); await done(3);
+    jobs = await state(); assert.equal(jobs.at(-1).items.length, 3);
+    checks.push('長いURLに対して通常コードで返る投稿の個別・全件保存');
     await page.goto('https://www.instagram.com/alice/');
     await all().waitFor(); await page.locator('#media').evaluate(el => el.decode());
     assert.equal(await all().count(), 1);

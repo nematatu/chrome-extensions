@@ -157,8 +157,10 @@
     if (!code) throw new Error("投稿の識別情報がありません。投稿を開いて保存してください。");
     const known = cache.get(code);
     if (!activeJob?.failed && known?.complete && Date.now() - known.cachedAt < 60000) return known;
-    await client.post(code);
-    const group = cache.get(code) || (code.length <= 20 ? cache.get(c.shortcodeID(code)) : null);
+    const received = c.groups(await client.post(code));
+    const aliases = code.length > 20 ? received.filter(group => group.code && code.startsWith(group.code)) : [];
+    const group = cache.get(code) || (code.length <= 20 ? cache.get(c.shortcodeID(code)) :
+      aliases.length === 1 ? cache.get(aliases[0].code) : null);
     if (!group?.complete) throw new Error("投稿の全メディアを取得できませんでした。部分的な一括保存は行いません。");
     return group;
   }
