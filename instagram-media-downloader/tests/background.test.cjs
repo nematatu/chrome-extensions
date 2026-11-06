@@ -10,10 +10,12 @@ function harness(previous = {}, options = {}) {
   const state = structuredClone(previous);
   const calls = [];
   const local = structuredClone(options.local || { savedMedia: {}, savedHistoryMigratedV1: true });
+  const preferences = { downloadEnabled: true, ...options.sync };
   let failWrites = false;
   const chrome = {
     storage: {
       onChanged: { addListener: fn => listeners.storage = fn },
+      sync: { get: async () => structuredClone(preferences) },
       session: { get: async () => structuredClone(state), set: async data => Object.assign(state, structuredClone(data)) },
       local: { get: async () => structuredClone(local), set: async data => { if (failWrites) throw new Error('fixture quota'); Object.assign(local, structuredClone(data)); } },
     },
@@ -34,7 +36,7 @@ function harness(previous = {}, options = {}) {
   vm.runInNewContext(fs.readFileSync(require.resolve('../background.js'), 'utf8'), context);
   const sender = { url: 'https://www.instagram.com/p/BA/', tab: { id: 7 } };
   const send = (message, from = sender) => new Promise(resolve => listeners.message(message, from, resolve));
-  return { send, calls, downloads, state, listeners, local, history: context.IGMediaHistory, failWrites: value => failWrites = value };
+  return { send, calls, downloads, state, listeners, local, preferences, history: context.IGMediaHistory, failWrites: value => failWrites = value };
 }
 const item = n => ({ url: `https://scontent.cdninstagram.com/${n}.jpg`, filename: `Instagram/alice/BA_0${n}.jpg` });
 test('queue counts actual completions and serializes downloads', async () => {
@@ -270,4 +272,15 @@ test('history remains readable after downloads grow beyond 100000 records', asyn
   assert.ok(Object.keys(result.savedMedia).length > 100000);
   const restored = harness({}, { local: h.local });
   assert.equal((await restored.send({ type: 'ig-download-history' })).ok, true);
+});
+
+ test('download setting blocks new starts without canceling active downloads or history access', async () => {
+  const h = harness();
+  assert.equal((await h.send({ type: 'ig-download-start', items: [item(1), item(2)] })).ok, true);
+  h.preferences.downloadEnabled = false;
+  assert.equal((await h.send({ type: 'ig-download-start', items: [item(3)] }, { url: 'https://www.instagram.com/p/BA/', tab: { id: 8 } })).ok, false);
+  assert.equal((await h.send({ type: 'ig-download-history' })).ok, true);
+  h.downloads.set(1, { id: 1, state: 'complete' });
+  assert.equal((await h.send({ type: 'ig-download-status' })).jobs[0].complete, 1);
+  assert.equal(h.calls.length, 2);
 });

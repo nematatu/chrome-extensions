@@ -5,11 +5,11 @@
   margin: 8px 6px 8px 0 !important;
   padding: 0 !important;
   place-items: center !important;
-  border: 1px solid #d4d4d4 !important;
+  border: 0.5px solid var(--mt-gray-7) !important;
   border-radius: 4px !important;
-  background: #fff !important;
-  box-shadow: none !important;
-  color: #333 !important;
+  background: var(--mt-gray-1) !important;
+  box-shadow: none;
+  color: var(--mt-gray-12) !important;
   cursor: pointer !important;
   vertical-align: middle !important;
 }
@@ -25,9 +25,9 @@
 }
 
 #badspi-hq-download:hover {
-  border-color: #999 !important;
-  background: #f5f5f5 !important;
+  border-color: var(--mt-gray-8) !important;
+  background: var(--mt-gray-3) !important;
 }
 
-#badspi-hq-download:active { background: #e9e9e9 !important; }
-#badspi-hq-download:focus-visible { outline: 2px solid #333 !important; outline-offset: 2px !important; }
+#badspi-hq-download:active { background: var(--mt-gray-4) !important; }
+#badspi-hq-download:focus-visible { outline: 2px solid var(--mt-gray-12) !important; outline-offset: 2px !important; }

@@ -20,9 +20,14 @@
   }
   if (root.MyToolsConfig?.modules) configure(root.MyToolsConfig.modules);
   function enabled(value) {
-    record(value, moduleIDs);
+    record(value, moduleIDs.includes('instagram') ? [...moduleIDs, 'instagramhq'] : moduleIDs);
     if (!Object.keys(value).length || Object.values(value).some(value => typeof value !== 'boolean')) fail();
-    return Object.fromEntries(Object.entries(value));
+    const result = Object.fromEntries(Object.entries(value));
+    if (Object.hasOwn(result, 'instagramhq')) {
+      result.instagram = result.instagram !== false || result.instagramhq;
+      delete result.instagramhq;
+    }
+    return result;
   }
   const portable = () => root.MyToolsPortable || (typeof require === 'function' ? require('./portable.js') : null);
   function parseBackup(value) {
@@ -41,7 +46,7 @@
       result.settings = { enabled: enabled(value.settings.enabled) };
     }
     result.instagram = { savedMedia };
-    if (value.preferences !== undefined) result.preferences = portable().validate(value.preferences);
+    if (value.preferences !== undefined || Object.hasOwn(value.settings?.enabled || {}, 'instagramhq')) result.preferences = portable().validate(value.preferences || {}, value.settings?.enabled);
     return result;
   }
   function makeBackup(settings, history, preferences) {

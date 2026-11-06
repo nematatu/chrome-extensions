@@ -180,6 +180,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
       return { ok: true, jobs: jobs.filter(j => popup || j.tabId === tabId).map(summary) };
     }
     if (message.type === "ig-download-start") {
+      if ((await chrome.storage.sync.get({ downloadEnabled: true })).downloadEnabled === false) throw new Error("保存機能はオフです。");
       if (jobs.some(j => j.tabId === tabId && !j.canceled && j.items.some(i => ["queued", "active"].includes(i.state)))) {
         throw new Error("このタブでは保存が進行中です。完了または中止してから再実行してください。");
       }

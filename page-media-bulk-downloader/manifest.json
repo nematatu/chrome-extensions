@@ -44,12 +44,16 @@
         "https://video.twimg-com.com/*"
       ],
       "js": [
+        "ui-kit.js",
         "core.js",
         "content.js"
       ],
       "run_at": "document_idle",
       "all_frames": false,
-      "world": "ISOLATED"
+      "world": "ISOLATED",
+      "css": [
+        "ui-tokens.css"
+      ]
     }
   ],
   "incognito": "not_allowed",

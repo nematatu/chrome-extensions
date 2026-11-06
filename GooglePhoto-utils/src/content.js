@@ -621,7 +621,7 @@
     if (albums.length === 0) {
       const empty = document.createElement("div");
       empty.className = "gpu-help";
-      empty.textContent = "写真プレビューを開くとアルバム候補を自動取得します。";
+      empty.textContent = "アルバムがありません";
       albumListNode.append(empty);
     }
   };
@@ -690,14 +690,14 @@
 
     const title = document.createElement("div");
     title.className = "gpu-title";
-    title.textContent = "Album Sorter";
+    title.textContent = "アルバム";
 
     const refresh = document.createElement("button");
     refresh.className = "gpu-icon-button";
     refresh.type = "button";
     refresh.title = "アルバム一覧を取得";
     refresh.setAttribute("aria-label", "アルバム一覧を取得");
-    refresh.textContent = "↻";
+    refresh.innerHTML = MyToolsUI.icon("refresh");
     refresh.addEventListener("click", () => {
       void refreshAlbumsFromGooglePhotos();
     });
@@ -707,7 +707,7 @@
     diagnose.type = "button";
     diagnose.title = "取得状態を診断";
     diagnose.setAttribute("aria-label", "取得状態を診断");
-    diagnose.textContent = "?";
+    diagnose.innerHTML = MyToolsUI.icon("help");
     diagnose.addEventListener("click", () => {
       void updateDiagnostics({ openDialog: true, show: true });
     });
@@ -717,7 +717,7 @@
     collapse.type = "button";
     collapse.title = "パネルの表示切替";
     collapse.setAttribute("aria-label", "パネルの表示切替");
-    collapse.textContent = "–";
+    collapse.innerHTML = MyToolsUI.icon("minus");
     collapse.addEventListener("click", async () => {
       const next = panel.dataset.collapsed !== "true";
       panel.dataset.collapsed = String(next);
@@ -731,19 +731,16 @@
 
     statusNode = document.createElement("div");
     statusNode.className = "gpu-status";
-    statusNode.textContent = "1-9/0: 新しい順上位10件へ追加 / Q: 直前へ追加";
+    statusNode.textContent = "";
 
     albumListNode = document.createElement("div");
     albumListNode.className = "gpu-albums";
 
-    const help = document.createElement("div");
-    help.className = "gpu-help";
-    help.textContent = "写真プレビュー中だけ表示します。10件目は 0 キーです。";
 
     diagnosticsNode = document.createElement("pre");
     diagnosticsNode.className = "gpu-diagnostics";
 
-    body.append(statusNode, albumListNode, help, diagnosticsNode);
+    body.append(statusNode, albumListNode, diagnosticsNode);
     panel.append(header, body);
     document.documentElement.append(panel);
     renderAlbums();
@@ -1179,7 +1176,7 @@
       const message = error instanceof Error ? error.message : "アルバム一覧の取得に失敗しました。";
       void updateDiagnostics({ openDialog: false, show: !silent });
       if (silent) {
-        setStatus("写真プレビューを開くとアルバム候補を自動取得します。");
+        setStatus("アルバムがありません");
       } else {
         setStatus(message, "error");
         showToast(message);

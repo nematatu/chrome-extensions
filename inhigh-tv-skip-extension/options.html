@@ -1,18 +1,17 @@
 <!doctype html>
-<html lang="ja">
+<html lang="ja" class="mt-popup">
   <head>
+<link rel="stylesheet" href="ui-tokens.css">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>インハイTV スキップ設定</title>
     <link rel="stylesheet" href="options.css" />
   </head>
-  <body>
+  <body class="mt-ui">
     <main>
       <div class="title-row">
-        <div class="logo" aria-hidden="true">↶</div>
         <div>
           <h1>インハイTV スキップ</h1>
-          <p class="subtitle">動画の戻る・進む秒数を設定します</p>
         </div>
       </div>
 
@@ -45,7 +44,6 @@
           <input id="keyboard-enabled" name="keyboardEnabled" type="checkbox" />
           <span>
             <strong>キーボード操作を使う</strong>
-            <small>← で戻る、→ で進む、Spaceで再生／一時停止</small>
           </span>
         </label>
 
@@ -55,11 +53,8 @@
         </div>
         <p id="status" role="status" aria-live="polite"></p>
       </form>
-
-      <p class="hint">
-        設定は開いているインハイTVにも自動反映されます。入力欄や設定メニューの操作中はキーボードショートカットを横取りしません。
-      </p>
     </main>
-    <script src="options.js"></script>
+    <script src="ui-kit.js"></script>
+<script src="options.js"></script>
   </body>
 </html>

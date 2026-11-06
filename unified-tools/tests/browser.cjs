@@ -18,7 +18,7 @@ const image = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQ
 const cdn = 'https://scontent.cdninstagram.com/';
 const post = { pk: '64', code: 'BA', user: { username: 'fixture' }, media_type: 2,
   video_versions: [{ url: `${cdn}clip.mp4`, width: 320, height: 480 }], image_versions2: { candidates: [{ url: `${cdn}image.png`, width: 1, height: 1 }] } };
-const igHTML = `<!doctype html><html><body><main style="width:420px;margin:40px auto"><article><a href="/p/BA/">fixture</a><video id="media" src="${cdn}clip.mp4" width="420" height="570" style="display:block"></video></article></main></body></html>`;
+const igHTML = `<!doctype html><html><head><meta charset="utf-8"></head><body><main style="width:420px;margin:40px auto"><article><a href="/p/BA/">fixture</a><video id="media" src="${cdn}clip.mp4" width="420" height="570" style="display:block"></video><div style="display:flex;align-items:center;padding:12px 0"><button id="save-post" type="button" aria-label="保存" title="保存" style="margin-left:auto;background:none;border:0;color:inherit;font:21px/1 sans-serif;padding:8px;cursor:pointer">♧</button></div></article></main></body></html>`;
 const goHTML = '<!doctype html><html><body><div id="filemanager_maincontent">Synthetic Gofile folder</div></body></html>';
 const canary = 'synthetic-gofile-private-canary';
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -55,10 +55,10 @@ async function main() {
     await manager.goto(`chrome-extension://${extensionId}/popup.html`);
     await manager.locator('#instagram:not([disabled])').waitFor();
     const rpc = message => manager.evaluate(message => chrome.runtime.sendMessage(message), message);
-    const initial = await rpc({ type: 'my-tools:get' }); assert.equal(initial.ok, true); assert.deepEqual(initial.settings.enabled, defaults); assert.equal(fixtureConfig.modules.length, 19); assert.equal(await manager.locator('#modules input[type=checkbox]').count(), 19);
+    const initial = await rpc({ type: 'my-tools:get' }); assert.equal(initial.ok, true); assert.deepEqual(initial.settings.enabled, defaults); assert.equal(fixtureConfig.modules.length, 19); assert.equal(await manager.getByRole('switch').count(), 19);
     let registrations = await worker.evaluate(() => chrome.scripting.getRegisteredContentScripts()); assert.equal(registrations.length, fixtureConfig.registrations.length);
     for (const expected of fixtureConfig.registrations) { const actual = registrations.find(r => r.id === expected.id); assert.ok(actual, expected.id); assert.deepEqual(actual.js, [...expected.js]); assert.equal(actual.world, expected.world || 'ISOLATED'); }
-    assert.deepEqual(registrations.find(r => r.id === 'tools-instagram-1').js, ['config.js', 'client.js', 'modules/instagram/__isolated__/core.js', 'modules/instagram/instagram-api.js', 'modules/instagram/content.js']);
+    assert.deepEqual(registrations.find(r => r.id === 'tools-instagram-1').js, ['config.js', 'client.js', 'modules/instagram/ui-kit.js', 'modules/instagram/__isolated__/core.js', 'modules/instagram/instagram-api.js', 'modules/instagram/quality-core.js', 'modules/instagram/quality-content.js', 'modules/instagram/content.js']);
     assert.equal(registrations.find(r => r.id === 'tools-instagram-0').runAt, 'document_start');
     assert.equal(registrations.find(r => r.id === 'tools-gofile-1').runAt, 'document_idle'); check('All 19 module controls and every ordered MAIN/ISOLATED registration exist');
     await worker.evaluate(value => chrome.storage.local.set({ gofilePrivateCanary: { url: `https://file1.gofile.io/${value}`, token: value } }), canary);
@@ -69,10 +69,18 @@ async function main() {
     const storageRead = await worker.evaluate(async tabId => (await chrome.scripting.executeScript({ target: { tabId }, world: 'ISOLATED', func: async () => { try { return { value: await chrome.storage.local.get(null) }; } catch { return { denied: true }; } } }))[0].result, tabId);
     assert.equal(storageRead.denied, true); check('Instagram content cannot read trusted local storage or Gofile canary');
     assert.equal((await worker.evaluate(async ({ tabId }) => (await chrome.scripting.executeScript({ target: { tabId }, func: () => chrome.runtime.sendMessage({ type: 'my-tools:export' }) }))[0].result, { tabId })).ok, false); check('Instagram content cannot invoke management export');
-    await single().click();
+    const bulk = ig.locator('#igmd-root .bulk').filter({ visible: true }).first();
+    await bulk.waitFor({ state: 'visible' });
+    const [bulkBox, bookmarkBox] = await Promise.all([bulk.boundingBox(), ig.locator('#save-post').boundingBox()]);
+    assert.ok(bulkBox && bookmarkBox, 'bulk and bookmark buttons must be visible');
+    assert.ok(bulkBox.x + bulkBox.width <= bookmarkBox.x - 6, 'bulk button must sit left of the bookmark button');
+    assert.ok(Math.abs((bulkBox.y + bulkBox.height / 2) - (bookmarkBox.y + bookmarkBox.height / 2)) < 2.5, 'bulk button must be vertically centered with the bookmark button');
+    assert.equal((await bulk.innerText()).trim(), '', 'bulk button must be icon-only');
+    await ig.keyboard.press('ArrowDown');
+    assert.equal(await worker.evaluate(() => chrome.downloads.onDeterminingFilename.hasListeners()), false, 'My Tools must never register a native filename listener');
     await ig.waitForFunction(() => [...document.querySelector('#igmd-root').shadowRoot.querySelectorAll('button')].some(b => b.getAttribute('aria-label') === 'この画像・動画を保存' && b.dataset.saved === 'true'));
     assert.match(await single().getAttribute('title'), /保存済み/);
-    const downloadedIG = await worker.evaluate(() => chrome.downloads.search({ state: 'complete' })); assert.equal(downloadedIG.length, 1); assert.ok(downloadedIG[0].fileSize > 1000); check('Generated Instagram module saves actual MP4 and turns button into saved check');
+    const downloadedIG = await worker.evaluate(() => chrome.downloads.search({ state: 'complete' })); assert.equal(downloadedIG.length, 1); assert.ok(downloadedIG[0].fileSize > 1000); check('Generated Instagram module places icon-only bulk save left of bookmark, saves actual MP4 with ArrowDown, and turns button into saved check');
     await ig.reload(); await single().waitFor(); await ig.waitForFunction(() => document.querySelector('#igmd-root').shadowRoot.querySelector('button[data-saved="true"]')); check('Saved check persists after page reload');
     const hist = await contentRPC({ type: 'ig-download-history' }); assert.equal(hist.ok, true); assert.ok(Object.keys(hist.savedMedia).length);
     const beforeHistory = hist.savedMedia;
@@ -104,6 +112,7 @@ async function main() {
     const goTabId = await worker.evaluate(async () => (await chrome.tabs.query({ url: 'https://gofile.io/d/TestCode' }))[0].id);
     const goRPC = payload => { const message = envelope('gofile', payload); return worker.evaluate(async ({ id, message }) => (await chrome.scripting.executeScript({ target: { tabId: id }, world: 'ISOLATED', func: message => chrome.runtime.sendMessage(message), args: [message] }))[0].result, { id: goTabId, message }); };
     const started = await goRPC({ type: 'gofile-bulk:start' }); assert.equal(started.ok, true, JSON.stringify(started));
+    assert.equal(await worker.evaluate(() => chrome.downloads.onDeterminingFilename.hasListeners()), false, 'My Tools must never register a native filename listener');
     let completed;
     for (let i = 0; i < 100; i++) { completed = await worker.evaluate(() => chrome.downloads.search({ state: 'complete' })); if (completed.length === 2) break; await delay(100); }
     assert.equal(completed.length, 2); assert.ok(completed.every(item => item.fileSize > 1000)); for (const item of completed) assert.deepEqual(fs.readFileSync(item.filename), clip); assert.equal((await goRPC({ type: 'gofile-bulk:status' })).ok, true); check('Generated Gofile worker uses actual MAIN collector and completes actual MP4 download');
@@ -112,18 +121,57 @@ async function main() {
     await manager.locator('#gofile').check(); await manager.getByRole('status').filter({ hasText: '設定を保存しました' }).waitFor();
     await manager.reload(); await manager.locator('#instagram:not([disabled])').waitFor();
     await manager.screenshot({ path: path.join(output, 'popup.png'), fullPage: true });
-    await manager.setViewportSize({ width: 380, height: 850 });
+    await manager.setViewportSize({ width: 380, height: 600 });
     await manager.screenshot({ path: path.join(output, 'popup-narrow.png'), fullPage: true }); check('Generated common management screen rendered and captured');
+    assert.equal(await manager.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    const typography = await manager.locator('main *').evaluateAll(elements => [...new Set(elements.filter(el => el.getClientRects().length && !el.closest('svg') && [...el.childNodes].some(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim())).map(el => getComputedStyle(el).fontSize))]);
+    assert.ok(typography.length <= 3, typography.join(', ')); assert.ok(typography.every(size => parseFloat(size) >= 12));
+    await manager.getByRole('tab', { name: '機能', exact: true }).focus(); await manager.keyboard.press('ArrowRight');
+    await manager.getByRole('tab', { name: 'バックアップ', exact: true }).waitFor();
+    await manager.waitForFunction(() => document.querySelector('[role="tab"][data-state="active"]').textContent.includes('バックアップ'));
+    assert.equal(await manager.locator('#modules').isVisible(), false);
+    await manager.screenshot({ path: path.join(output, 'backup-narrow.png'), fullPage: true });
+    await manager.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
+    await manager.screenshot({ path: path.join(output, 'backup-dark.png'), fullPage: true });
+    await manager.getByRole('tab', { name: '機能', exact: true }).click();
+    await manager.screenshot({ path: path.join(output, 'popup-dark.png'), fullPage: true });
+    await manager.emulateMedia({ colorScheme: 'light' });
+    await manager.getByRole('tab', { name: 'バックアップ', exact: true }).click();
+    check('Compact UI fits narrow viewport with three readable font sizes, keyboard tabs and dark mode');
     const downloadEvent = manager.waitForEvent('download'); await manager.locator('#export').click(); const backupDownload = await downloadEvent; const file = path.join(output, 'backup.json'); await backupDownload.saveAs(file); const exported = JSON.parse(fs.readFileSync(file, 'utf8')); assert.equal(exported.format, 'nematatu-tools'); assert.doesNotMatch(JSON.stringify(exported), /synthetic-gofile|https:|token|jobs/); check('Actual export button downloads allowlisted JSON');
     await manager.locator('#import-file').setInputFiles({ name: 'legacy.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(legacy)) }); await manager.getByRole('status').filter({ hasText: '履歴を追加しました' }).waitFor(); check('Actual file input imports tagged legacy JSON');
-    const savedBeforeBulk = (await worker.evaluate(() => chrome.downloads.search({ state: 'complete' }))).length;
+    const beforeInvalid = (await rpc({ type: 'my-tools:export' })).backup;
+    await manager.locator('#import-file').setInputFiles({ name: 'invalid.json', mimeType: 'application/json', buffer: Buffer.from('{') });
+    await manager.getByRole('alert').filter({ hasText: 'JSON' }).waitFor();
+    assert.deepEqual((await rpc({ type: 'my-tools:export' })).backup, beforeInvalid);
+    check('Malformed UI import reports error and preserves settings and saved history');
+    await manager.getByRole('tab', { name: '機能', exact: true }).click();
+    await manager.evaluate(() => {
+      const original = chrome.runtime.sendMessage.bind(chrome.runtime);
+      chrome.runtime.sendMessage = message => {
+        if (message.type !== 'my-tools:set') return original(message);
+        chrome.runtime.sendMessage = original;
+        return Promise.resolve({ ok: false, error: '設定を保存できませんでした。' });
+      };
+    });
+    await manager.locator('#instagram').click();
+    await manager.getByRole('alert').filter({ hasText: '設定を保存できませんでした' }).waitFor();
+    assert.equal(await manager.locator('#instagram').getAttribute('aria-checked'), 'true');
+    assert.equal((await rpc({ type: 'my-tools:get' })).settings.enabled.instagram, true);
+    check('Failed switch update restores checked state without modifying persisted settings');
+    const beforeBulkIds = new Set((await worker.evaluate(() => chrome.downloads.search({ state: 'complete' }))).map(item => item.id));
     await worker.evaluate(tabId => chrome.tabs.update(tabId, { active: true }), tabId);
     await manager.locator('#save').click();
     await manager.getByRole('status').filter({ hasText: 'Instagram画面の右下で進捗をご確認ください' }).waitFor();
-    let afterBulk;
-    for (let i = 0; i < 100; i++) { afterBulk = await worker.evaluate(() => chrome.downloads.search({ state: 'complete' })); if (afterBulk.length > savedBeforeBulk) break; await delay(100); }
-    assert.equal(afterBulk.length, savedBeforeBulk + 1);
-    assert.deepEqual(fs.readFileSync(afterBulk.find(item => !completed.some(previous => previous.id === item.id) && !item.filename.endsWith('.json')).filename), clip);
+    let bulkDownload;
+    for (let i = 0; i < 150; i++) {
+      const current = await worker.evaluate(() => chrome.downloads.search({ state: 'complete' }));
+      bulkDownload = current.find(item => !beforeBulkIds.has(item.id) && item.fileSize === clip.length);
+      if (bulkDownload) break;
+      await delay(100);
+    }
+    assert.ok(bulkDownload, 'Instagram bulk save did not produce a new MP4 download');
+    assert.deepEqual(fs.readFileSync(bulkDownload.filename), clip);
     check('Actual common Instagram bulk-save button routes to active content and completes real MP4 download');
     const finalHistory = (await rpc({ type: 'my-tools:export' })).backup.instagram.savedMedia;
     await context.close(); context = await launch(); worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');

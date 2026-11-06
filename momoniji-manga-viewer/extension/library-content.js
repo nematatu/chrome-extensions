@@ -69,7 +69,7 @@
   }
   function updateButton(button) {
     const saved = !!entries.get(currentWork?.url)?.readLater;
-    const label = saved ? '✓ 後で読むに保存済み' : '後で読む';
+    const label = saved ? '保存済み' : '後で読む';
     if (button.textContent !== label) button.textContent = label;
     const pressed = String(saved);
     if (button.getAttribute('aria-pressed') !== pressed) button.setAttribute('aria-pressed', pressed);
@@ -81,7 +81,7 @@
     const download = shadow.getElementById('library-download-status');
     if (download) {
       download.hidden = !entry?.downloadedAt;
-      const label = entry?.downloadedAt ? `✓ 画像ダウンロード済み（${entry.downloadedCount}ページ）` : '';
+      const label = entry?.downloadedAt ? `ダウンロード済み（${entry.downloadedCount}ページ）` : '';
       if (download.textContent !== label) download.textContent = label;
       download.title = 'この拡張機能で画像の保存完了を記録しています。現在のファイルの存在を保証する表示ではありません。';
     }
@@ -95,7 +95,7 @@
       const host = make('div', { id: 'momoniji-library-page-state' });
       const shadow = host.attachShadow({ mode: 'open' });
       const style = make('style');
-      style.textContent = ':host{display:block;margin:8px 0;color-scheme:light dark;font:13px/1.5 system-ui,sans-serif} [hidden]{display:none!important} .row{display:flex;align-items:center;flex-wrap:wrap;gap:8px} button{font:inherit;border:1px solid #8888;border-radius:6px;padding:5px 10px;cursor:pointer;background:Canvas;color:CanvasText} button:focus-visible{outline:2px solid Highlight;outline-offset:2px} button:disabled{opacity:.6;cursor:default} #library-download-status{padding:2px 7px;border:1px solid #8886;border-radius:12px;color:CanvasText} #library-notice{margin:4px 0;color:CanvasText}';
+      style.textContent = MyToolsUI.css + ':host{display:block;margin:8px 0;color-scheme:light dark;font:14px/1.5 system-ui,sans-serif} [hidden]{display:none!important} .row{display:flex;align-items:center;flex-wrap:wrap;gap:8px} button{font:inherit;border:0.5px solid var(--mt-gray-7);border-radius:6px;padding:5px 10px;cursor:pointer;background:var(--mt-gray-1);color:var(--mt-gray-12)} button:focus-visible{outline:2px solid var(--mt-indigo-8);outline-offset:2px} button:disabled{opacity:.6;cursor:default} #library-download-status{padding:2px 7px;border:0.5px solid var(--mt-gray-6);border-radius:12px;color:var(--mt-gray-12)} #library-notice{margin:4px 0;color:var(--mt-gray-12)}';
       const row = make('div', { class: 'row' });
       const download = make('span', { id: 'library-download-status' }); download.hidden = true;
       row.append(readButton(), download);
@@ -112,7 +112,7 @@
       const downloadButton = shadow.getElementById('download');
       if (downloadButton) downloadButton.before(button); else toolbar.append(button);
       const download = make('span', { id: 'library-download-status' }); download.hidden = true;
-      download.style.cssText = 'padding:2px 7px;border:1px solid #64748b;border-radius:12px;white-space:nowrap;';
+      download.style.cssText = 'padding:2px 7px;border:0.5px solid var(--mt-gray-7);border-radius:12px;white-space:nowrap;';
       (shadow.getElementById('save-info') || toolbar).append(download);
       statusHosts.add(reader);
     }
@@ -132,7 +132,7 @@
   function installLinkStyle() {
     if (document.getElementById('momoniji-library-style')) return;
     const style = make('style', { id: 'momoniji-library-style' });
-    style.textContent = '.momoniji-library-badges{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap;margin:3px 5px;font:11px/1.5 system-ui,sans-serif;color:inherit}.momoniji-library-badges>span{padding:1px 6px;border:1px solid currentColor;border-radius:12px;white-space:nowrap;background:transparent}.momoniji-library-badges[hidden]{display:none!important}';
+    style.textContent = '.momoniji-library-badges{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap;margin:3px 5px;font:14px/1.5 system-ui,sans-serif;color:inherit}.momoniji-library-badges>span{padding:1px 6px;border:0.5px solid currentColor;border-radius:12px;white-space:nowrap;background:transparent}.momoniji-library-badges[hidden]{display:none!important}';
     (document.head || document.documentElement).append(style);
   }
   function renderLinks() {
@@ -152,8 +152,8 @@
       badges.setAttribute('data-momoniji-library-url', url);
       badges.dataset.state = state;
       badges.replaceChildren();
-      if (entry.readLater) badges.append(make('span', { class: 'momoniji-library-saved' }, '✓ 後で読むに保存済み'));
-      if (entry.downloadedAt) badges.append(make('span', { class: 'momoniji-library-downloaded', title: 'この拡張機能で画像の保存完了を記録しています。' }, '✓ 画像ダウンロード済み'));
+      if (entry.readLater) badges.append(make('span', { class: 'momoniji-library-saved' }, '保存済み'));
+      if (entry.downloadedAt) badges.append(make('span', { class: 'momoniji-library-downloaded', title: 'ダウンロード済み' }, 'ダウンロード済み'));
     }
   }
   function render() { installCurrent(); renderCurrent(); renderLinks(); }
@@ -169,7 +169,7 @@
       notice = document.getElementById('momoniji-library-notice');
       if (!notice) {
         notice = make('div', { id: 'momoniji-library-notice', role: 'status', 'aria-live': 'polite' });
-        notice.style.cssText = 'position:fixed;bottom:16px;left:16px;max-width:calc(100vw - 32px);z-index:2147483647;padding:10px 14px;border:1px solid #8888;border-radius:6px;background:Canvas;color:CanvasText;font:13px/1.5 system-ui,sans-serif;';
+        notice.style.cssText = 'position:fixed;bottom:16px;left:16px;max-width:calc(100vw - 32px);z-index:2147483647;padding:10px 14px;border:0.5px solid var(--mt-gray-7);border-radius:6px;background:var(--mt-gray-1);color:var(--mt-gray-12);font:14px/1.5 system-ui,sans-serif;';
         document.body.append(notice);
       }
     }

@@ -40,7 +40,7 @@
     button.className = className;
     button.setAttribute("aria-label", label);
     button.title = label;
-    button.textContent = text;
+    button.innerHTML = MyToolsUI.icon(text === "‹" ? "chevronLeft" : text === "›" ? "chevronRight" : "x");
     return button;
   };
 

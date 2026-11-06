@@ -18,9 +18,9 @@
   width: max-content;
   max-width: none;
   white-space: nowrap;
-  color: white;
+  color: var(--mt-on-accent);
   font: 700 var(--kltra-font-size, 23px)/1.2 system-ui, sans-serif;
-  text-shadow: 1px 1px 2px black, -1px -1px 2px black, 0 0 5px black;
+  background: var(--mt-overlay);
   animation-name: kltra-danmaku-move;
   animation-timing-function: linear;
   animation-fill-mode: forwards;
@@ -32,7 +32,7 @@
   height: var(--kltra-sticker-height, 88px);
   object-fit: contain;
   border-radius: 4px;
-  background: rgb(0 0 0 / 35%);
+  background: var(--mt-overlay);
 }
 
 @keyframes kltra-danmaku-move {
@@ -42,12 +42,12 @@
 .kltra-original-toggle {
   margin-left: 6px;
   padding: 1px 5px;
-  border: 1px solid #94a3b8;
+  border: .5px solid var(--mt-gray-7);
   border-radius: 3px;
-  background: #334155;
-  color: #e2e8f0;
-  font: 11px system-ui, sans-serif;
+  background: var(--mt-gray-3);
+  color: var(--mt-gray-12);
+  font: 12px system-ui, sans-serif;
   cursor: pointer;
 }
 
-.kltra-original-text { color: #475569; }
+.kltra-original-text { color: var(--mt-gray-11); }

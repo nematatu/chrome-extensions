@@ -1,4 +1,19 @@
 {
   "private": true,
-  "scripts": { "build": "node build.mjs", "test": "node --test tests/*.test.cjs" }
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test tests/*.test.cjs",
+    "prebuild": "node ../shared-ui/build.mjs"
+  },
+  "dependencies": {
+    "@radix-ui/colors": "3.0.0",
+    "@radix-ui/react-switch": "1.4.1",
+    "@radix-ui/react-tabs": "1.2.1",
+    "lucide-react": "1.61.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
 }

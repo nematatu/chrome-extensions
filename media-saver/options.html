@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<link rel="stylesheet" href="ui-tokens.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Media Saver 設定</title>
+  <link rel="stylesheet" href="ui.css">
+</head>
+<body class="mt-ui options-body">
+  <div class="options-page">
+    <header class="options-header">
+      <div>
+        <h1>Media Saver</h1>
+      </div>
+    </header>
+
+    <div class="options-grid">
+      <section class="card">
+        <h2>保存先とファイル名</h2>
+        <div class="field">
+          <label for="folder">保存フォルダー</label>
+          <input class="input" id="folder" type="text" maxlength="200" placeholder="MediaSaver">
+        </div>
+        <div class="field">
+          <label for="filename-template">ファイル名テンプレート</label>
+          <input class="input" id="filename-template" type="text" maxlength="160" placeholder="{title}">
+          <p class="help"><code>{title}</code> <code>{site}</code> <code>{date}</code> <code>{quality}</code> <code>{index}</code></p>
+        </div>
+        <div class="switch-row">
+          <div class="switch-copy"><strong>サイトごとにサブフォルダーを作る</strong></div>
+          <label class="switch"><input aria-label="サイトごとにサブフォルダーを作る" id="subfolder" type="checkbox"><span></span></label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>検出</h2>
+        <div class="switch-row">
+          <div class="switch-copy"><strong>動画</strong></div>
+          <label class="switch"><input aria-label="動画を検出" id="detect-video" type="checkbox"><span></span></label>
+        </div>
+        <div class="switch-row">
+          <div class="switch-copy"><strong>音声</strong></div>
+          <label class="switch"><input aria-label="音声を検出" id="detect-audio" type="checkbox"><span></span></label>
+        </div>
+        <div class="switch-row">
+          <div class="switch-copy"><strong>画像</strong></div>
+          <label class="switch"><input aria-label="画像を検出" id="detect-images" type="checkbox"><span></span></label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>ダウンロード</h2>
+        <div class="field">
+          <label for="concurrency">同時ダウンロード数</label>
+          <select class="select" id="concurrency">
+            <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+            <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="min-size">最小サイズ（MB）</label>
+          <input class="input" id="min-size" type="number" min="0" max="100000" step="1" value="0">
+          <p class="help">0はすべて表示</p>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>表示</h2>
+        <div class="field">
+          <label for="theme">テーマ</label>
+          <select class="select" id="theme">
+            <option value="auto">システムに合わせる</option>
+            <option value="light">ライト</option>
+            <option value="dark">ダーク</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>ダウンロード履歴</label>
+          <button class="secondary" id="clear-history" type="button">完了した履歴を消去</button>
+          <p class="help">ファイルは残ります。</p>
+        </div>
+      </section>
+
+      <section class="card card-wide">
+        <h2>除外するドメイン</h2>
+        <div class="field blacklist-entry">
+          <input aria-label="除外するドメイン" class="input" id="blacklist-input" type="text" placeholder="ads.example.com" autocomplete="off">
+          <button class="secondary" id="blacklist-add" type="button">追加</button>
+        </div>
+        <div class="blacklist" id="blacklist"></div>
+        <p class="help" id="blacklist-empty">登録されているドメインはありません。</p>
+      </section>
+
+      <section class="card card-wide">
+        <h2>対応範囲と制限</h2>
+        <ul class="limits">
+          <li>直接ファイル、音声、画像に対応します。</li>
+          <li>HLSのVODはMP4に結合します。DASHのVODは映像と音声を別ファイルで保存します。</li>
+          <li>暗号化、DRM、ライブ、YouTube、独自ヘッダーが必要な配信は非対応です。</li>
+        </ul>
+      </section>
+    </div>
+
+    <div class="options-footer">
+      <span class="save-status" id="save-status">設定を保存しました</span>
+      <button class="secondary" id="reset" type="button">初期設定に戻す</button>
+      <button class="primary" id="save" type="button">設定を保存</button>
+    </div>
+  </div>
+  <script src="ui-kit.js"></script>
+<script src="lib/common.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

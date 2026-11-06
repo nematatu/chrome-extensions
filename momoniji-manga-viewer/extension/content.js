@@ -3,7 +3,7 @@
   if (window.top !== window || document.getElementById('momoniji-reader')) return;
   const Extract = globalThis.MomonijiExtract;
   let host, shadow, work, viewer, job, loading = false, opened = true;
-  let controller, pollTimer, lastPage = 1, previousFocus, bodyOverflow;
+  let controller, pollTimer, viewerUiObserver, lastPage = 1, previousFocus, bodyOverflow;
   let inertSiblings = [];
   const $ = id => shadow.getElementById(id);
   const ACTIVE = new Set(['running', 'cancelling']);
@@ -23,21 +23,21 @@
     host.style.cssText = 'all:initial!important;position:fixed!important;inset:0!important;z-index:2147483647!important;display:block!important;';
     shadow = host.attachShadow({ mode: 'open' });
     const style = make('style');
-    style.textContent = `
-      :host {color-scheme:dark;font:14px/1.5 system-ui,sans-serif;color:#eee}
+    style.textContent = MyToolsUI.css + `
+      :host {font:14px/1.5 system-ui,sans-serif;color:var(--mt-gray-11)}
       * {box-sizing:border-box} [hidden] {display:none!important}
-      #shell {height:100dvh;display:flex;flex-direction:column;background:#111827;color:#f8fafc}
-      #toolbar {display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;background:#182234;border-bottom:1px solid #334155;z-index:2}
+      #shell {font:14px/1.5 system-ui,sans-serif;height:100dvh;display:flex;flex-direction:column;background:var(--mt-gray-1);color:var(--mt-gray-12)}
+      #toolbar {display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;background:var(--mt-gray-2);border-bottom:0.5px solid var(--mt-gray-6);z-index:2}
       #title {font-weight:600;max-width:min(30vw,400px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-      button,select {font:inherit;min-height:36px;border:1px solid #475569;border-radius:7px;color:#f8fafc;background:#263549;padding:6px 12px;cursor:pointer}
-      button:disabled {opacity:.45;cursor:default} button:hover:enabled {background:#344963} #download {background:#2563eb;border-color:#3b82f6} #download:hover:enabled {background:#1d4ed8}
-      button:focus-visible,select:focus-visible {outline:2px solid #93c5fd;outline-offset:2px}
-      #save-info {display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:6px 14px;font-size:12px;background:#111827;border-bottom:1px solid #334155}
-      #status {flex:1;min-width:140px} #folder {overflow-wrap:anywhere;max-width:45vw;color:#94a3b8} #progress {width:130px;height:8px;accent-color:#60a5fa}
-      #failure {width:100%;color:#fca5a5;white-space:pre-wrap}
-      #reader-stage {position:relative;flex:1;min-height:0;contain:layout style;background:#0b0e14;overflow:hidden}
-      #error {padding:24px;white-space:pre-wrap;color:#fca5a5} #loading-message {padding:24px;color:#cbd5e1}
-      #shell.closed {height:auto;width:min(720px,calc(100vw - 24px));max-height:45vh;overflow:auto;border:1px solid #475569;border-radius:10px;box-shadow:0 8px 24px #0008}
+      button,select {font:inherit;min-height:36px;border:0.5px solid var(--mt-gray-7);border-radius:7px;color:var(--mt-gray-12);background:var(--mt-gray-3);padding:6px 12px;cursor:pointer}
+      button:disabled {opacity:.45;cursor:default} button:hover:enabled {background:var(--mt-gray-4)} #download {background:var(--mt-indigo-9);border-color:var(--mt-indigo-9);color:var(--mt-on-accent)} #download:hover:enabled {background:var(--mt-indigo-10)}
+      button:focus-visible,select:focus-visible {outline:2px solid var(--mt-indigo-8);outline-offset:2px}
+      #save-info {display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:6px 14px;font-size:12px;background:var(--mt-gray-1);border-bottom:0.5px solid var(--mt-gray-6)}
+      #status {flex:1;min-width:140px} #folder {overflow-wrap:anywhere;max-width:45vw;color:var(--mt-gray-11)} #progress {width:130px;height:8px;accent-color:var(--mt-indigo-9)}
+      #failure {width:100%;color:var(--mt-red-11);white-space:pre-wrap}
+      #reader-stage {position:relative;flex:1;min-height:0;contain:layout style;background:var(--mt-gray-1);overflow:hidden}
+      #error {padding:24px;white-space:pre-wrap;color:var(--mt-red-11)} #loading-message {padding:24px;color:var(--mt-gray-11)}
+      #shell.closed {height:auto;width:min(720px,calc(100vw - 24px));max-height:45vh;overflow:auto;border:0.5px solid var(--mt-gray-7);border-radius:10px;box-shadow:none}
       .closed #reader-stage {display:none} .closed #title {max-width:230px} .closed #mode,.closed #direction {display:none}
       .closed #folder {max-width:100%}
       @media(max-width:600px) {#toolbar{gap:5px;padding:7px} button,select{font-size:12px;padding:5px 8px} #title{width:100%;max-width:100%} #save-info{padding:6px 8px} #folder{max-width:100%} #progress{width:90px}}
@@ -64,7 +64,7 @@
     info.append(make('span', { id: 'folder' }));
     const failure = make('span', { id: 'failure' }); failure.hidden = true; info.append(failure);
     const stage = make('div', { id: 'reader-stage', tabindex: '0' });
-    stage.append(make('p', { id: 'loading-message' }, '全ページを読み込んでいます…'));
+    stage.append(make('p', { id: 'loading-message' }, '読み込み中…'));
     shell.append(toolbar, info, stage); shadow.append(shell);
     host.addEventListener('keydown', event => {
       if (!opened || event.key !== 'Escape') return;
@@ -94,6 +94,7 @@
   }
   function closeViewer() {
     lastPage = viewer?.currentPage || lastPage;
+    viewerUiObserver?.disconnect();
     viewer?.destroy(); viewer = null;
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
     opened = false;
@@ -111,6 +112,7 @@
   }
   function createViewer(page, forcePosition = false) {
     if (!work || !opened) return;
+    viewerUiObserver?.disconnect();
     viewer?.destroy();
     const stage = $('reader-stage'); stage.replaceChildren();
     const instance = new globalThis.MomonijiMangaViewer.MangaViewer({
@@ -123,8 +125,76 @@
       onPageChange: current => { lastPage = current; stage.dataset.page = String(current); },
     });
     viewer = instance;
-    const style = make('style'); style.textContent = '.mv-container{height:100%;width:100%}.mv-main{height:100%}';
+    const style = make('style'); style.textContent = MyToolsUI.css + `
+      :host,:host(.mv-theme-dark),:host(.mv-theme-light) {
+        --mv-font-family:system-ui,sans-serif;
+        --mv-bg:var(--mt-gray-1);--mv-fg:var(--mt-gray-12);--mv-text-muted:var(--mt-gray-11);
+        --mv-header-bg:var(--mt-gray-2);--mv-footer-bg:var(--mt-gray-2);
+        --mv-btn-bg:var(--mt-gray-3);--mv-btn-bg-hover:var(--mt-gray-4);--mv-btn-fg:var(--mt-gray-12);
+        --mv-slider-track:var(--mt-gray-6);--mv-spinner-track:var(--mt-gray-4);--mv-spinner-fg:var(--mt-indigo-9);
+        --mv-accent:var(--mt-indigo-9);--mv-shadow:transparent;
+      }
+      .mv-container{height:100%;width:100%}.mv-main{height:100%}
+      *,*::before,*::after{box-shadow:none!important;transition:none!important;animation:none!important}
+      [class^="mv-"],[class*=" mv-"]{font-size:14px;border-width:0.5px!important}
+      .mv-resume-dialog,.mv-help-overlay,.mv-bookmark-overlay{background:var(--mt-overlay);color:var(--mt-gray-12);backdrop-filter:none}
+      .mv-resume-card,.mv-help-card,.mv-purchase-card,.mv-bookmark-panel,.mv-toast{
+        background:var(--mt-gray-2);color:var(--mt-gray-12);border-radius:8px;backdrop-filter:none;
+      }
+      .mv-resume-title,.mv-help-title,.mv-purchase-title,.mv-bookmark-panel-title{font-size:20px;color:var(--mt-gray-12)}
+      .mv-resume-subtitle,.mv-purchase-desc,.mv-purchase-back,.mv-help-desc,.mv-bookmark-empty{color:var(--mt-gray-11)}
+      .mv-resume-btn,.mv-purchase-btn,.mv-bookmark-add,.mv-help-key,.mv-help-close,.mv-bookmark-panel-close{
+        background:var(--mt-gray-3);color:var(--mt-gray-12);border-color:var(--mt-gray-7);border-radius:4px;
+      }
+      .mv-resume-btn.mv-primary,.mv-purchase-btn,.mv-bookmark-add{
+        background:var(--mt-indigo-9);color:var(--mt-on-accent);
+      }
+      .mv-resume-btn.mv-secondary{background:var(--mt-gray-3);color:var(--mt-gray-12);border-color:var(--mt-gray-7)}
+      .mv-resume-btn:hover,.mv-purchase-btn:hover{transform:none;background:var(--mt-indigo-10)}
+      .mv-resume-btn.mv-secondary:hover,.mv-help-close:hover,.mv-bookmark-panel-close:hover{background:var(--mt-gray-4)}
+      .mv-resume-icon,.mv-purchase-icon{background:var(--mt-indigo-3);color:var(--mt-indigo-11);border-radius:4px}
+      .mv-help-section,.mv-help-header,.mv-bookmark-panel-header{border-color:var(--mt-gray-6);background:transparent}
+      .mv-help-section-title,.mv-help-key,.mv-bookmark-item-page{color:var(--mt-indigo-11)}
+      .mv-help-key-desc,.mv-bookmark-item-title{color:var(--mt-gray-12)}
+      .mv-help-note{background:var(--mt-indigo-3);color:var(--mt-indigo-11)}
+      .mv-bookmark-clear,.mv-bookmark-item-delete,.mv-bookmark-item-delete:hover{background:var(--mt-red-3);color:var(--mt-red-11)}
+      .mv-bookmark-item:hover,.mv-bookmark-item.mv-active{background:var(--mt-gray-3)}
+      .mv-bookmark-btn.mv-bookmark-active{color:var(--mt-indigo-11)!important}
+      .mv-bookmark-btn.mv-bookmark-active svg{fill:none!important}
+      .mv-header-btn svg,.mv-zoom-btn svg,.mv-help-title svg,.mv-resume-icon svg,.mv-toast svg{fill:none;stroke:currentColor}
+      .mv-footer,.mv-page-info,.mv-slider-label{font-size:12px}
+      .mv-page-slider::-webkit-slider-thumb{background:var(--mt-indigo-9);box-shadow:none}
+      .mv-page-slider::-moz-range-thumb{background:var(--mt-indigo-9);box-shadow:none}
+      .mv-zoom-btn,.mv-zoom-btn:disabled:hover{background:var(--mt-gray-3);color:var(--mt-gray-12);border-color:var(--mt-gray-7);border-radius:4px;backdrop-filter:none}
+      .mv-zoom-btn:hover{background:var(--mt-gray-4);color:var(--mt-gray-12)}
+      .mv-adsense-label{color:var(--mt-gray-11)}
+      .mv-purchase-trigger{background:var(--mt-gray-2)}
+      .mv-bookmark-toggle-btn{background:var(--mt-indigo-9);color:var(--mt-on-accent);border-radius:4px}
+      .mv-bookmark-toggle-btn:hover{background:var(--mt-indigo-10);transform:none}
+      .mv-bookmark-toggle-btn.mv-bookmark-remove,.mv-bookmark-toggle-btn.mv-bookmark-remove:hover{background:var(--mt-red-3);color:var(--mt-red-11)}
+    `;
     stage.shadowRoot.append(style);
+    const icons = [
+      ['[title="Back"]','arrowLeft'],['[title="Fullscreen"]','maximize'],
+      ['[title="Zoom in"]','zoomIn'],['[title="Reset zoom"]','zoomOut'],
+      ['.mv-header-btn[aria-label]:not([title="Back"])','help'],
+      ['.mv-help-title','help'],['.mv-help-close,.mv-bookmark-panel-close','x'],
+      ['.mv-resume-icon','play'],['.mv-toast','check']
+    ];
+    const refreshIcons = () => {
+      for (const [selector, name] of icons) {
+        for (const target of stage.shadowRoot.querySelectorAll(selector)) {
+          const svg = target.querySelector('svg:not([data-mt-icon])');
+          if (!svg) continue;
+          const wrapper = make('span'); wrapper.innerHTML = MyToolsUI.icon(name === 'maximize' && document.fullscreenElement ? 'minimize' : name);
+          wrapper.firstElementChild.dataset.mtIcon = name;
+          svg.replaceWith(wrapper.firstElementChild);
+        }
+      }
+    };
+    refreshIcons();
+    viewerUiObserver = new MutationObserver(refreshIcons);
+    viewerUiObserver.observe(stage.shadowRoot, {childList:true,subtree:true});
     if (forcePosition) stage.shadowRoot.querySelector('.mv-resume-btn.mv-secondary')?.click();
     if (forcePosition || !stage.shadowRoot.querySelector('.mv-resume-dialog')) instance.goToPage(page || 1);
     stage.focus({ preventScroll: true });
@@ -195,7 +265,7 @@
       });
       if (!result) throw new Error('作品を確認できません。');
       work = result; lastPage = result.initialPage;
-      $('status').textContent = `全${work.totalPages}ページを読み込めました。`;
+      $('status').textContent = `${work.totalPages}ページ`;
       if (opened) createViewer(lastPage);
       await queryJob();
     } catch (error) {

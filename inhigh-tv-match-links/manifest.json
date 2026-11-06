@@ -9,20 +9,36 @@
         "https://www.birdscore.live/web/interhigh-2026-wakayama-team/*",
         "https://www.birdscore.live/web/interhigh-2026-wakayama-Individual/*"
       ],
-      "css": ["birdscore-content.css"],
-      "js": ["birdscore-content.js"],
+      "css": [
+        "ui-tokens.css",
+        "birdscore-content.css"
+      ],
+      "js": [
+        "ui-kit.js",
+        "birdscore-content.js"
+      ],
       "run_at": "document_idle"
     },
     {
-      "matches": ["https://inhightv.sportsbull.jp/summer/archive/*"],
-      "css": ["inhigh-content.css"],
-      "js": ["inhigh-content.js"],
+      "matches": [
+        "https://inhightv.sportsbull.jp/summer/archive/*"
+      ],
+      "css": [
+        "ui-tokens.css",
+        "inhigh-content.css"
+      ],
+      "js": [
+        "ui-kit.js",
+        "inhigh-content.js"
+      ],
       "run_at": "document_idle"
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["data/matches.json"],
+      "resources": [
+        "data/matches.json"
+      ],
       "matches": [
         "https://www.birdscore.live/*",
         "https://inhightv.sportsbull.jp/*"

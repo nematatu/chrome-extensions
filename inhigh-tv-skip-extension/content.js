@@ -69,9 +69,7 @@
 
   function createArrowIcon() {
     return `
-      <svg class="inhigh-skip-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <path d="M12 4.25V1.5L7.4 5.8l4.6 4.3V7.25a6.25 6.25 0 1 1-5.66 8.9l-2.17.99A8.65 8.65 0 1 0 12 4.25Z"></path>
-      </svg>
+      <span class="inhigh-skip-icon">${MyToolsUI.icon("arrowLeft")}</span>
       <span class="inhigh-skip-seconds" aria-hidden="true"></span>
     `;
   }

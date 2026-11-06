@@ -9,7 +9,7 @@ chrome.storage.sync.get(STORAGE_KEY).then(({ [STORAGE_KEY]: hashtags = "" }) => 
 
 saveButton.addEventListener("click", async () => {
   await chrome.storage.sync.set({ [STORAGE_KEY]: input.value.trim() });
-  status.textContent = "保存しました。次に開く投稿画面から反映されます。";
+  status.textContent = "保存しました。";
   setTimeout(() => { status.textContent = ""; }, 2500);
 });
 

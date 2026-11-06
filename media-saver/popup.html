@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ja" class="mt-popup">
+<head>
+<link rel="stylesheet" href="ui-tokens.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Media Saver</title>
+  <link rel="stylesheet" href="ui.css">
+</head>
+<body class="mt-ui popup-body">
+  <div class="app" id="app">
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-copy">
+          <h1>Media Saver</h1>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-button" id="refresh" type="button" title="このページを再スキャン" aria-label="再スキャン"></button>
+        <button class="icon-button" id="settings" type="button" title="設定" aria-label="設定"></button>
+      </div>
+    </header>
+
+    <nav class="tabs" aria-label="表示切り替え">
+      <button class="tab is-active" type="button" data-view="media" id="tab-media">メディア<span class="tab-count" id="media-count">0</span></button>
+      <button class="tab" type="button" data-view="downloads" id="tab-downloads">ダウンロード<span class="tab-count" id="job-count">0</span></button>
+    </nav>
+
+    <main class="main">
+      <section class="view" id="view-media" aria-labelledby="tab-media">
+        <div class="page-card">
+          <div class="page-card-copy">
+            <p class="page-title" id="page-title">ページを読み込み中…</p>
+          </div>
+          <span class="detected-pill" id="detected-pill">0 件</span>
+        </div>
+
+        <div class="filter-row" id="filters" role="group" aria-label="種類で絞り込む">
+          <button class="chip is-active" data-filter="all" type="button">すべて</button>
+          <button class="chip" data-filter="video" type="button">動画</button>
+          <button class="chip" data-filter="audio" type="button">音声</button>
+          <button class="chip" data-filter="image" type="button">画像</button>
+        </div>
+
+        <div class="hint" id="blob-hint" hidden>
+          動画を数秒再生すると配信URLを検出できます。
+        </div>
+        <div class="hint hint-warn" id="restricted-hint" hidden>
+          直接スキャンできません。通信から検出したメディアを表示します。
+        </div>
+
+        <div class="media-list" id="media-list" aria-live="polite"></div>
+
+        <div class="empty" id="empty" hidden>
+          <h2>まだメディアが見つかりません</h2>
+          <button class="secondary" id="empty-refresh" type="button">再スキャン</button>
+        </div>
+      </section>
+
+      <section class="view" id="view-downloads" hidden aria-labelledby="tab-downloads">
+        <div class="section-heading">
+          
+          <button class="text-button" id="clear-jobs" type="button">履歴を消去</button>
+        </div>
+        <div class="job-list" id="job-list" aria-live="polite"></div>
+        <div class="empty empty-small" id="job-empty" hidden>
+          <h2>ダウンロードはありません</h2>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer" id="media-footer">
+      <label class="check-all">
+        <input type="checkbox" id="select-all">
+        <span>すべて選択</span>
+      </label>
+      <button class="primary" id="save-selected" type="button" disabled>選択を保存</button>
+    </footer>
+
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+    <div class="menu-layer" id="menu-layer" hidden></div>
+  </div>
+  <script src="ui-kit.js"></script>
+<script src="lib/common.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

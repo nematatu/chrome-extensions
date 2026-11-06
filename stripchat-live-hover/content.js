@@ -28,7 +28,7 @@
     session.state = state;
     const labels = {
       loading: "読み込み中…",
-      playing: "LIVE · 無音",
+      playing: "LIVE 無音",
       waiting: "再接続中…",
       error: "プレビューできません"
     };

@@ -44,6 +44,8 @@
     const runtime = Object.create(native.runtime);
     Object.defineProperty(runtime, 'lastError', { get: () => callbackError || native.runtime.lastError });
     runtime.getURL = path => path === '' ? native.runtime.getURL('') : native.runtime.getURL(`modules/${id}/${path}`);
+    if (module.options && native.tabs) runtime.openOptionsPage = callback => deliver(Promise.resolve().then(() =>
+      native.tabs.create({ url: native.runtime.getURL(`modules/${id}/${module.options}`) })).then(() => undefined), callback);
     runtime.sendMessage = (...args) => {
       const callback = typeof args.at(-1) === 'function' ? args.pop() : undefined;
       if (typeof args[0] === 'string') throw new Error('外部拡張への通信には対応していません。');
@@ -153,6 +155,14 @@
         if (!response?.ok) throw new Error(response?.error || 'ダウンロードを開始できませんでした。');
         return response.downloadId;
       }), callback);
+      // Never expose Chrome's global filename event from a module page. The
+      // root service worker owns download naming and does not register it.
+      const filenameListeners = new Set();
+      scoped.downloads.onDeterminingFilename = {
+        addListener: listener => filenameListeners.add(listener),
+        removeListener: listener => filenameListeners.delete(listener),
+        hasListener: listener => filenameListeners.has(listener),
+      };
     }
     if (worker && hooks.decorate) hooks.decorate(module, scoped, deliver);
     return scoped;

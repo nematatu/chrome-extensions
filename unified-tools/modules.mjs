@@ -1,9 +1,12 @@
 export const modules = [
   {
     "id": "instagram",
-    "name": "Instagram Media Downloader",
+    "name": "better-ig",
     "source": "instagram-media-downloader",
     "files": [
+      "ui-kit.js",
+      "ui-tokens.css",
+      "UI-LICENSES.txt",
       "background.js",
       "bridge.js",
       "content.js",
@@ -11,7 +14,11 @@ export const modules = [
       "instagram-api.js",
       "popup.css",
       "popup.html",
-      "popup.js"
+      "popup.js",
+      "quality-core.js",
+      "quality-content.js",
+      "quality.css",
+      "LICENSE"
     ],
     "worker": "background.js",
     "popup": "popup.html",
@@ -20,7 +27,19 @@ export const modules = [
     ],
     "contentStorage": {
       "local": [],
-      "sync": []
+      "sync": [
+        "downloadEnabled",
+        "enabled",
+        "rotateLive"
+      ]
+    },
+    "portable": {
+      "area": "sync",
+      "keys": [
+        "downloadEnabled",
+        "enabled",
+        "rotateLive"
+      ]
     }
   },
   {
@@ -28,6 +47,9 @@ export const modules = [
     "name": "Gofile 動画・画像一括ダウンローダー",
     "source": "gofile-bulk-video-downloader",
     "files": [
+      "ui-kit.js",
+      "ui-tokens.css",
+      "UI-LICENSES.txt",
       "background.js",
       "collector.js",
       "content.js",
@@ -49,6 +71,9 @@ export const modules = [
     "name": "Google Photos Album Sorter",
     "source": "GooglePhoto-utils",
     "files": [
+      "ui-kit.js",
+      "ui-tokens.css",
+      "UI-LICENSES.txt",
       "src/content.css",
       "src/content.js",
       "src/page-bridge.js"
@@ -73,6 +98,9 @@ export const modules = [
     "name": "バドスピ 高画質画像ダウンローダー",
     "source": "badspi-hq-downloader",
     "files": [
+      "ui-kit.js",
+      "ui-tokens.css",
+      "UI-LICENSES.txt",
       "LICENSE",
       "background.js",
       "content.css",
@@ -93,6 +121,9 @@ export const modules = [
     "name": "Birdscore Popup",
     "source": "birdcore-popup",
     "files": [
+      "ui-kit.js",
+      "ui-tokens.css",
+      "UI-LICENSES.txt",
       "config.json",
       "court-youtube.json",
       "icons/icon128.png",
@@ -116,6 +147,9 @@ export const modules = [
     "name": "インハイTV 試合リンク",
     "source": "inhigh-tv-match-links",
     "files": [
+      "ui-kit.js",
+      "ui-tokens.css",
+      "UI-LICENSES.txt",
       "birdscore-content.css",
       "birdscore-content.js",
       "data/matches.json",
@@ -133,6 +167,9 @@ export const modules = [
     "name": "インハイTV スキップ操作",
     "source": "inhigh-tv-skip-extension",
     "files": [
+      "ui-kit.js",
+      "ui-tokens.css",
+      "UI-LICENSES.txt",
       "content.css",
       "content.js",
       "options.css",
@@ -158,40 +195,13 @@ export const modules = [
     }
   },
   {
-    "id": "instagramhq",
-    "name": "Instagram High Quality Images",
-    "source": "instagram-high-quality-images",
-    "files": [
-      "LICENSE",
-      "content.css",
-      "content.js",
-      "popup.css",
-      "popup.html",
-      "popup.js",
-      "quality-core.js"
-    ],
-    "popup": "popup.html",
-    "startTypes": [],
-    "contentStorage": {
-      "local": [],
-      "sync": [
-        "enabled",
-        "rotateLive"
-      ]
-    },
-    "portable": {
-      "area": "sync",
-      "keys": [
-        "enabled",
-        "rotateLive"
-      ]
-    }
-  },
-  {
     "id": "kltra",
     "name": "KLTRA 弾幕チャット",
     "source": "kltra-danmaku",
     "files": [
+      "ui-kit.js",
+      "ui-tokens.css",
+      "UI-LICENSES.txt",
       "background.js",
       "chat.js",
       "danmaku.css",
@@ -240,6 +250,9 @@ export const modules = [
     "name": "全国高体連バドミントン 写真送り修正",
     "source": "koutairen-gallery-fix",
     "files": [
+      "ui-kit.js",
+      "ui-tokens.css",
+      "UI-LICENSES.txt",
       "LICENSE",
       "content.js",
       "viewer.css"
@@ -255,6 +268,9 @@ export const modules = [
     "name": "Momoniji 漫画ビューア・一括保存",
     "source": "momoniji-manga-viewer/extension",
     "files": [
+      "ui-kit.js",
+      "ui-tokens.css",
+      "UI-LICENSES.txt",
       "background.js",
       "content.js",
       "download-core.js",
@@ -285,6 +301,9 @@ export const modules = [
     "name": "ページ動画・画像 一括保存",
     "source": "page-media-bulk-downloader",
     "files": [
+      "ui-kit.js",
+      "ui-tokens.css",
+      "UI-LICENSES.txt",
       "background.js",
       "collector.js",
       "content.js",
@@ -313,6 +332,9 @@ export const modules = [
     "name": "R2 Image Preview",
     "source": "r2-image-preview",
     "files": [
+      "ui-kit.js",
+      "ui-tokens.css",
+      "UI-LICENSES.txt",
       "content.css",
       "content.js",
       "options.css",
@@ -347,6 +369,9 @@ export const modules = [
     "name": "SMASH and NET. TV Photo Gallery Plus",
     "source": "smashAndNetTV-better-photo-garally",
     "files": [
+      "ui-kit.js",
+      "ui-tokens.css",
+      "UI-LICENSES.txt",
       "background.js",
       "content.js",
       "styles.css",
@@ -366,6 +391,9 @@ export const modules = [
     "name": "Stripchat ライブ・ホバープレビュー",
     "source": "stripchat-live-hover",
     "files": [
+      "ui-kit.js",
+      "ui-tokens.css",
+      "UI-LICENSES.txt",
       "content.css",
       "content.js",
       "core.js",
@@ -382,6 +410,9 @@ export const modules = [
     "name": "Sushida Log",
     "source": "sushida-log",
     "files": [
+      "ui-kit.js",
+      "ui-tokens.css",
+      "UI-LICENSES.txt",
       "src/background.js",
       "src/content.js",
       "src/page-bridge.js",
@@ -414,6 +445,9 @@ export const modules = [
     "name": "Tweetfile 動画一括ダウンローダー",
     "source": "tweetfile-video-downloader",
     "files": [
+      "ui-kit.js",
+      "ui-tokens.css",
+      "UI-LICENSES.txt",
       "background.js",
       "content.js",
       "hls.js",
@@ -439,6 +473,9 @@ export const modules = [
     "name": "X Hashtag Autofill",
     "source": "x-hashtag-autofill",
     "files": [
+      "ui-kit.js",
+      "ui-tokens.css",
+      "UI-LICENSES.txt",
       "LICENSE",
       "content.js",
       "popup.css",
@@ -465,6 +502,9 @@ export const modules = [
     "name": "YouTube 範囲指定MP4クリップ",
     "source": "youtube-five-second-clip",
     "files": [
+      "ui-kit.js",
+      "ui-tokens.css",
+      "UI-LICENSES.txt",
       "background.js",
       "clip.js",
       "collector.js",
@@ -483,6 +523,48 @@ export const modules = [
     "offscreen": "offscreen.html",
     "startTypes": [
       "clip"
+    ],
+    "contentStorage": {
+      "local": [],
+      "sync": []
+    }
+  },
+  {
+    "id": "mediasaver",
+    "name": "Media Saver",
+    "source": "media-saver",
+    "files": [
+      "ui-kit.js",
+      "ui-tokens.css",
+      "UI-LICENSES.txt",
+      "background.js",
+      "content.js",
+      "icons/icon16.png",
+      "icons/icon32.png",
+      "icons/icon48.png",
+      "icons/icon128.png",
+      "lib/common.js",
+      "lib/dash.js",
+      "lib/hls.js",
+      "lib/mp4.js",
+      "offscreen.html",
+      "offscreen.js",
+      "options.html",
+      "options.js",
+      "popup.html",
+      "popup.js",
+      "ui.css",
+      "vendor/mux.js-LICENSE",
+      "vendor/mux.min.js"
+    ],
+    "worker": "background.js",
+    "popup": "popup.html",
+    "options": "options.html",
+    "offscreen": "offscreen.html",
+    "startTypes": [
+      "ms:scan",
+      "ms:probe",
+      "ms:start"
     ],
     "contentStorage": {
       "local": [],

@@ -1,0 +1,262 @@
+[
+  {
+    "path": "media-saver/vendor/mux.js-LICENSE",
+    "hash": "1a3c5bb355ae9ea7f0e8e92836b72189c7acf85a487dd8706d5f1dfff9bf7d3d"
+  },
+  {
+    "path": "media-saver/vendor/mux.min.js",
+    "hash": "94cc4bb58e26b96e9160bd9fd7fe0eeae171f0ffb80086e570f8991e1f210ffa"
+  },
+  {
+    "path": "media-saver/content.js",
+    "hash": "b0ae0eb2f87d812386f6fb9ae689e8dcd1fea13ea999d552471595eedfdbfef4"
+  },
+  {
+    "path": "media-saver/options.html",
+    "hash": "15c7de5274b39c039f5d51f1181cf1445a93eb0da66fe922cc39b650ea0be466"
+  },
+  {
+    "path": "media-saver/lib/common.js",
+    "hash": "6b38fcc75a77df10c05eb2d01731eaf4166a7979ca7b0952df0890e20f2be45e"
+  },
+  {
+    "path": "media-saver/lib/mp4.js",
+    "hash": "952bad3bd64033e3ded57df34a5308cdc0c227d5002c85d42d0dfdcd24389b03"
+  },
+  {
+    "path": "media-saver/lib/hls.js",
+    "hash": "e587a33d89308ec32d1efd34ad1597a7c073d4fad4f0aee1c79016752d16a347"
+  },
+  {
+    "path": "media-saver/lib/dash.js",
+    "hash": "9f24e3cb645eba2d5c356a4c8d0c0ce356005bc1a308ffa6e2f4bee069dd46b5"
+  },
+  {
+    "path": "media-saver/offscreen.js",
+    "hash": "19121fb938bb94717f81e894be85364756d9e093324e4bb302636e74bfc46e75"
+  },
+  {
+    "path": "media-saver/manifest.json",
+    "hash": "f1b3c33190809946cb032822c1f5cb5141f58f7c6ee4e2c85398d3b3d163e94d"
+  },
+  {
+    "path": "media-saver/icons/icon32.png",
+    "hash": "732f1011d1e1301043940254a980c29b17a058b9ad03e5be0be8b175dbaa0fad"
+  },
+  {
+    "path": "media-saver/icons/icon128.png",
+    "hash": "d9535107aaaff369ef80cf885e985641f8192225b84bb2ef5f0f2dd78d6f1b33"
+  },
+  {
+    "path": "media-saver/icons/icon48.png",
+    "hash": "c80b1ca929bf1af7ce3caa9131fa9cb2f1eba42b3418b75b7272343c7e165d10"
+  },
+  {
+    "path": "media-saver/icons/icon16.png",
+    "hash": "d404238b0472ccfbc75d3891f9716dc6c209c0db944254618ceac913b1a204cb"
+  },
+  {
+    "path": "media-saver/ui.css",
+    "hash": "9a9954134399630eb51bf75f00a35a33461316de79ec214e367ee60abb82b8bf"
+  },
+  {
+    "path": "media-saver/README.md",
+    "hash": "944d1a881282c569f44c8f1249094c98e62a3a68638b78dec3e589eb22988c0b"
+  },
+  {
+    "path": "media-saver/tests/fixtures/dash-single/manifest.mpd",
+    "hash": "8a3ea58ad679f6a8a7d3f104ea30b069e6e78369b5ac10faafa2472199b535f3"
+  },
+  {
+    "path": "media-saver/tests/fixtures/dash-single/manifest-stream1.mp4",
+    "hash": "2c32f833145a3081b33685c232892cc6367aea69fcce9ba11483e39f969ac687"
+  },
+  {
+    "path": "media-saver/tests/fixtures/dash-single/manifest-stream0.mp4",
+    "hash": "44098c97d6e6f785ff40d5bd8c3f3bf3de92b3145fc9d87e8e2b62264e6358e5"
+  },
+  {
+    "path": "media-saver/tests/manifest.test.cjs",
+    "hash": "cccbe6eb112cc1b1033a720a65c9f1eb4a26a5caf405f33efbf2168e1aedb371"
+  },
+  {
+    "path": "media-saver/tests/common.test.cjs",
+    "hash": "20643d2ad907c449e442f967dd54b3bc2b49c2fbee64f75b76914b1163f1d3fe"
+  },
+  {
+    "path": "media-saver/tests/hls.test.cjs",
+    "hash": "70ed404b2e663325d6d9852204ac0ec8fc3126a77bbd97a77f6f70df274456b8"
+  },
+  {
+    "path": "media-saver/tests/helpers.cjs",
+    "hash": "009011e70b4817502607fd679b73dd1cc77661c5587451826eadf59c9af9a95c"
+  },
+  {
+    "path": "media-saver/tests/browser.cjs",
+    "hash": "361efc3d06c2ba29ed5f003a5f23643cbb8cf4d7a3344bf92e75259edfbcd686"
+  },
+  {
+    "path": "media-saver/tests/dash.test.cjs",
+    "hash": "ca65de12558570ea20486416f2bde02fe318d13f167bea122b76ea1a8305e8da"
+  },
+  {
+    "path": "media-saver/options.js",
+    "hash": "544c6a0fde9ea374bb44c7d59157e186b5d3fdb2078202847f2b120046d33598"
+  },
+  {
+    "path": "media-saver/popup.html",
+    "hash": "956cbf805f5e631f14b9952c3066ea43e236ba93bd87f8075f15491fee016314"
+  },
+  {
+    "path": "media-saver/background.js",
+    "hash": "c919678a7d9f91acc0e2d15e6179518fc631a462cb4d758f4e1da6d160440cf3"
+  },
+  {
+    "path": "media-saver/offscreen.html",
+    "hash": "378b69f3cb4bfc66295731c43b048589ba1295e737069384b2cc8a09abf00914"
+  },
+  {
+    "path": "media-saver/popup.js",
+    "hash": "5ec93bf0568f6df32b2547c501f6ca9f42dfe458524ee186db6d71a5d2e8e401"
+  },
+  {
+    "path": "media-saver/tests/fixtures/tone.mp3",
+    "hash": "223673ae5685e1087fe4b182add5b82c9d9d6fc0ea463aa0b63a331092b6161c"
+  },
+  {
+    "path": "media-saver/tests/fixtures/gallery.jpg",
+    "hash": "33031c871c996e30557a494c0d568bf2ef4624bcfc9f8656165bc0eda1a7bc04"
+  },
+  {
+    "path": "media-saver/tests/fixtures/list.m3u8",
+    "hash": "4e9ad0c5cdcbfeec02b0c5b3487cde2f1d3100db61940c5118a94fd69a90e71f"
+  },
+  {
+    "path": "media-saver/tests/fixtures/hls-fmp4/stream.m3u8",
+    "hash": "b1eb53f1891b17dea1fa2909f21ef82be76c92f4eebecc03518b96416ea85cc3"
+  },
+  {
+    "path": "media-saver/tests/fixtures/hls-fmp4/init.mp4",
+    "hash": "d33654c74f342c4fa38551b367dfe8a3d37d1e12c9a7a5f3b133d237368dd75e"
+  },
+  {
+    "path": "media-saver/tests/fixtures/hls-fmp4/seg_000.m4s",
+    "hash": "af46988887ce03710efa6b59098cc9aeb89c1dff2a7608367e7bf2a68550adcd"
+  },
+  {
+    "path": "media-saver/tests/fixtures/hls-fmp4/seg_001.m4s",
+    "hash": "b477554702a2b4dac5597ef722f16a7dfd503cfb79a8bcccbc3e7aa45df0d084"
+  },
+  {
+    "path": "media-saver/tests/fixtures/clip.mp4",
+    "hash": "e8e8d7e50a945d126eff72a00ce64c2bd18d2c83f86988a9dddce923b3a21266"
+  },
+  {
+    "path": "media-saver/tests/fixtures/photo.png",
+    "hash": "9056c8734477e98a425551662463c76cb35494a168f16b65441f102095b9d1e0"
+  },
+  {
+    "path": "media-saver/tests/fixtures/segment1.ts",
+    "hash": "0013625646ee4ead185b7d99e65271db18a2bbbe84887f079485f53356bac516"
+  },
+  {
+    "path": "media-saver/tests/fixtures/tiny.png",
+    "hash": "1f163b441b8543d3d4c6386b76dde285497ed42a474e80f9d6e3f933041e00d9"
+  },
+  {
+    "path": "media-saver/tests/fixtures/segment0.ts",
+    "hash": "65befd9f6ba735431af1474571168b3a095ec0c866ddc0fa6409742c7feb3cca"
+  },
+  {
+    "path": "media-saver/tools/make-icons.cjs",
+    "hash": "4a9640a2b83d00590eb4e751f1e0edf966c70c447d11c1328f173d53b3cfadd2"
+  },
+  {
+    "path": "media-saver/tests/fixtures/dash-list/manifest.mpd",
+    "hash": "c83f7791ca5bd6d5025726181edf1f24815d561eaff2f447dc0158961f54fe75"
+  },
+  {
+    "path": "media-saver/tests/fixtures/dash-list/init-1.m4s",
+    "hash": "72924a2bd9c5be19a399c5cf3bef868f784e2446458a0492fed71eb9ea5b2cf7"
+  },
+  {
+    "path": "media-saver/tests/fixtures/dash-list/init-0.m4s",
+    "hash": "886f4662b2407d3db421981794983a44233d9d34706f8b189fceadd2ea766608"
+  },
+  {
+    "path": "media-saver/tests/fixtures/dash-list/chunk-1-00002.m4s",
+    "hash": "37fa428e037506a56dbf31154c1e928fdf5bbc697534eff50d82508baba65545"
+  },
+  {
+    "path": "media-saver/tests/fixtures/dash-list/chunk-1-00001.m4s",
+    "hash": "9bee33b4adba8e0f4bd6ed3d3b47351f0596e649aa944af38113327e5b377a93"
+  },
+  {
+    "path": "media-saver/tests/fixtures/dash-list/chunk-0-00002.m4s",
+    "hash": "fb564aacde88561d8f7df77a01ee590e8409db456db101ce2a5d2fe576350b0a"
+  },
+  {
+    "path": "media-saver/tests/fixtures/dash-list/chunk-0-00001.m4s",
+    "hash": "ab52dc4d662cd652a6d844d984466c6c38ec0b660571d61e16d87c2799770bdb"
+  },
+  {
+    "path": "media-saver/tests/fixtures/dash-template/manifest.mpd",
+    "hash": "47288d8400f7c1a4101e3c37014fc18d0281b959330585cdeee864c4380c704e"
+  },
+  {
+    "path": "media-saver/tests/fixtures/dash-template/init-1.m4s",
+    "hash": "72924a2bd9c5be19a399c5cf3bef868f784e2446458a0492fed71eb9ea5b2cf7"
+  },
+  {
+    "path": "media-saver/tests/fixtures/dash-template/init-0.m4s",
+    "hash": "886f4662b2407d3db421981794983a44233d9d34706f8b189fceadd2ea766608"
+  },
+  {
+    "path": "media-saver/tests/fixtures/dash-template/chunk-1-00002.m4s",
+    "hash": "37fa428e037506a56dbf31154c1e928fdf5bbc697534eff50d82508baba65545"
+  },
+  {
+    "path": "media-saver/tests/fixtures/dash-template/chunk-1-00001.m4s",
+    "hash": "9bee33b4adba8e0f4bd6ed3d3b47351f0596e649aa944af38113327e5b377a93"
+  },
+  {
+    "path": "media-saver/tests/fixtures/dash-template/chunk-0-00002.m4s",
+    "hash": "fb564aacde88561d8f7df77a01ee590e8409db456db101ce2a5d2fe576350b0a"
+  },
+  {
+    "path": "media-saver/tests/fixtures/dash-template/chunk-0-00001.m4s",
+    "hash": "ab52dc4d662cd652a6d844d984466c6c38ec0b660571d61e16d87c2799770bdb"
+  },
+  {
+    "path": "media-saver/tests/fixtures/hls-av/stream_0.m3u8",
+    "hash": "618100a5bea31428ad4c7f900d7c3cec9a1b2ac9a44997c459b79052a40fc87a"
+  },
+  {
+    "path": "media-saver/tests/fixtures/hls-av/seg_0_001.ts",
+    "hash": "37695ee3a92b8daea0789179d1eaef1de6254b7b30b2125599d84c60f8d295b3"
+  },
+  {
+    "path": "media-saver/tests/fixtures/hls-av/seg_0_000.ts",
+    "hash": "3d2ee28a4e19f2dd8328c3762b81f7c98a637d0bfa8610a7d006e0bddafd761d"
+  },
+  {
+    "path": "media-saver/tests/fixtures/hls-av/stream_1.m3u8",
+    "hash": "e243c56ea5db5bccc011a396186c39d3c3f99949f4c6c06c7b1d0923236f8021"
+  },
+  {
+    "path": "media-saver/tests/fixtures/hls-av/seg_1_002.ts",
+    "hash": "32a2850c06545a6eba28703413ed1135c913f907aac8c36d1e853e1cb74570b4"
+  },
+  {
+    "path": "media-saver/tests/fixtures/hls-av/master.m3u8",
+    "hash": "423a95217383ce4e29c2966b0432fd1394353dbd3a4aedd64af5272bc55151df"
+  },
+  {
+    "path": "media-saver/tests/fixtures/hls-av/seg_1_001.ts",
+    "hash": "1b25239940049f3991f67c8969ca580e1d7aee91491661aa0c13ec5ad0d3a68d"
+  },
+  {
+    "path": "media-saver/tests/fixtures/hls-av/seg_1_000.ts",
+    "hash": "6ece4d691afa7f2b38a231b93184e543a20b6e52e276dbe8681663f16ba575a7"
+  }
+]

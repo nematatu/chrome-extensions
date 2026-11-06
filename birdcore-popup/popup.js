@@ -170,7 +170,7 @@
   const setStatus = (text, isError = false) => {
     if (!els.status) return;
     els.status.textContent = text;
-    els.status.style.color = isError ? "#b42318" : "";
+    els.status.style.color = isError ? "var(--mt-red-11)" : "";
   };
 
   const handleToggleDetails = event => {
@@ -181,10 +181,16 @@
     event.currentTarget.setAttribute("aria-expanded", isOpen ? "true" : "false");
   };
 
+  document.querySelectorAll("[data-ui-icon]").forEach(node => {
+    node.innerHTML = MyToolsUI.icon(node.dataset.uiIcon);
+  });
+
   const bindToggleHandlers = root => {
     if (!root) return;
     root.querySelectorAll(".match-handle").forEach(button => {
       if (button.dataset.bound === "true") return;
+      button.innerHTML = MyToolsUI.icon("chevronDown");
+      button.setAttribute("aria-label", "スコア詳細");
       button.dataset.bound = "true";
       const targetId = button.dataset.target;
       const panel = targetId ? document.getElementById(targetId) : null;
@@ -948,12 +954,8 @@
         link.href = youtubeUrl;
         link.target = "_blank";
         link.rel = "noopener";
-        link.innerHTML =
-          '<svg class="youtube-icon" viewBox="0 0 24 24" aria-hidden="true">' +
-          '<path d="M22 8.2c0-1.2-.8-2.2-2-2.4C18.3 5.5 12 5.5 12 5.5s-6.3 0-8 .3C2.8 6 2 7 2 8.2v7.6c0 1.2.8 2.2 2 2.4 1.7.3 8 .3 8 .3s6.3 0 8-.3c1.2-.2 2-1.2 2-2.4V8.2z" fill="currentColor"/>' +
-          '<polygon points="10,9 16,12 10,15" fill="#ffffff"/></svg>' +
-          '<svg class="link-icon" viewBox="0 0 24 24" aria-hidden="true">' +
-          '<path d="M14 3h7v7M10 14L21 3M20 14v6H4V4h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        link.innerHTML = MyToolsUI.icon("play") + MyToolsUI.icon("externalLink");
+        link.setAttribute("aria-label", "YouTubeの配信を開く");
         bandRight.appendChild(link);
       }
     }
@@ -1004,7 +1006,9 @@
     body.appendChild(buildTeamBlock(teamB, true));
     card.appendChild(body);
 
-    const handle = el("button", "match-handle", "≡");
+    const handle = el("button", "match-handle");
+    handle.innerHTML = MyToolsUI.icon("chevronDown");
+    handle.setAttribute("aria-label", "スコア詳細");
     handle.type = "button";
     handle.dataset.target = detailsId;
     handle.setAttribute("aria-expanded", "false");

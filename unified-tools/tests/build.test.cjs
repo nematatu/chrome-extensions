@@ -8,7 +8,7 @@ const crypto = require('node:crypto');
 const {execFileSync} = require('node:child_process');
 const {pathToFileURL} = require('node:url');
 const root = path.resolve(__dirname,'../..');
-const rootFiles = ['build.mjs','modules.mjs','identity.json','runtime.js','client.js','portable.js','transfer.js','offscreen-host.js','popup.html','popup.js','popup.css'];
+const rootFiles = ['build.mjs','modules.mjs','identity.json','runtime.js','client.js','portable.js','transfer.js','offscreen-host.js','popup.html','popup.jsx','popup.css'];
 const registry = () => import(pathToFileURL(path.join(root,'unified-tools/modules.mjs')).href).then(value=>value.modules);
 async function files(folder, prefix='') {
  const result=[];
@@ -29,6 +29,7 @@ function run(target, workspace=root) {
 async function fixture(temp) {
  const workspace=path.join(temp,'workspace'),tool=path.join(workspace,'unified-tools');
  await fs.mkdir(tool,{recursive:true});
+ await fs.symlink(path.join(root,'unified-tools/node_modules'),path.join(tool,'node_modules'),'dir');
  for(const file of rootFiles)await fs.copyFile(path.join(root,'unified-tools',file),path.join(tool,file));
  for(const module of await registry()){
   for(const file of ['manifest.json',...module.files]) {
@@ -55,6 +56,9 @@ test('all 19 modules build deterministically with valid manifest and complete re
   if(file.endsWith('.mjs'))for(const match of source.toString().matchAll(/(?:from\s*|import\s*)["'](\.[^"']+)["']/g))assert.ok(list.includes(path.normalize(path.join(path.dirname(file),match[1]))),`${file} import ${match[1]}`);
  }
  const manifest=JSON.parse(await fs.readFile(path.join(a,'manifest.json'))),config=configuration(a);
+ const licenses=await fs.readFile(path.join(a,'THIRD_PARTY_LICENSES.txt'),'utf8');
+ for(const name of ['@radix-ui/react-tabs','@radix-ui/react-switch','@radix-ui/colors','lucide-react','react-dom'])assert.ok(licenses.includes(name),name);
+ assert.match(licenses,/Permission is hereby granted/);assert.match(licenses,/WorkOS/);assert.match(licenses,/Lucide/);
  assert.equal(config.modules.length,19);assert.equal(manifest.manifest_version,3);assert.equal(manifest.content_scripts,undefined);assert.equal(manifest.incognito,'not_allowed');assert.equal(manifest.minimum_chrome_version,'120');
  for(const permission of ['scripting','alarms','offscreen','contextMenus','webRequest'])assert.ok(manifest.permissions.includes(permission));
  assert.ok(manifest.host_permissions.includes('https://*/*'));
@@ -83,7 +87,7 @@ test('all 19 modules build deterministically with valid manifest and complete re
  }
  const worker=await fs.readFile(path.join(a,'worker.js'),'utf8');
  for(const module of sourceModules.filter(module=>module.worker))assert.ok(worker.includes(`modules/${module.id}/${module.worker}`));
- const offscreen=await fs.readFile(path.join(a,'offscreen.html'),'utf8');assert.equal([...offscreen.matchAll(/<iframe /g)].length,3);assert.ok(offscreen.indexOf('offscreen-host.js')<offscreen.indexOf('<iframe'));
+ const offscreen=await fs.readFile(path.join(a,'offscreen.html'),'utf8');assert.equal([...offscreen.matchAll(/<iframe /g)].length,4);assert.ok(offscreen.indexOf('offscreen-host.js')<offscreen.indexOf('<iframe'));
  run(a);assert.deepEqual(list,await files(a));
  }finally{await fs.rm(temp,{recursive:true,force:true});}
 });
@@ -100,7 +104,7 @@ test('generated wrappers bind API to module and preserve vendor/global exports',
   for(const file of module.files.filter(file=>file.startsWith('vendor/')))assert.deepEqual(await fs.readFile(path.join(temp,'modules',module.id,file)),await fs.readFile(path.join(root,module.source,file)));
  }
  const context=vm.createContext({globalThis:null,MyToolsClient:{moduleChrome:()=>({})}});context.globalThis=context;
- for(const [id,file,name] of [['instagram','core.js','IGMediaCore'],['gofile','core.js','GofileBulkCore'],['pagemedia','core.js','PageMediaBulkCore'],['badspi','quality-core.js','BadspiImageCore'],['instagramhq','quality-core.js','InstagramHighQualityCore'],['stripchat','core.js','StripchatLiveHoverCore'],['momoniji','download-core.js','MomonijiDownloads'],['momoniji','library-core.js','MomonijiLibrary'],['youtube','clip.js','YouTubeFiveSecondClip']]) {
+ for(const [id,file,name] of [['instagram','core.js','IGMediaCore'],['gofile','core.js','GofileBulkCore'],['pagemedia','core.js','PageMediaBulkCore'],['badspi','quality-core.js','BadspiImageCore'],['instagram','quality-core.js','InstagramHighQualityCore'],['stripchat','core.js','StripchatLiveHoverCore'],['momoniji','download-core.js','MomonijiDownloads'],['momoniji','library-core.js','MomonijiLibrary'],['youtube','clip.js','YouTubeFiveSecondClip']]) {
   vm.runInContext(await fs.readFile(path.join(temp,'modules',id,file),'utf8'),context);assert.ok(context[name],name);
  }
  }finally{await fs.rm(temp,{recursive:true,force:true});}
@@ -119,7 +123,7 @@ test('failed generation preserves previous output and source-manifest additions 
  run(output,workspace);await fs.writeFile(path.join(output,'sentinel.txt'),'previous working extension');const before=await snapshot();
  const module=(await registry()).find(module=>module.id==='gofile'),missing=path.join(workspace,module.source,'content.js'),original=await fs.readFile(missing);await fs.rm(missing);
  assert.throws(()=>run(output,workspace),/ENOENT/);assert.deepEqual(await snapshot(),before);assert.deepEqual((await fs.readdir(temp)).sort(),['output','workspace']);await fs.writeFile(missing,original);
- const invalid=path.join(tool,'popup.js');await fs.writeFile(invalid,'function broken( {');assert.throws(()=>run(output,workspace),/SyntaxError/);assert.deepEqual(await snapshot(),before);await fs.copyFile(path.join(root,'unified-tools/popup.js'),invalid);
+ const invalid=path.join(tool,'popup.jsx');await fs.writeFile(invalid,'function broken( {');assert.throws(()=>run(output,workspace),/ERROR|Expected|Unexpected/);assert.deepEqual(await snapshot(),before);await fs.copyFile(path.join(root,'unified-tools/popup.jsx'),invalid);
  const added=path.join(workspace,'new-extension');await fs.mkdir(added);await fs.writeFile(path.join(added,'manifest.json'),'{}');assert.throws(()=>run(output,workspace),/Source manifests and module registry differ/);assert.deepEqual(await snapshot(),before);await fs.rm(added,{recursive:true});
  run(output,workspace);assert.ok(!(await files(output)).includes('sentinel.txt'));assert.deepEqual((await fs.readdir(temp)).sort(),['output','workspace']);
  }finally{await fs.rm(temp,{recursive:true,force:true});}

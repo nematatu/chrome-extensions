@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const portable = require('../portable.js');
 const transfer = require('../transfer.js');
 test('portable preferences contain only explicit user settings and preserve exact values', () => {
-  const preferences = { instagramhq: { enabled: false, rotateLive: true }, inhighskip: { skipSeconds: 7, keyboardEnabled: false }, kltra: { enabled: true, fontSize: 25, translationSource: 'id', translationEngine: 'local' }, r2: { baseUrlTemplate: 'https://images.example/{bucket}/{key}', maxWidth: 280, hoverOnly: true }, xhashtags: { hashtags: '#badminton\n#test' }, googlephotos: { 'gpu-panel-collapsed-v1': false }, sushida: { settings: { settingsVersion: 2, autoDownloadCsv: true, autoDownloadJson: true, autoResultNetworkRecord: false } } };
+  const preferences = { instagram: { downloadEnabled: true, enabled: false, rotateLive: true }, inhighskip: { skipSeconds: 7, keyboardEnabled: false }, kltra: { enabled: true, fontSize: 25, translationSource: 'id', translationEngine: 'local' }, r2: { baseUrlTemplate: 'https://images.example/{bucket}/{key}', maxWidth: 280, hoverOnly: true }, xhashtags: { hashtags: '#badminton\n#test' }, googlephotos: { 'gpu-panel-collapsed-v1': false }, sushida: { settings: { settingsVersion: 2, autoDownloadCsv: true, autoDownloadJson: true, autoResultNetworkRecord: false } } };
   assert.deepEqual(portable.validate(preferences), preferences);
   const backup = transfer.makeBackup({ enabled: { instagram: true, gofile: false } }, {}, preferences);
   assert.deepEqual(transfer.parseBackup(JSON.parse(JSON.stringify(backup))).preferences, preferences);
@@ -19,4 +19,20 @@ test('legacy two-module backup accepts registry expansion and unknown modules st
   const current = transfer.makeBackup({ enabled: Object.fromEntries(modules.map(module => [module.id, true])) }, {});
   assert.equal(Object.keys(current.settings.enabled).length, 19);
   assert.throws(() => transfer.parseBackup({ ...legacy, settings: { enabled: { unknown: true } } }));
+});
+
+test('legacy Instagram backup maps four independent module states to better-ig',()=>{
+ transfer.configure([{id:'instagram'},{id:'gofile'}]);
+ for(const download of [false,true])for(const high of [false,true]){
+  const old={format:'nematatu-tools',version:1,settings:{enabled:{instagram:download,instagramhq:high,gofile:false}},preferences:{instagramhq:{enabled:true,rotateLive:true}},instagram:{savedMedia:{'m:1:2:image':1}}};
+  const result=transfer.parseBackup(old);
+  assert.deepEqual(result.settings.enabled,{instagram:download||high,gofile:false});
+  assert.deepEqual(result.preferences,{instagram:{downloadEnabled:download,enabled:high,rotateLive:high}});
+  assert.deepEqual(transfer.parseBackup(JSON.parse(JSON.stringify(result))),result);
+ }
+});
+test('legacy HQ preferences are accepted but current explicit settings win',()=>{
+ assert.deepEqual(portable.validate({instagramhq:{enabled:true,rotateLive:false},instagram:{enabled:false,downloadEnabled:true}}),{instagram:{enabled:false,rotateLive:false,downloadEnabled:true}});
+ assert.throws(()=>portable.validate({instagramhq:{downloadEnabled:true}}));
+ assert.throws(()=>transfer.parseBackup({format:'nematatu-tools',version:1,settings:{enabled:{instagramhq:'true'}},instagram:{savedMedia:{}}}));
 });

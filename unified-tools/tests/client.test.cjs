@@ -6,7 +6,7 @@ function event() { const listeners = new Set(); return { listeners, addListener:
 function fixture(page = true) {
   const onMessage = event(), onChanged = event(), calls = [];
   const data = { local: {}, sync: {}, session: {} };
-  const chrome = { runtime: { id: 'native', getURL: path => 'chrome-extension://native/' + path, onMessage, sendMessage: (...args) => { calls.push(args); const cb = args.at(-1); if (typeof cb === 'function') cb({ok:true,value:{safe:3}}); else return Promise.resolve({ok:true,value:{safe:3}}); } }, storage: { onChanged }, tabs: { sendMessage: (...args) => { calls.push(args); return Promise.resolve(); } } };
+  const chrome = { runtime: { id: 'native', getURL: path => 'chrome-extension://native/' + path, onMessage, sendMessage: (...args) => { calls.push(args); const cb = args.at(-1); if (typeof cb === 'function') cb({ok:true,value:{safe:3}}); else return Promise.resolve({ok:true,value:{safe:3}}); } }, storage: { onChanged }, tabs: { sendMessage: (...args) => { calls.push(args); return Promise.resolve(); }, create: async value => { calls.push(['create', value]); return {id:1}; } } };
   for (const area of Object.keys(data)) chrome.storage[area] = {
     get(query, callback) { const keys = typeof query === 'string' ? [query] : Array.isArray(query) ? query : query && Object.keys(query); const result = query && !Array.isArray(query) && typeof query === 'object' ? {...query} : {}; for (const [key,value] of Object.entries(data[area])) if (!keys || keys.includes(key)) result[key]=value; if(callback)callback(result);else return Promise.resolve(result); },
     set(value, callback) { Object.assign(data[area], value); if(callback)callback();else return Promise.resolve(); },
@@ -88,6 +88,11 @@ test('manager Instagram bulk request is accepted without opening other module me
   listener({toolModule:'instagram',payload:{type:'ig-download-page'}},{...sender,url:'chrome-extension://native/modules/a/popup.html'},()=>{});
  }
  assert.deepEqual(seen,['ig-download-page']);
+});
+test('module settings open their own options page instead of the manager',async()=>{
+ const f=fixture();f.modules[0].options='options.html';const adapter=f.client.moduleChrome('a');
+ await adapter.runtime.openOptionsPage();
+ assert.deepEqual(JSON.parse(JSON.stringify(f.calls.at(-1))),['create',{url:'chrome-extension://native/modules/a/options.html'}]);
 });
 test('extension pages route download names through the privileged bridge and preserve callback errors',async()=>{
  const f=fixture();f.chrome.downloads={download(){throw Error('unscoped download');}};

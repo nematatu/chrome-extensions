@@ -9,23 +9,19 @@
   const badges = new Map(), menuDefinitions = new Map(), filenameListeners = new Map();
   let config, settings, ready, startupError, boundary = Promise.resolve(), offscreenOpening;
   let presentationWrites = Promise.resolve();
-  const pendingDownloads = new Map(), namedDownloads = new Map(), downloadStarts = new Map();
+  const downloadStarts = new Map();
   const downloadURL = value => { try { const url = new URL(value); url.hash = ''; return url.href; } catch { return String(value); } };
   function startDownload(module, options) {
     const url = downloadURL(options?.url);
     const previous = downloadStarts.get(url) || Promise.resolve();
     const started = previous.catch(() => {}).then(() => new Promise((resolve, reject) => {
-      const request = { module: module.id, options, finished: false };
-      pendingDownloads.set(url, request);
       const finish = downloadId => {
         const error = native.runtime.lastError;
-        if (pendingDownloads.get(url) === request) pendingDownloads.delete(url);
         if (error) { reject(new Error(error.message)); return; }
-        if (!request.finished && Number.isInteger(downloadId)) namedDownloads.set(downloadId, request);
         resolve(downloadId);
       };
       try { native.downloads.download(options, finish); }
-      catch (error) { pendingDownloads.delete(url); reject(error); }
+      catch (error) { reject(error); }
     }));
     downloadStarts.set(url, started);
     started.finally(() => { if (downloadStarts.get(url) === started) downloadStarts.delete(url); }).catch(() => {});
@@ -56,8 +52,13 @@
     const defaults = Object.fromEntries(config.modules.map(module => [module.id, true]));
     if (value === undefined) return { version: 1, enabled: defaults };
     if (!value || value.version !== 1 || Object.keys(value).sort().join() !== 'enabled,version' || !value.enabled || Array.isArray(value.enabled) || typeof value.enabled !== 'object'
-      || Object.entries(value.enabled).some(([id, state]) => !Object.hasOwn(defaults, id) || typeof state !== 'boolean')) throw new Error('保存された設定の形式が不正です。');
-    return { version: 1, enabled: { ...defaults, ...value.enabled } };
+      || Object.entries(value.enabled).some(([id, state]) => (!Object.hasOwn(defaults, id) && !(id === 'instagramhq' && Object.hasOwn(defaults, 'instagram'))) || typeof state !== 'boolean')) throw new Error('保存された設定の形式が不正です。');
+    const merged = { ...defaults, ...value.enabled };
+    if (Object.hasOwn(merged, 'instagramhq')) {
+      merged.instagram = value.enabled.instagram !== false || merged.instagramhq;
+      delete merged.instagramhq;
+    }
+    return { version: 1, enabled: merged };
   }
   async function migrate() {
     await native.storage.local.setAccessLevel?.({ accessLevel: 'TRUSTED_CONTEXTS' });
@@ -75,13 +76,42 @@
     }
     await native.storage.local.set({ [migrationKey]: true });
   }
+  async function migrateInstagram() {
+    const previous = (await native.storage.local.get(settingsKey))[settingsKey];
+    const next = settingsFrom(previous);
+    const oldKeys = ['enabled', 'rotateLive'].map(key => client.prefix('instagramhq') + key);
+    const newKeys = ['downloadEnabled', 'enabled', 'rotateLive'].map(key => client.prefix('instagram') + key);
+    const values = await native.storage.sync.get([...oldKeys, ...newKeys]);
+    const legacy = Object.fromEntries(oldKeys.filter(key => Object.hasOwn(values, key)).map(key => [key.slice(client.prefix('instagramhq').length), values[key]]));
+    if (!Object.hasOwn(previous?.enabled || {}, 'instagramhq') && !Object.keys(legacy).length) return next;
+    const current = Object.fromEntries(newKeys.filter(key => Object.hasOwn(values, key)).map(key => [key.slice(client.prefix('instagram').length), values[key]]));
+    const preferences = globalThis.MyToolsPortable.validate({ instagramhq: legacy, instagram: current }, previous?.enabled || {}).instagram;
+    await native.storage.sync.set(Object.fromEntries(Object.entries(preferences).map(([key, value]) => [client.prefix('instagram') + key, value])));
+    await native.storage.local.set({ [settingsKey]: next });
+    await native.storage.sync.remove(oldKeys);
+    return next;
+  }
   async function reconcile(next) {
     const owned = new Set(config.registrations.map(script => script.id));
     const existing = await native.scripting.getRegisteredContentScripts();
-    const ids = existing.filter(script => owned.has(script.id)).map(script => script.id);
+    const ids = existing.filter(script => owned.has(script.id) || /^tools-instagramhq-\d+$/.test(script.id)).map(script => script.id);
     if (ids.length) await native.scripting.unregisterContentScripts({ ids });
-    const wanted = config.registrations.filter(script => next.enabled[script.module]).map(({ module, ...script }) => script);
-    if (wanted.length) await native.scripting.registerContentScripts(wanted);
+    const wanted = config.registrations.filter(script => next.enabled[script.module]);
+    const failed = [];
+    let registered = 0;
+    // Register one entry at a time. Chrome validates a whole registration batch
+    // atomically, so one unsupported entry must not disable every page feature.
+    for (const script of wanted) {
+      const { module, ...registration } = script;
+      try { await native.scripting.registerContentScripts([registration]); registered += 1; }
+      catch { failed.push(script); }
+    }
+    if (failed.length) {
+      const names = [...new Set(failed.map(script => config.modules.find(module => module.id === script.module)?.name || script.module))];
+      const message = `一部の機能をページに登録できませんでした（${names.join('、')}）。拡張機能を読み込み直してください。`;
+      if (!registered) throw new Error(message);
+      report(message);
+    }
   }
   async function updateBadge() {
     if (!native.action?.setBadgeText) return;
@@ -104,6 +134,66 @@
       await Promise.all(config.modules.map(module => updateMenus(module.id)));
       await updateBadge();
     } catch (error) { if (previous) await reconcile(previous).catch(() => {}); throw error; }
+  }
+  const injectionRuns = new Map();
+  const injectionOrder = { document_start: 0, document_end: 1, document_idle: 2 };
+  const injectionTarget = (tabId, script) => ({ tabId, ...(script.allFrames ? { allFrames: true } : {}) });
+  const injectionFailure = error => new Error(/cannot access|missing host permission|extensions gallery|chrome:\/\//i.test(error?.message || '')
+    ? 'このタブに機能を反映できませんでした。chrome://extensions の My Tools で「サイトへのアクセス」を「すべてのサイト」に変更してから、タブを再読み込みしてください。'
+    : 'このタブに機能を反映できませんでした。タブを再読み込みしてください。');
+  async function pageHasClient(tabId) {
+    const [check] = await native.scripting.executeScript({
+      target: { tabId }, world: 'ISOLATED',
+      func: () => Boolean(globalThis.MyToolsClient)
+    });
+    return check?.result === true;
+  }
+  async function ensureTab(tab) {
+    if (!Number.isInteger(tab?.id) || !tab.url || tab.status === 'loading') return { ok: true, matched: 0, injected: 0 };
+    const matchesTab = script => script.matches.some(pattern => client.matches(pattern, tab.url))
+      && !(script.excludeMatches || []).some(pattern => client.matches(pattern, tab.url));
+    const direct = config.registrations.filter(script => settings.enabled[script.module] && matchesTab(script));
+    const directIds = new Set(direct.map(script => script.id));
+    const matchedModules = new Set(direct.map(script => script.module));
+    // A module matched by its top-level page can own an all-frames registration
+    // for an already-present embedded player/chat (KLTRA's Cbox). Inject those
+    // frames too.
+    const scripts = config.registrations.filter(script => settings.enabled[script.module]
+      && (directIds.has(script.id) || (script.allFrames && matchedModules.has(script.module))));
+    if (!scripts.length) return { ok: true, matched: 0, injected: 0 };
+    if (injectionRuns.has(tab.id)) return injectionRuns.get(tab.id);
+    const run = (async () => {
+      if (await pageHasClient(tab.id)) return { ok: true, matched: scripts.length, injected: 0 };
+      const ordered = [...scripts].sort((a, b) => (injectionOrder[a.runAt] ?? 2) - (injectionOrder[b.runAt] ?? 2)
+        || (a.world === 'MAIN' ? 0 : 1) - (b.world === 'MAIN' ? 0 : 1));
+      const css = new Set(), failed = [];
+      let injected = 0;
+      for (const script of ordered) {
+        try {
+          for (const file of script.css || []) {
+            const key = `${script.allFrames ? 'all' : 'main'}:${file}`;
+            if (css.has(key)) continue;
+            css.add(key);
+            await native.scripting.insertCSS({ target: injectionTarget(tab.id, script), files: [file] }).catch(() => {});
+          }
+          await native.scripting.executeScript({ target: injectionTarget(tab.id, script), world: script.world || 'ISOLATED', files: script.js });
+          injected += 1;
+        } catch (error) { failed.push({ script, error }); }
+      }
+      if (!injected && failed.length) throw injectionFailure(failed[0].error);
+      return { ok: true, matched: scripts.length, injected, failed: failed.map(({ script }) => script.module) };
+    })().finally(() => injectionRuns.delete(tab.id));
+    injectionRuns.set(tab.id, run);
+    return run;
+  }
+  async function ensureOpenTabs() {
+    if (!native.tabs?.query) return;
+    const tabs = await native.tabs.query({});
+    const queue = tabs.filter(tab => Number.isInteger(tab.id) && tab.url && tab.status !== 'loading');
+    let cursor = 0;
+    await Promise.all(Array.from({ length: Math.min(4, queue.length) }, async () => {
+      while (cursor < queue.length) await ensureTab(queue[cursor++]).catch(() => {});
+    }));
   }
   const history = () => globalThis.IGMediaHistory;
   async function result() {
@@ -153,30 +243,6 @@
     const adapter = moduleChrome(module.id);
     return { ok: true, value: await adapter.storage.local[message.operation](input) };
   }
-  function filenameBroker(item, suggest) {
-    const request = item.byExtensionId === native.runtime.id ? namedDownloads.get(item.id) || pendingDownloads.get(downloadURL(item.url)) : undefined;
-    const claims = [];
-    const tasks = [...filenameListeners].flatMap(([id, listeners]) => [...listeners].map(listener => new Promise(resolve => {
-      let settled = false;
-      const finish = value => {
-        if (settled) return;
-        settled = true; clearTimeout(timer);
-        if (value !== undefined) claims.push({ id, value });
-        resolve();
-      };
-      const timer = setTimeout(() => { report('保存名の確認が時間内に完了しませんでした。'); finish(); }, 5000);
-      try { if (listener(item, finish) !== true) finish(); } catch { report('保存名の確認に失敗しました。'); finish(); }
-    })));
-    Promise.all(tasks).then(() => {
-      const unique = [...new Map(claims.map(claim => [JSON.stringify(claim.value), claim.value])).values()];
-      if (unique.length > 1) { report('複数の機能が保存名を指定したため、Chromeの既定の保存名を使用しました。'); suggest(); }
-      else if (unique.length) suggest(unique[0]);
-      else if (request?.options?.filename) suggest({ filename: request.options.filename, ...(request.options.conflictAction ? { conflictAction: request.options.conflictAction } : {}) });
-      else suggest();
-      if (request) { request.finished = true; namedDownloads.delete(item.id); }
-    });
-    return true;
-  }
   const offscreenModules = () => config.modules.filter(module => module.offscreen);
   async function liveOffscreen() {
     const contexts = await native.runtime.getContexts({ contextTypes: ['OFFSCREEN_DOCUMENT'], documentUrls: [native.runtime.getURL('offscreen.html')] });
@@ -215,9 +281,14 @@
       hasDocument: async () => (await contexts(module)).length > 0,
       closeDocument: async () => undefined
     });
-    if (native.downloads?.onDeterminingFilename) {
+    if (native.downloads) {
       scoped.downloads = Object.create(native.downloads);
       scoped.downloads.download = (options, callback) => deliver(startDownload(module, options), callback);
+      // Chrome dispatches onDeterminingFilename globally. Even a listener that
+      // returns false or calls suggest() with no filename makes Chrome ignore
+      // another extension's download filename, so My Tools must never register
+      // the native event. Bundled modules pass filename to downloads.download;
+      // keep their listener registrations as compatibility no-ops.
       scoped.downloads.onDeterminingFilename = {
         addListener(listener) { if (!filenameListeners.has(id)) filenameListeners.set(id, new Set()); filenameListeners.get(id).add(listener); },
         removeListener(listener) { filenameListeners.get(id)?.delete(listener); },
@@ -232,10 +303,22 @@
     }
     if (native.action) {
       scoped.action = Object.create(native.action);
-      for (const method of ['setBadgeText', 'setBadgeBackgroundColor']) scoped.action[method] = (value, callback) => {
+      for (const method of ['setBadgeText', 'setBadgeBackgroundColor', 'setBadgeTextColor']) scoped.action[method] = (value, callback) => {
         badges.set(id, { ...badges.get(id), ...value });
         const promise = persistPresentation().then(updateBadge);
         return deliver(promise, callback);
+      };
+    }
+    if (native.scripting) {
+      scoped.scripting = Object.create(native.scripting);
+      scoped.scripting.executeScript = (injection, callback) => {
+        let value = injection;
+        if (value && typeof value === 'object' && Array.isArray(value.files)) {
+          const prefix = `modules/${id}/`;
+          const files = value.files.map(file => typeof file === 'string' && !file.startsWith('modules/') && file !== 'config.js' && file !== 'client.js' ? prefix + file : file);
+          value = { ...value, files: value.world === 'MAIN' ? files : [...new Set(['config.js', 'client.js', ...files])] };
+        }
+        return deliver(Promise.resolve().then(() => native.scripting.executeScript(value)), callback);
       };
     }
     if (native.contextMenus) {
@@ -271,7 +354,11 @@
     }
     if (native.webRequest) {
       scoped.webRequest = Object.create(native.webRequest);
-      scoped.webRequest.onBeforeRequest = { addListener(listener, ...args) { native.webRequest.onBeforeRequest.addListener((...event) => { if (enabled(id)) return listener(...event); }, ...args); } };
+      for (const name of ['onBeforeRequest', 'onHeadersReceived']) {
+        const event = native.webRequest[name];
+        if (!event) continue;
+        scoped.webRequest[name] = { addListener(listener, ...args) { event.addListener((...eventArgs) => { if (enabled(id)) return listener(...eventArgs); }, ...args); } };
+      }
     }
     for (const name of ['onInstalled', 'onStartup']) if (native.runtime[name]) scoped.runtime[name] = {
       addListener(listener) { native.runtime[name].addListener((...args) => { ready.then(() => { if (id !== 'sushida' || enabled(id)) return listener(...args); }).catch(() => report('機能の初期化に失敗しました。拡張機能を読み込み直してください。')); }); }
@@ -313,13 +400,13 @@
     ready = serialize(async () => {
       await migrate();
       await restorePresentation();
-      await apply(settingsFrom((await native.storage.local.get(settingsKey))[settingsKey]));
+      await apply(await migrateInstagram());
     });
     ready.catch(error => { startupError = error; });
-    native.downloads?.onDeterminingFilename?.addListener(filenameBroker);
-    native.downloads?.onChanged?.addListener(delta => {
-      if (['complete', 'interrupted'].includes(delta.state?.current) || delta.error) namedDownloads.delete(delta.id);
-    });
+    const repairOpenTabs = () => ready.then(() => ensureOpenTabs()).catch(() => {});
+    native.runtime.onInstalled?.addListener(repairOpenTabs);
+    native.runtime.onStartup?.addListener(repairOpenTabs);
+    ready.then(() => ensureOpenTabs()).catch(() => {});
     native.runtime.onMessage.addListener((message, sender, respond) => {
       if (message?.type === 'my-tools:download') {
         const module = config.modules.find(value => value.id === message.module);
@@ -335,9 +422,24 @@
       if (message?.type === 'my-tools:storage') {
         ready.then(() => contentStorage(message, sender)).then(respond, error => respond({ ok: false, error: errorText(error) })); return true;
       }
-      if (typeof message?.type !== 'string' || !['my-tools:get', 'my-tools:set', 'my-tools:export', 'my-tools:import'].includes(message.type)) return;
+      const management = ['my-tools:get', 'my-tools:set', 'my-tools:export', 'my-tools:import', 'my-tools:ensure-active'];
+      if (typeof message?.type !== 'string' || !management.includes(message.type)) return;
       if (sender.id !== native.runtime.id || sender.url !== native.runtime.getURL('popup.html')) { respond({ ok: false, error: 'この画面からの操作は許可されていません。' }); return; }
-      serialize(async () => { if (startupError) throw startupError; return manage(message); }).then(respond, error => respond({ ok: false, error: errorText(error) }));
+      if (message.type === 'my-tools:ensure-active') {
+        serialize(async () => {
+          if (startupError) throw startupError;
+          const [tab] = await native.tabs.query({ active: true, lastFocusedWindow: true });
+          try { return await ensureTab(tab); }
+          catch (error) { throw error?.message?.includes('このタブに機能を反映できませんでした') ? error : injectionFailure(error); }
+        }).then(respond, error => respond({ ok: false, error: errorText(error) }));
+        return true;
+      }
+      serialize(async () => {
+        if (startupError) throw startupError;
+        const value = await manage(message);
+        if (message.type === 'my-tools:set' || message.type === 'my-tools:import') void ensureOpenTabs().catch(() => {});
+        return value;
+      }).then(respond, error => respond({ ok: false, error: errorText(error) }));
       return true;
     });
     native.storage.onChanged.addListener((changes, area) => {

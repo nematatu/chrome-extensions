@@ -3,19 +3,19 @@
   const host = document.createElement('div');
   host.id = 'tweetfile-downloader';
   host.setAttribute('popover', 'manual');
-  host.style.cssText = 'all:initial;font:14px system-ui,sans-serif;color:#f8fafc;position:fixed;inset:auto;margin:0;padding:0;border:0;background:transparent;overflow:visible;right:20px;bottom:20px;z-index:2147483647;';
+  host.style.cssText = 'all:initial;font:14px system-ui,sans-serif;color:var(--mt-gray-12);position:fixed;inset:auto;margin:0;padding:0;border:0;background:transparent;overflow:visible;right:20px;bottom:20px;z-index:2147483647;';
   const root = host.attachShadow({ mode: 'open' });
   root.innerHTML = `
-    <style>
-      :host{font:14px system-ui,sans-serif;color:#f8fafc}*{box-sizing:border-box}
-      button{font:inherit;cursor:pointer;color:inherit;border:1px solid #566075;background:#263248;border-radius:9px;padding:8px 12px}button:hover{background:#374863}button:focus-visible,input:focus-visible{outline:3px solid #7dd3fc;outline-offset:2px}button:disabled{opacity:.45;cursor:default}
-      section{width:min(350px,calc(100vw - 40px));background:#172033;border:1px solid #526078;border-radius:16px;box-shadow:0 10px 36px #0006;overflow:hidden;margin-bottom:12px}
-      header{display:flex;align-items:center;justify-content:space-between;padding:14px}h2{font-size:16px;margin:0}.tools{display:flex;gap:8px;padding:0 14px 10px}.list{max-height:min(48vh,420px);overflow:auto;padding:0 10px}
-      label{display:flex;align-items:center;gap:10px;padding:9px 4px;border-top:1px solid #334155;cursor:pointer}input{width:19px;height:19px;accent-color:#38bdf8;flex-shrink:0}img,.placeholder{width:76px;height:48px;object-fit:cover;border-radius:6px;background:#334155;flex-shrink:0}.name{overflow-wrap:anywhere;font-size:12px}small{display:block;color:#fbbf24}p{padding:0 14px;font-size:12px;color:#cbd5e1;line-height:1.6}.bottom{display:flex;justify-content:flex-end;gap:8px;align-items:center}#download{background:#0284c7;border-color:#38bdf8;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;box-shadow:0 4px 18px #0006}svg{width:28px;height:28px} [hidden]{display:none!important}
-      .progress-box{padding:0 14px 4px}.progress-heading{display:flex;justify-content:space-between;gap:8px;font-size:12px;margin-bottom:7px}progress{display:block;width:100%;height:9px;border:0;border-radius:9px;overflow:hidden;background:#334155;accent-color:#38bdf8}progress::-webkit-progress-bar{background:#334155;border-radius:9px}progress::-webkit-progress-value{background:#38bdf8;border-radius:9px;transition:width .2s}#progress-detail{font-size:11px;color:#cbd5e1;margin-top:7px}
+    <style>${MyToolsUI.css}
+      :host{font:14px system-ui,sans-serif;color:var(--mt-gray-12)}*{box-sizing:border-box}
+      button{font:inherit;cursor:pointer;color:inherit;border:0.5px solid var(--mt-gray-7);background:var(--mt-gray-3);border-radius:9px;padding:8px 12px}button:hover{background:var(--mt-gray-4)}button:focus-visible,input:focus-visible{outline:3px solid var(--mt-indigo-8);outline-offset:2px}button:disabled{opacity:.45;cursor:default}
+      section{width:min(350px,calc(100vw - 40px));background:var(--mt-gray-1);border:0.5px solid var(--mt-gray-7);border-radius:8px;overflow:hidden;margin-bottom:12px}
+      header{display:flex;align-items:center;justify-content:space-between;padding:14px}h2{font-size:14px;margin:0}.tools{display:flex;gap:8px;padding:0 14px 10px}.list{max-height:min(48vh,420px);overflow:auto;padding:0 10px}
+      label{display:flex;align-items:center;gap:10px;padding:9px 4px;border-top:0.5px solid var(--mt-gray-5);cursor:pointer}input{width:19px;height:19px;accent-color:var(--mt-indigo-9);flex-shrink:0}img,.placeholder{width:76px;height:48px;object-fit:cover;border-radius:6px;background:var(--mt-gray-5);flex-shrink:0}.name{overflow-wrap:anywhere;font-size:12px}small{display:block;color:var(--mt-amber-11)}p{padding:0 14px;font-size:12px;color:var(--mt-gray-11);line-height:1.6}.bottom{display:flex;justify-content:flex-end;gap:8px;align-items:center}#download{color:var(--mt-on-accent);background:var(--mt-indigo-9);border-color:var(--mt-indigo-9);width:44px;height:44px;border-radius:6px;display:grid;place-items:center;}svg{width:28px;height:28px} [hidden]{display:none!important}
+      .progress-box{padding:0 14px 4px}.progress-heading{display:flex;justify-content:space-between;gap:8px;font-size:12px;margin-bottom:7px}progress{display:block;width:100%;height:9px;border:0;border-radius:9px;overflow:hidden;background:var(--mt-gray-5);accent-color:var(--mt-indigo-9)}progress::-webkit-progress-bar{background:var(--mt-gray-5);border-radius:9px}progress::-webkit-progress-value{background:var(--mt-indigo-9);border-radius:9px;}#progress-detail{font-size:12px;color:var(--mt-gray-11);margin-top:7px}
     </style>
-    <section aria-label="動画の選択"><header><h2>動画を選択 <span id="count"></span></h2><button id="close" aria-label="選択一覧を閉じる">×</button></header><div class="tools"><button id="all">全選択</button><button id="none">選択解除</button></div><div class="list"></div><div class="progress-box" hidden><div class="progress-heading"><span>ダウンロード全体</span><strong id="percent">0%</strong></div><progress id="progress" max="100" value="0" aria-label="ダウンロード全体の進捗"></progress><div id="progress-detail"></div></div><p id="status" role="status" aria-live="polite">ページ内の動画を確認中…</p></section>
-    <div class="bottom"><button id="toggle" aria-expanded="true">動画の選択</button><button id="download" title="選択した動画を一括ダウンロード" aria-label="選択した動画を一括ダウンロード" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 15v6h16v-6"/></svg></button></div>`;
+    <section aria-label="動画の選択"><header><h2>動画を選択 <span id="count"></span></h2><button id="close" aria-label="選択一覧を閉じる">${MyToolsUI.icon("x")}</button></header><div class="tools"><button id="all">全選択</button><button id="none">選択解除</button></div><div class="list"></div><div class="progress-box" hidden><div class="progress-heading"><span>ダウンロード全体</span><strong id="percent">0%</strong></div><progress id="progress" max="100" value="0" aria-label="ダウンロード全体の進捗"></progress><div id="progress-detail"></div></div><p id="status" role="status" aria-live="polite">ページ内の動画を確認中…</p></section>
+    <div class="bottom"><button id="toggle" aria-expanded="true">動画の選択</button><button id="download" title="選択した動画を一括ダウンロード" aria-label="選択した動画を一括ダウンロード" disabled>${MyToolsUI.icon("download")}</button></div>`;
   document.documentElement.append(host);
   // Top layer keeps page advertising overlays from covering the controls.
   host.showPopover();
@@ -57,7 +57,7 @@
       img.className = 'placeholder';
       if (item.thumbnail) { img.src = item.thumbnail; img.alt = ''; img.loading = 'lazy'; img.referrerPolicy = 'no-referrer'; }
       const name = document.createElement('span'); name.className = 'name'; name.textContent = item.name;
-      
+
       label.append(check, img, name); $('.list').append(label);
     }
     count();
@@ -74,7 +74,7 @@
     for (const item of items) { if (!known.has(item.url)) selected.add(item.url); }
     known = urls;
     render();
-    if (!busy) $('#status').textContent = items.length ? 'チェックした動画を保存します。追加読み込みされた動画も反映されます。' : 'このページに動画が見つかりません。フォルダは対象外です。';
+    if (!busy) $('#status').textContent = items.length ? `${items.length}件の動画` : 'このページに動画が見つかりません。フォルダは対象外です。';
   });
   $('#all').onclick = () => { selected = new Set(items.map(item => item.url)); render(); };
   $('#none').onclick = () => { selected.clear(); render(); };

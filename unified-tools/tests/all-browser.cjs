@@ -8,6 +8,7 @@ const { workHtml } = require('../../momoniji-manga-viewer/tests/fixtures.cjs');
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 module.exports = async function verifyAll({ context, worker, manager, config, check, root, extensionId, image, clip, tracks, output }) {
   const rpc = message => manager.evaluate(message => chrome.runtime.sendMessage(message), message);
+  assert.equal(await worker.evaluate(() => chrome.downloads.onDeterminingFilename.hasListeners()), false, 'My Tools must never register a native filename listener');
   const tabRPC = async (page, id, payload) => {
     const tabId = await worker.evaluate(async url => (await chrome.tabs.query({})).find(tab => tab.url === url)?.id, page.url());
     return worker.evaluate(async ({ tabId, id, payload }) => (await chrome.scripting.executeScript({ target: { tabId }, world: 'ISOLATED', func: (id, payload) => chrome.runtime.sendMessage({ toolModule: id, payload }), args: [id, payload] }))[0].result, { tabId, id, payload });
@@ -53,7 +54,7 @@ module.exports = async function verifyAll({ context, worker, manager, config, ch
   await manager.locator('#search').fill('存在しない検索語'); assert.ok(await manager.locator('#no-results').isVisible()); await manager.locator('#search').fill('');
   check('Manager search filters 19 modules and displays empty state');
   const isolation = await worker.evaluate(async () => {
-    const high = MyToolsRuntime.moduleChrome('instagramhq'), kltra = MyToolsRuntime.moduleChrome('kltra');
+    const high = MyToolsRuntime.moduleChrome('instagram'), kltra = MyToolsRuntime.moduleChrome('kltra');
     await high.storage.local.set({ enabled: false }); await kltra.storage.local.set({ enabled: true });
     await high.storage.sync.set({ enabled: false }); await kltra.storage.sync.set({ enabled: true });
     await high.storage.session.set({ jobs: ['high'] }); await kltra.storage.session.set({ jobs: ['kltra'] });
@@ -98,7 +99,7 @@ module.exports = async function verifyAll({ context, worker, manager, config, ch
     await page.waitForFunction(() => document.querySelector('[data-testid="tweetTextarea_0"]').innerText.includes('#fixture'));
   });
   await context.route('https://scontent.cdninstagram.com/**', route => route.fulfill({ contentType: 'image/png', body: image }));
-  await fixture('instagramhq', 'https://www.instagram.com/p/Hqfixture/', '<main><article><img width="400" height="300" src="https://scontent.cdninstagram.com/low.png" srcset="https://scontent.cdninstagram.com/high.png 2000w"></article></main>', '.instagram-hq-image', async page => {
+  await fixture('instagram', 'https://www.instagram.com/p/Hqfixture/', '<main><article><img width="400" height="300" src="https://scontent.cdninstagram.com/low.png" srcset="https://scontent.cdninstagram.com/high.png 2000w"></article></main>', '.instagram-hq-image', async page => {
     assert.equal(await page.locator('img').getAttribute('srcset'), null);
     assert.match(await page.locator('img').getAttribute('src'), /high.png/);
   });
@@ -126,6 +127,7 @@ module.exports = async function verifyAll({ context, worker, manager, config, ch
     youtubeStart()
   ]);
   assert.equal(starts[0].queued, 1, JSON.stringify(starts[0])); assert.equal(starts[1].ok, true, JSON.stringify(starts[1]));
+  assert.equal(await worker.evaluate(() => chrome.downloads.onDeterminingFilename.hasListeners()), false, 'My Tools must not register a filename listener during downloads');
   const codec = await manager.evaluate(async () => ({
     video: (await VideoEncoder.isConfigSupported({codec:'avc1.42001f',width:320,height:480,bitrate:1000000,framerate:25})).supported,
     audio: (await AudioEncoder.isConfigSupported({codec:'mp4a.40.2',sampleRate:44100,numberOfChannels:2,bitrate:128000})).supported
@@ -167,4 +169,5 @@ module.exports = async function verifyAll({ context, worker, manager, config, ch
   await manager.screenshot({ path: path.join(output, 'all-modules.png'), fullPage: true });
   fs.writeFileSync(path.join(output, 'module-coverage.json'), JSON.stringify({ evidence, unverified: ['live external sites', 'user Chrome installation', 'Birdscore score fetch and keyboard dispatch', 'original photo download bytes for badspi/smashnet', 'full remote translation and Google Photos album RPC'] }, null, 2));
   for (const page of pages) await page.close();
+  assert.equal(await worker.evaluate(() => chrome.downloads.onDeterminingFilename.hasListeners()), false, 'My Tools must leave the filename listener unregistered after downloads');
 };

@@ -6,7 +6,7 @@
   'use strict';
   const definitions = {
     googlephotos: { area: 'local', fields: { 'gpu-panel-collapsed-v1': 'boolean' } },
-    instagramhq: { area: 'sync', fields: { enabled: 'boolean', rotateLive: 'boolean' } },
+    instagram: { area: 'sync', fields: { downloadEnabled: 'boolean', enabled: 'boolean', rotateLive: 'boolean' } },
     inhighskip: { area: 'sync', fields: { skipSeconds: [1, 300, 'integer'], keyboardEnabled: 'boolean' } },
     kltra: { area: 'local', fields: { enabled: 'boolean', fontSize: [14, 40], transparency: [0, 100], position: [0, 100], speed: [60, 300], showName: 'boolean', translationEnabled: 'boolean', translationSource: ['auto', 'id', 'en'], translationEngine: ['online', 'local'] } },
     r2: { area: 'sync', fields: { baseUrlTemplate: 'template', maxWidth: [40, 320], maxHeight: [40, 320], hoverOnly: 'boolean', showNonImages: 'boolean' } },
@@ -55,13 +55,24 @@
     }
     fail();
   }
-  function validate(value) {
-    object(value, Object.keys(definitions));
+  function validate(value, moduleEnabled = {}) {
+    object(value, [...Object.keys(definitions), 'instagramhq']);
     const result = {};
     for (const [id, preferences] of Object.entries(value)) {
-      const fields = definitions[id].fields;
+      const fields = id === 'instagramhq' ? { enabled: 'boolean', rotateLive: 'boolean' } : definitions[id].fields;
       object(preferences, Object.keys(fields));
       result[id] = Object.fromEntries(Object.entries(preferences).map(([key, value]) => [key, field(value, fields[key])]));
+    }
+    const legacyFlag = Object.hasOwn(moduleEnabled, 'instagramhq');
+    if (legacyFlag || Object.hasOwn(result, 'instagramhq')) {
+      const previous = result.instagramhq || {};
+      const moved = legacyFlag ? {
+        downloadEnabled: moduleEnabled.instagram !== false,
+        enabled: moduleEnabled.instagramhq && previous.enabled !== false,
+        rotateLive: moduleEnabled.instagramhq && previous.rotateLive !== false
+      } : previous;
+      result.instagram = { ...moved, ...result.instagram };
+      delete result.instagramhq;
     }
     return result;
   }

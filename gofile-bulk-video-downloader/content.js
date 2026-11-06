@@ -123,38 +123,36 @@
 
     const shadow = buttonHost.attachShadow({ mode: "closed" });
     shadow.innerHTML = `
-      <style>
-        :host { all: initial; color-scheme: dark; }
+      <style>${MyToolsUI.css}
+        :host { all: initial;  }
         button {
           align-items: center;
-          background: linear-gradient(135deg, #2563eb, #4f46e5);
-          border: 1px solid rgba(255,255,255,.2);
-          border-radius: 9px;
-          box-shadow: 0 6px 18px rgba(37,99,235,.25);
-          color: #fff;
+          background: var(--mt-indigo-9);
+          border: 0.5px solid var(--mt-gray-a5);
+          border-radius: 6px;
+
+          color: var(--mt-on-accent);
           cursor: pointer;
           display: inline-flex;
-          font: 700 13px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          font: 700 14px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
           gap: 7px;
           min-height: 34px;
           padding: 7px 12px;
-          transition: transform .15s ease, filter .15s ease, opacity .15s ease;
+
           white-space: nowrap;
         }
-        button:hover { filter: brightness(1.08); transform: translateY(-1px); }
-        button:active { transform: translateY(0); }
-        button:focus-visible { outline: 3px solid rgba(96,165,250,.55); outline-offset: 2px; }
+        button:hover { background:var(--mt-indigo-10); }
+
+        button:focus-visible { outline: 2px solid var(--mt-indigo-8); outline-offset: 2px; }
         button[aria-busy="true"] { cursor: progress; opacity: .82; }
-        button:disabled { cursor: wait; filter: none; opacity: .65; transform: none; }
+        button:disabled { cursor: wait; opacity: .65; }
         svg { fill: none; height: 17px; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; width: 17px; }
         @media (max-width: 520px) {
           button { font-size: 12px; padding: 7px 9px; }
         }
       </style>
       <button type="button" aria-label="このGofileページの動画・画像を一括保存">
-        <svg aria-hidden="true" viewBox="0 0 24 24">
-          <path d="M12 3v11m0 0 4-4m-4 4-4-4M5 18v2h14v-2" />
-        </svg>
+        ${MyToolsUI.icon("download")}
         <span>動画・画像を一括保存</span>
       </button>
     `;
@@ -231,11 +229,11 @@
     panelHost.id = PANEL_HOST_ID;
     const shadow = panelHost.attachShadow({ mode: "closed" });
     shadow.innerHTML = `
-      <style>
+      <style>${MyToolsUI.css}
         :host {
           all: initial;
           bottom: max(16px, env(safe-area-inset-bottom));
-          color-scheme: dark;
+
           display: block;
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
           position: fixed;
@@ -245,61 +243,60 @@
         }
         * { box-sizing: border-box; }
         .panel {
-          background: rgba(17,24,39,.98);
-          border: 1px solid rgba(148,163,184,.35);
-          border-radius: 14px;
-          box-shadow: 0 20px 55px rgba(0,0,0,.45);
-          color: #f8fafc;
+          background: var(--mt-gray-1);
+          border: 0.5px solid var(--mt-gray-a5);
+          border-radius: 8px;
+
+          color: var(--mt-gray-12);
           display: flex;
           flex-direction: column;
           max-height: min(72vh, 680px);
           max-height: min(72dvh, 680px, calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
           overflow: hidden;
         }
-        .header { align-items: center; border-bottom: 1px solid #334155; display: flex; flex: 0 0 auto; gap: 10px; padding: 12px 13px; }
-        .header-icon { align-items: center; background: #1d4ed8; border-radius: 9px; display: flex; flex: 0 0 34px; height: 34px; justify-content: center; }
-        .header-icon svg { fill: none; height: 19px; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; width: 19px; }
+        .header { align-items: center; border-bottom: 0.5px solid var(--mt-gray-5); display: flex; flex: 0 0 auto; gap: 10px; padding: 12px 13px; }
         .heading { min-width: 0; }
         .title { font-size: 14px; font-weight: 750; line-height: 1.35; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .subtitle { color: #94a3b8; font-size: 11px; margin: 2px 0 0; }
-        .icon-button { background: transparent; border: 0; border-radius: 7px; color: #cbd5e1; cursor: pointer; font-size: 20px; margin-left: auto; padding: 3px 7px; }
-        .icon-button:hover { background: #334155; color: #fff; }
-        .icon-button:focus-visible, .action:focus-visible { outline: 3px solid rgba(96,165,250,.65); outline-offset: 2px; }
+        .subtitle { color: var(--mt-gray-11); font-size:12px; margin: 2px 0 0; }
+        .icon-button { background: transparent; border: 0; border-radius: 5px; color: var(--mt-gray-11); cursor: pointer; font-size: 20px; margin-left: auto; padding: 3px 7px; }
+        .icon-button:hover { background: var(--mt-gray-4); color: var(--mt-gray-12); }
+        .icon-button:focus-visible, .action:focus-visible { outline: 2px solid var(--mt-indigo-8); outline-offset: 2px; }
         .body { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; overflow: hidden; padding: 12px 13px 8px; }
         .progress-head { align-items: baseline; display: flex; justify-content: space-between; }
-        .percent { font-size: 25px; font-variant-numeric: tabular-nums; font-weight: 800; letter-spacing: -.5px; }
-        .count { color: #cbd5e1; font-size: 12px; font-weight: 650; }
-        .track { background: #334155; border-radius: 999px; height: 8px; margin-top: 8px; overflow: hidden; }
-        .bar { background: linear-gradient(90deg, #3b82f6, #6366f1); border-radius: inherit; height: 100%; min-width: 0; transition: width .3s ease; width: 0; }
-        .summary { color: #e2e8f0; font-size: 12px; line-height: 1.45; margin: 8px 0 0; }
-        .meta { color: #94a3b8; font-size: 11px; line-height: 1.45; margin: 2px 0 0; }
+        .percent { font-size:20px; font-variant-numeric: tabular-nums; font-weight: 800; letter-spacing: -.5px; }
+        .count { color: var(--mt-gray-11); font-size: 12px; font-weight: 650; }
+        .track { background: var(--mt-gray-5); border-radius: 999px; height: 8px; margin-top: 8px; overflow: hidden; }
+        .bar { background: var(--mt-indigo-9); border-radius: inherit; height: 100%; min-width: 0;  width: 0; }
+        .summary { color: var(--mt-gray-12); font-size: 12px; line-height: 1.45; margin: 8px 0 0; }
+        .meta:empty { display:none; }
+        .meta { color: var(--mt-gray-11); font-size:12px; line-height: 1.45; margin: 2px 0 0; }
         .progress-head, .track, .summary, .meta { flex: 0 0 auto; }
-        .list { border-top: 1px solid #334155; flex: 1 1 auto; margin-top: 10px; min-height: 0; overflow: auto; padding: 5px 0; scrollbar-color: #475569 transparent; }
-        .row { align-items: center; border-radius: 9px; display: grid; gap: 9px; grid-template-columns: 62px minmax(0, 1fr); margin: 3px 0; padding: 6px; }
-        .row:hover { background: rgba(51,65,85,.45); }
-        .preview { align-items: center; background: #0f172a; border: 1px solid #334155; border-radius: 7px; display: flex; height: 42px; justify-content: center; overflow: hidden; position: relative; width: 62px; }
+        .list { border-top: 0.5px solid var(--mt-gray-5); flex: 1 1 auto; margin-top: 10px; min-height: 0; overflow: auto; padding: 5px 0; scrollbar-color: var(--mt-gray-7) transparent; }
+        .row { align-items: center; border-radius: 6px; display: grid; gap: 9px; grid-template-columns: 62px minmax(0, 1fr); margin: 3px 0; padding: 6px; }
+        .row:hover { background: var(--mt-gray-a5); }
+        .preview { align-items: center; background: var(--mt-gray-2); border: 0.5px solid var(--mt-gray-5); border-radius: 5px; display: flex; height: 42px; justify-content: center; overflow: hidden; position: relative; width: 62px; }
         .preview img { height: 100%; object-fit: cover; width: 100%; }
-        .placeholder { color: #64748b; display: grid; inset: 0; place-items: center; position: absolute; }
-        .placeholder svg { fill: currentColor; height: 20px; width: 20px; }
+        .placeholder { color: var(--mt-gray-10); display: grid; inset: 0; place-items: center; position: absolute; }
+        .placeholder svg { fill: none; stroke: currentColor; stroke-width: 2; height: 20px; width: 20px; }
         .info { min-width: 0; }
-        .name { color: #f8fafc; font-size: 12px; font-weight: 650; line-height: 1.35; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .item-line { align-items: center; color: #94a3b8; display: flex; font-size: 10px; gap: 6px; justify-content: space-between; margin-top: 4px; }
+        .name { color: var(--mt-gray-12); font-size: 12px; font-weight: 650; line-height: 1.35; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .item-line { align-items: center; color: var(--mt-gray-11); display: flex; font-size:12px; gap: 6px; justify-content: space-between; margin-top: 4px; }
         .item-state { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .item-size { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
-        .mini-track { background: #334155; border-radius: 999px; height: 3px; margin-top: 4px; overflow: hidden; }
-        .mini-bar { background: #60a5fa; height: 100%; transition: width .3s ease; width: 0; }
-        .row.complete .mini-bar { background: #22c55e; }
-        .row.failed .mini-bar, .row.unavailable .mini-bar { background: #f97316; }
-        .more { color: #94a3b8; font-size: 11px; padding: 9px; text-align: center; }
-        .footer { align-items: center; border-top: 1px solid #334155; display: flex; flex: 0 0 auto; flex-wrap: wrap; gap: 7px; justify-content: flex-end; padding: 9px 13px max(11px, env(safe-area-inset-bottom)); }
-        .action { border: 1px solid #475569; border-radius: 8px; color: #fff; cursor: pointer; font-family: inherit; font-size: 11px; font-weight: 650; line-height: 1.2; padding: 7px 10px; }
-        .action.cancel { background: #7f1d1d; border-color: #991b1b; }
-        .action.retry { background: #1d4ed8; border-color: #2563eb; }
-        .action.dismiss { background: #334155; }
-        .action:hover { filter: brightness(1.12); }
+        .mini-track { background: var(--mt-gray-5); border-radius: 999px; height: 3px; margin-top: 4px; overflow: hidden; }
+        .mini-bar { background: var(--mt-indigo-9); height: 100%;  width: 0; }
+        .row.complete .mini-bar { background: var(--mt-green-9); }
+        .row.failed .mini-bar, .row.unavailable .mini-bar { background: var(--mt-amber-9); }
+        .more { color: var(--mt-gray-11); font-size:12px; padding: 9px; text-align: center; }
+        .footer { align-items: center; border-top: 0.5px solid var(--mt-gray-5); display: flex; flex: 0 0 auto; flex-wrap: wrap; gap: 7px; justify-content: flex-end; padding: 9px 13px max(11px, env(safe-area-inset-bottom)); }
+        .action { border: 0.5px solid var(--mt-gray-7); border-radius: 6px; color: var(--mt-gray-12); cursor: pointer; font-family: inherit; font-size:12px; font-weight: 650; line-height: 1.2; padding: 7px 10px; }
+        .action.cancel { background: var(--mt-red-3); border-color: var(--mt-red-7); }
+        .action.retry { color:var(--mt-on-accent); background: var(--mt-indigo-9); border-color: var(--mt-indigo-9); }
+        .action.dismiss { background: var(--mt-gray-5); }
+        .action:hover { background:var(--mt-gray-4); }
         .action:disabled { cursor: wait; filter: none; opacity: .6; }
         .action[hidden] { display: none; }
-        .empty-list { color: #94a3b8; font-size: 12px; padding: 16px 8px; text-align: center; }
+        .empty-list { color: var(--mt-gray-11); font-size: 12px; padding: 16px 8px; text-align: center; }
         @media (max-width: 520px) {
           :host {
             bottom: max(8px, env(safe-area-inset-bottom));
@@ -312,18 +309,15 @@
             max-height: calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
           }
         }
-        @media (prefers-reduced-motion: reduce) { .bar, .mini-bar { transition: none; } }
+        @media (prefers-reduced-motion: reduce) { .bar, .mini-bar {  } }
       </style>
       <section class="panel" role="region" aria-label="Gofile一括保存の進捗">
         <header class="header">
-          <div class="header-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 18v2h14v-2" /></svg>
-          </div>
           <div class="heading">
             <h2 class="title">Gofile 一括保存</h2>
             <p class="subtitle">準備中</p>
           </div>
-          <button class="icon-button" type="button" data-action="close" aria-label="進捗を閉じる">×</button>
+          <button class="icon-button" type="button" data-action="close" aria-label="進捗を閉じる">${MyToolsUI.icon("x")}</button>
         </header>
         <div class="body">
           <div class="progress-head"><strong class="percent">0%</strong><span class="count">0 / 0 件</span></div>
@@ -410,8 +404,8 @@
     panel.subtitle.textContent = "全ページを確認中";
     panel.count.textContent = "— / — 件";
     setProgress(0, "0%、動画・画像を確認中");
-    setTextIfChanged(panel.summary, "このフォルダの動画・画像を安全に確認しています…");
-    panel.meta.textContent = "認証情報やパスワードは拡張機能に保存しません。";
+    setTextIfChanged(panel.summary, "動画・画像を確認中…");
+    panel.meta.textContent = "";
     panel.list.replaceChildren();
     const loading = document.createElement("div");
     loading.className = "empty-list";
@@ -437,7 +431,7 @@
       panel.summary,
       ERROR_MESSAGES[code] || "処理を完了できませんでした。ページを再読み込みしてからお試しください。",
     );
-    panel.meta.textContent = "ファイルの削除や上書きは行っていません。";
+    panel.meta.textContent = "";
     panel.list.replaceChildren();
     const message = document.createElement("div");
     message.className = "empty-list";
@@ -455,7 +449,7 @@
     const placeholder = document.createElement("span");
     placeholder.className = "placeholder";
     placeholder.setAttribute("aria-hidden", "true");
-    placeholder.innerHTML = '<svg viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h9A1.5 1.5 0 0 1 16 5.5V9l4-2v10l-4-2v3.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 4 18.5z"/></svg>';
+    placeholder.innerHTML = MyToolsUI.icon("video");
     preview.append(placeholder);
 
     if (thumbnail) {
@@ -679,7 +673,7 @@
     if (batch.cancelRequested) {
       summaryText = "キャンセル済みかどうかをChromeの保存履歴と照合しています…";
     } else if (batch.retryRequested) {
-      summaryText = "失敗した動画・画像の再試行キューを安全に復元しています…";
+      summaryText = "再試行の準備中…";
     } else if (batch.status === "complete") {
       summaryText = skippedCount > 0
         ? `${summary.total} 件を保存しました。安全上またはGofile側の理由で ${skippedCount} 件は対象外です。`
