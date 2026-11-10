@@ -235,3 +235,21 @@ test("assemble never requests a private-network variant listed by a public maste
   }), /^Error: UNSAFE_TARGET$/);
   assert.deepEqual(requested, ["https://media.example.com/master.m3u8"]);
 });
+
+test("relative references resolve against the URL a redirected manifest was finally served from", async () => {
+  const serve = fixtureRequest();
+  const requested = [];
+  const request = async (url, init) => {
+    requested.push(url);
+    const moved = url === "http://test.local/moved/master.m3u8";
+    const response = await serve(moved ? `${base}master.m3u8` : url, init);
+    if (moved) Object.defineProperty(response, "url", { value: `${base}master.m3u8` });
+    return response;
+  };
+  const probed = await H.probe("http://test.local/moved/master.m3u8", { request });
+  assert.deepEqual(probed.variants.map(variant => [variant.url, variant.audioUrl]), [[`${base}stream_0.m3u8`, `${base}stream_1.m3u8`]]);
+  const output = H.memoryOutput();
+  await H.assemble("http://test.local/moved/master.m3u8", { request, muxjs: hls, mp4, output, progress() {} });
+  assert.deepEqual(requested.filter(url => !url.startsWith(base)), ["http://test.local/moved/master.m3u8", "http://test.local/moved/master.m3u8"]);
+  assert.ok((await outputBuffer(output)).length > 10000);
+});

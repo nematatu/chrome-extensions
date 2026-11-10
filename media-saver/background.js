@@ -438,6 +438,11 @@ async function beginDownloads(job, outputs) {
       const downloadId = await chrome.downloads.download({
         url: output.blobUrl, filename, conflictAction: "uniquify", saveAs: false
       });
+      // cancelJob may have run while Chrome was starting this download, and it only knew the earlier IDs.
+      if (job.state === "canceled") {
+        try { await chrome.downloads.cancel(downloadId); } catch {}
+        break;
+      }
       job.downloads.push({ id: downloadId, state: "downloading", size: output.size || 0, filename });
     } catch (error) {
       job.state = "failed";
@@ -445,7 +450,7 @@ async function beginDownloads(job, outputs) {
       break;
     }
   }
-  if (job.state !== "failed" && job.downloads.length === 0) {
+  if (job.state === "downloading" && job.downloads.length === 0) {
     job.state = "failed"; job.error = "NO_OUTPUT";
   }
   if (job.state === "failed") {

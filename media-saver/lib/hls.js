@@ -195,7 +195,7 @@
     return { signal: controller.signal, cleanup: () => { clearTimeout(timer); parent?.removeEventListener("abort", abort); }, abort };
   }
 
-  async function readBytes(url, options, deps) {
+  async function readResponse(url, options, deps) {
     const limit = options.limit || MAX_SEGMENT_BYTES;
     const request = deps.request || deps.fetch || root.fetch;
     if (typeof request !== "function") fail("HLS_FETCH_FAILED");
@@ -253,13 +253,21 @@
       let offset = 0;
       for (const part of parts) { bytes.set(part, offset); offset += part.byteLength; }
       if (options.range && response.status === 200 && bytes.length !== options.range.length) fail("HLS_BAD_SEGMENT");
-      return bytes;
+      return { bytes, url: response.url || url };
     } catch (error) {
       if (deps.signal?.aborted) fail("HLS_CANCELED");
       if (error?.name === "AbortError") fail("HLS_TIMEOUT");
       if (ERROR_CODES.includes(error?.message)) throw error;
       fail("HLS_FETCH_FAILED");
     } finally { timeout.cleanup(); }
+  }
+
+  const readBytes = async (url, options, deps) => (await readResponse(url, options, deps)).bytes;
+
+  // A manifest's relative references point next to where it was finally served from, after redirects.
+  async function readPlaylist(url, deps) {
+    const { bytes, url: served } = await readResponse(url, { limit: MAX_MANIFEST_BYTES }, deps);
+    return parsePlaylist(decodeText(bytes), served);
   }
 
   function isHttpUrl(value) {
@@ -273,9 +281,7 @@
 
   async function loadPlaylist(url, deps, depth = 0) {
     if (depth > 2) fail("HLS_UNSUPPORTED");
-    const bytes = await readBytes(url, { limit: MAX_MANIFEST_BYTES }, deps);
-    const text = decodeText(bytes);
-    const plan = parsePlaylist(text, url);
+    const plan = await readPlaylist(url, deps);
     if (plan.variants) {
       let variant = plan.variants[0];
       if (deps.variantUrl) {
@@ -509,9 +515,7 @@
   }
 
   async function probe(url, deps = {}) {
-    const bytes = await readBytes(url, { limit: MAX_MANIFEST_BYTES }, { ...deps, pageUrl: deps.pageUrl });
-    const text = decodeText(bytes);
-    const plan = parsePlaylist(text, url);
+    const plan = await readPlaylist(url, deps);
     if (!plan.variants) {
       if (plan.encrypted) fail("HLS_ENCRYPTED");
       return { kind: "hls", variants: [], separateAudio: false, duration: plan.duration, fragmented: plan.fragmented };

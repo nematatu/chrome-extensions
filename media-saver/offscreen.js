@@ -170,6 +170,7 @@ async function appendResponse(job, response, output, limit, range) {
   if (range && size < range.length) throw new Error("UNSUPPORTED");
 }
 
+// Returns the text and the URL it was finally served from, which relative references in a manifest use.
 async function readText(job, url, limit) {
   const response = await fetchWithLimit(job, url, limit);
   const reader = response.body.getReader();
@@ -185,7 +186,7 @@ async function readText(job, url, limit) {
   const bytes = new Uint8Array(size);
   let offset = 0;
   for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
-  try { return new TextDecoder("utf-8", { fatal: true }).decode(bytes); }
+  try { return { text: new TextDecoder("utf-8", { fatal: true }).decode(bytes), url: response.url || url }; }
   catch { throw new Error("UNSUPPORTED"); }
 }
 
@@ -209,11 +210,6 @@ async function downloadDirect(job, url, output, role) {
   const extension = MediaSaverCommon.extensionForMime(type) || MediaSaverCommon.extensionOf(response.url || url) || "mp4";
   const mime = type || "application/octet-stream";
   return { output, extension, mime, role, filenameHint };
-}
-
-async function fetchManifest(job, url, kind) {
-  const text = await readText(job, url, kind === "dash" ? 4 * 1024 * 1024 : 2 * 1024 * 1024);
-  return text;
 }
 
 async function runHls(job) {
@@ -265,8 +261,8 @@ async function runDashTrack(job, index, track, role) {
 }
 
 async function runDash(job) {
-  const text = await fetchManifest(job, job.url, "dash");
-  const parsed = MediaSaverDash.parseMpd(text, job.url);
+  const manifest = await readText(job, job.url, 4 * 1024 * 1024);
+  const parsed = MediaSaverDash.parseMpd(manifest.text, manifest.url);
   const plan = MediaSaverDash.selectPlan(parsed, job.quality || null);
   const tracks = [];
   if (plan.video) tracks.push({ track: plan.video, role: "video" });
@@ -339,8 +335,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (message.kind === "hls") {
           result = await MediaSaverHls.probe(message.url, { request: requestFor(message.pageUrl), pageUrl: message.pageUrl });
         } else if (message.kind === "dash") {
-          const text = await readText({ controller: new AbortController(), pageUrl: message.pageUrl, disposed: false }, message.url, 4 * 1024 * 1024);
-          result = MediaSaverDash.probe(text, message.url);
+          const manifest = await readText({ controller: new AbortController(), pageUrl: message.pageUrl, disposed: false }, message.url, 4 * 1024 * 1024);
+          result = MediaSaverDash.probe(manifest.text, manifest.url);
         } else {
           throw new Error("UNSUPPORTED");
         }

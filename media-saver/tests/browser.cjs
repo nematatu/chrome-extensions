@@ -102,6 +102,13 @@ function startServer() {
     const privateMedia = `http://127.0.0.1:${server.address().port}/media/`;
     const unsafe = unsafeResponse(url.pathname, privateMedia);
     if (unsafe) { sendText(request, response, ...unsafe); return; }
+    // Manifests that moved: relative references must resolve against where they ended up.
+    const moved = { '/moved/master.m3u8': '/media/hls-av/master.m3u8', '/moved/manifest.mpd': '/media/dash-template/manifest.mpd' }[url.pathname];
+    if (moved) {
+      response.writeHead(302, { location: moved });
+      response.end();
+      return;
+    }
     if (url.pathname === '/unsafe/redirect.png') {
       response.writeHead(302, { location: `${privateMedia}tiny.png?leak=redirect` });
       response.end();
@@ -435,6 +442,53 @@ async function main() {
     assert.deepEqual(requested.filter(request => /leak=(hls|dash)/.test(request)), []);
     await publicPage.close();
     pass('Private-network URLs from public-page manifests are never requested, and a redirect there is rejected');
+
+    // A manifest served through a redirect resolves relative references against the final URL.
+    const movedProbe = await rpc({ type: 'ms:probe', tabId, url: `${base}/moved/master.m3u8`, kind: 'hls' });
+    assert.equal(movedProbe.ok, true, JSON.stringify(movedProbe));
+    assert.deepEqual(movedProbe.result.variants.map(variant => [variant.url, variant.audioUrl]),
+      [[`${base}/media/hls-av/stream_0.m3u8`, `${base}/media/hls-av/stream_1.m3u8`]]);
+    const movedStart = await rpc({ type: 'ms:start', tabId, items: [
+      { url: `${base}/moved/master.m3u8`, kind: 'hls', title: 'moved-hls' },
+      { url: `${base}/moved/manifest.mpd`, kind: 'dash', title: 'moved-dash' }
+    ] });
+    const movedJobs = await finished(movedStart.jobs);
+    assert.deepEqual(movedJobs.map(job => [job.kind, job.state, job.error, job.downloads.length]).sort(),
+      [['dash', 'completed', null, 2], ['hls', 'completed', null, 1]]);
+    pass('Redirected HLS and DASH manifests resolve their segments against the final URL when probing and saving');
+
+    // Cancelling while Chrome is still starting a download cancels that download and starts no further output.
+    await worker.evaluate(() => {
+      const original = chrome.downloads.download;
+      let open;
+      self.downloadGate = { original, started: 0, ids: [], opened: new Promise(resolve => { open = resolve; }) };
+      self.downloadGate.open = () => open();
+      chrome.downloads.download = async options => {
+        self.downloadGate.started++;
+        await self.downloadGate.opened;
+        const id = await original.call(chrome.downloads, options);
+        self.downloadGate.ids.push(id);
+        return id;
+      };
+    });
+    const gated = await rpc({ type: 'ms:start', tabId, items: [{ url: expected.dash, kind: 'dash', title: 'cancel-while-starting' }] });
+    await waitFor(() => worker.evaluate(() => self.downloadGate.started === 1), 'the first DASH download to be starting');
+    assert.deepEqual(await rpc({ type: 'ms:cancel', jobId: gated.jobs[0] }), { ok: true });
+    await worker.evaluate(() => self.downloadGate.open());
+    const [gateIds] = await Promise.all([
+      waitFor(async () => { const ids = await worker.evaluate(() => self.downloadGate.ids); return ids.length ? ids : null; }, 'the gated download ID'),
+      delay(1500)
+    ]);
+    const gatedDownload = await waitFor(async () => {
+      const [item] = await worker.evaluate(id => chrome.downloads.search({ id }), gateIds[0]);
+      return item && item.state !== 'in_progress' ? item : null;
+    }, 'the gated download to stop');
+    assert.equal(gatedDownload.state, 'interrupted');
+    assert.deepEqual(await worker.evaluate(() => [self.downloadGate.started, self.downloadGate.ids.length]), [1, 1]);
+    const [gatedJob] = (await rpc({ type: 'ms:jobs' })).jobs.filter(job => job.id === gated.jobs[0]);
+    assert.deepEqual([gatedJob.state, gatedJob.downloads.length], ['canceled', 0]);
+    await worker.evaluate(() => { chrome.downloads.download = self.downloadGate.original; });
+    pass('Cancelling while a download is starting cancels it and starts no further output');
 
     // More items than the old 50-item batch limit are all queued; more than the detector keeps (300) are refused whole.
     const original = (await rpc({ type: 'ms:settings' })).settings;
