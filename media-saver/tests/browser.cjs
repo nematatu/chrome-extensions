@@ -575,6 +575,36 @@ async function main() {
     assert.deepEqual(startedTokens, [firstJob.token]);
     pass('A queued job cancelled while an earlier job is starting stays cancelled and never starts');
 
+    // A small download can finish before chrome.downloads.download() resolves, so its completion event
+    // arrives before the job knows the ID. The job must still complete.
+    await worker.evaluate(() => {
+      const original = chrome.downloads.download;
+      self.earlyGate = { original, settled: 0 };
+      chrome.downloads.download = async options => {
+        const id = await original.call(chrome.downloads, options);
+        for (let tries = 0; tries < 100; tries++) {
+          const [item] = await chrome.downloads.search({ id });
+          if (item && item.state !== 'in_progress') break;
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
+        await new Promise(resolve => setTimeout(resolve, 500)); // let the completion event be handled first
+        self.earlyGate.settled++;
+        return id;
+      };
+    });
+    const early = await rpc({ type: 'ms:start', tabId, items: [{ url: `${base}/media/tiny.png?early=1`, kind: 'image', title: 'finished-early' }] });
+    const earlyJob = await waitFor(async () => {
+      const [job] = (await rpc({ type: 'ms:jobs' })).jobs.filter(item => item.id === early.jobs[0]);
+      return job && ['completed', 'failed'].includes(job.state) ? job : null;
+    }, 'the early-finishing job to complete', 20000).catch(async error => {
+      const [job] = (await rpc({ type: 'ms:jobs' })).jobs.filter(item => item.id === early.jobs[0]);
+      throw new Error(`${error.message} (state ${job?.state})`);
+    });
+    assert.equal(await worker.evaluate(() => self.earlyGate.settled), 1);
+    await worker.evaluate(() => { chrome.downloads.download = self.earlyGate.original; });
+    assert.deepEqual([earlyJob.state, earlyJob.downloads.map(entry => entry.state)], ['completed', ['complete']]);
+    pass('A download that finishes before its ID is recorded still completes its job');
+
     // When the audio track of a DASH job fails after the video track finished, the video's object URL,
     // which keeps the file alive, is revoked instead of being left behind.
     await evaluateInOffscreen(context, `(() => {

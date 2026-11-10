@@ -319,14 +319,7 @@ async function restoreJobs() {
   }
   for (const job of jobCache.values()) {
     if (job.state === "downloading" && Array.isArray(job.downloads)) {
-      for (const entry of job.downloads) {
-        try {
-          const [download] = await chrome.downloads.search({ id: entry.id });
-          if (!download) { entry.state = "failed"; job.error = "INTERRUPTED"; continue; }
-          entry.state = download.state === "complete" ? "complete" : download.state === "interrupted" ? "failed" : "downloading";
-          if (download.state === "interrupted" && !job.error) job.error = download.error || "DOWNLOAD_FAILED";
-        } catch {}
-      }
+      await refreshDownloads(job);
       // Outputs that were never started cannot finish, so the job fails like one with a failed output.
       if (job.downloads.length < (Number(job.expectedDownloads) || job.downloads.length)) {
         job.error = "INTERRUPTED";
@@ -458,8 +451,26 @@ async function beginDownloads(job, outputs) {
     job.state = "failed"; job.error = "NO_OUTPUT";
   }
   if (job.state === "failed") await failJob(job);
+  else if (job.state === "downloading") {
+    // A small download can finish before its ID was recorded above, and onChanged ignored that event.
+    await refreshDownloads(job);
+    await settleDownloads(job);
+  }
   pushJobs();
   schedulePersistJobs();
+  if (FINISHED.includes(job.state)) void pump();
+}
+
+// Reads the real state of each recorded download, for events that were missed or arrived too early.
+async function refreshDownloads(job) {
+  for (const entry of job.downloads) {
+    try {
+      const [download] = await chrome.downloads.search({ id: entry.id });
+      if (!download) { entry.state = "failed"; job.error = "INTERRUPTED"; continue; }
+      entry.state = download.state === "complete" ? "complete" : download.state === "interrupted" ? "failed" : "downloading";
+      if (download.state === "interrupted" && !job.error) job.error = download.error || "DOWNLOAD_FAILED";
+    } catch {}
+  }
 }
 
 // Used both for live download events and after a worker restart: every output saved completes the job,
