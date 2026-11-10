@@ -9,7 +9,7 @@ const modules = globalThis.MyToolsConfig.modules;
 const presentation = {
   instagram: ['better-ig', 'SNS'],
   xhashtags: ['X ハッシュタグ補完', 'SNS'],
-  youtube: ['YouTube 切り抜き', '動画・ファイル'],
+  ytqueue: ['YouTube ダウンロードキュー', '動画・ファイル'],
   gofile: ['Gofile 一括保存', '動画・ファイル'],
   pagemedia: ['ページ内メディア保存', '動画・ファイル'],
   tweetfile: ['Tweetfile 動画保存', '動画・ファイル'],

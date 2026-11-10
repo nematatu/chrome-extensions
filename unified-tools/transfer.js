@@ -19,10 +19,13 @@
     moduleIDs = modules.map(value => value.id);
   }
   if (root.MyToolsConfig?.modules) configure(root.MyToolsConfig.modules);
+  // Modules removed from the registry: older backups may still carry their flags.
+  const retiredModules = ['youtube'];
   function enabled(value) {
-    record(value, moduleIDs.includes('instagram') ? [...moduleIDs, 'instagramhq'] : moduleIDs);
+    record(value, [...moduleIDs, ...(moduleIDs.includes('instagram') ? ['instagramhq'] : []), ...retiredModules]);
     if (!Object.keys(value).length || Object.values(value).some(value => typeof value !== 'boolean')) fail();
     const result = Object.fromEntries(Object.entries(value));
+    for (const id of retiredModules) if (!moduleIDs.includes(id)) delete result[id];
     if (Object.hasOwn(result, 'instagramhq')) {
       result.instagram = result.instagram !== false || result.instagramhq;
       delete result.instagramhq;

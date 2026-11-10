@@ -1,0 +1,7 @@
+main { display: grid; gap: 20px; width: 360px; padding: 20px; }
+section { display: grid; gap: 8px; }
+p { color: var(--mt-gray-11); }
+#target { overflow-wrap: anywhere; font-size: 12px; }
+#message:empty { display: none; }
+#message[data-tone="error"] { color: var(--mt-red-11); }
+#message[data-tone="ok"] { color: var(--mt-green-11); }

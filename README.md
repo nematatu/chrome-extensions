@@ -10,7 +10,7 @@
 | [`media-saver`](./media-saver) | ページの動画・音声・画像検出、HLS/DASH 保存 |
 | [`instagram-media-downloader`](./instagram-media-downloader) | better-ig（保存・高画質表示・Live横向き表示） |
 | [`kltra-danmaku`](./kltra-danmaku) | KLTRA 弾幕チャット |
-| [`youtube-five-second-clip`](./youtube-five-second-clip) | YouTube 範囲指定MP4クリップ |
+| [`youtube-download-queue`](./youtube-download-queue) | YouTube ダウンロードキュー（Auto-YTDLP の links.txt への追加と登録済み・ダウンロード済み表示） |
 | [`momoniji-manga-viewer`](./momoniji-manga-viewer) | Momoniji 漫画ビューア・一括保存 |
 | [`tweetfile-video-downloader`](./tweetfile-video-downloader) | Tweetfile 動画一括ダウンローダー |
 | [`stripchat-live-hover`](./stripchat-live-hover) | Stripchat ライブ・ホバープレビュー |

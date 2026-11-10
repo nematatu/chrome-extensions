@@ -247,6 +247,30 @@ test('better-ig migrates independent legacy on/off states and removes retired re
   assert.ok(!f.scripts().some(script=>script.id.startsWith('tools-instagramhq-')));
  }
 });
+test('a worker restart keeps correct registrations and replaces only changed ones',async()=>{
+ const first=fixture();await first.boot();
+ const registered=first.scripts().filter(script=>script.id.startsWith('tools-'));
+ assert.equal(registered.length,config.registrations.length);
+ const changed={...registered[1],js:['client.js','old.js']};
+ const calls=[];
+ const f=fixture({},{scripts:[{id:'unrelated'},registered[0],changed,...registered.slice(2)]});
+ const {registerContentScripts,unregisterContentScripts}=f.chrome.scripting;
+ f.chrome.scripting.registerContentScripts=async next=>{calls.push(['register',next[0].id]);return registerContentScripts(next);};
+ f.chrome.scripting.unregisterContentScripts=async value=>{calls.push(['unregister',...value.ids]);return unregisterContentScripts(value);};
+ await f.boot();
+ assert.deepEqual(calls,[['unregister',changed.id],['register',changed.id]]);
+ assert.deepEqual(f.scripts().find(script=>script.id===changed.id).js,config.registrations[1].js);
+ assert.ok(f.scripts().some(script=>script.id==='unrelated'));
+});
+test('removed modules drop saved flags and stale registrations without touching others',async()=>{
+ const current={modules:modules.filter(module=>module.id!=='youtube'),registrations:config.registrations.filter(script=>script.module!=='youtube')};
+ const f=fixture({local:{unifiedSettingsV1:{version:1,enabled:{instagram:false,youtube:true}}}},{config:current,scripts:[{id:'unrelated'},{id:'tools-youtube-0'}]});
+ await f.boot();
+ assert.deepEqual(Object.keys(f.store.local.unifiedSettingsV1.enabled).sort(),current.modules.map(module=>module.id).sort());
+ assert.equal(f.store.local.unifiedSettingsV1.enabled.instagram,false);
+ assert.ok(f.scripts().some(script=>script.id==='unrelated'));
+ assert.ok(!f.scripts().some(script=>script.id==='tools-youtube-0'));
+});
 test('better-ig migration keeps explicit new preferences and is stable across restart',async()=>{
  const f=fixture({local:{unifiedSettingsV1:{version:1,enabled:{instagram:true,instagramhq:true}}},sync:{'my-tools:module:instagramhq:enabled':true,'my-tools:module:instagramhq:rotateLive':true,'my-tools:module:instagram:enabled':false,'my-tools:module:instagram:rotateLive':false,'my-tools:module:instagram:downloadEnabled':false}});
  await f.boot();

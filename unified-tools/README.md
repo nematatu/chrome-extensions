@@ -78,7 +78,8 @@ Google Photos のアルバム一覧、Momoniji の後で読む一覧・保存履
 
 - `downloads`・`storage`・`unlimitedStorage`・`alarms`: 保存、保存状態、各機能の設定と復旧。
 - `scripting`: 機能ごとのスクリプト登録・解除と既存コレクター。
-- `offscreen`: YouTube・Tweetfile・ページ動画保存・Media Saver の処理。共通の裏側の画面に独立した4フレームを置き、各処理のライブラリと状態を分けます。Media Saver の HLS/DASH 結合もこの専用フレームで行います。
+- `offscreen`: Tweetfile・ページ動画保存・Media Saver の処理。共通の裏側の画面に独立した3フレームを置き、各処理のライブラリと状態を分けます。
+- `nativeMessaging`: YouTube ダウンロードキューが `yt-queue` を通じて Auto-YTDLP の `links.txt` に追加し、登録済み・ダウンロード済みの動画 ID を受け取るため。詳細は [YouTube ダウンロードキューの README](../youtube-download-queue/README.md) を参照してください。Media Saver の HLS/DASH 結合もこの専用フレームで行います。
 - `contextMenus`: Momoniji の後で読むメニュー。
 - `activeTab`・`tabs`・`webRequest`: 元拡張の対象タブ操作、寿司打の結果取得、Media Saver のメディア検出。
 - Birdscore のウィンドウ表示には `chrome.windows` API を使います。独立した `windows` 権限は宣言しません。元manifestのこの無効な権限名は生成時に除外します。[Chrome Windows API](https://developer.chrome.com/docs/extensions/reference/api/windows) と [権限一覧](https://developer.chrome.com/docs/extensions/reference/permissions-list) に従います。

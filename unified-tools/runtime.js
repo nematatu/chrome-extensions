@@ -5,6 +5,8 @@
   const settingsKey = 'unifiedSettingsV1';
   const migrationKey = 'my-tools:namespace-migration:v1';
   const presentationKey = 'my-tools:presentation:v1';
+  // Modules removed from the registry: their saved flags and registrations are dropped.
+  const retiredModules = ['youtube'];
   const errors = [];
   const badges = new Map(), menuDefinitions = new Map(), filenameListeners = new Map();
   let config, settings, ready, startupError, boundary = Promise.resolve(), offscreenOpening;
@@ -52,8 +54,9 @@
     const defaults = Object.fromEntries(config.modules.map(module => [module.id, true]));
     if (value === undefined) return { version: 1, enabled: defaults };
     if (!value || value.version !== 1 || Object.keys(value).sort().join() !== 'enabled,version' || !value.enabled || Array.isArray(value.enabled) || typeof value.enabled !== 'object'
-      || Object.entries(value.enabled).some(([id, state]) => (!Object.hasOwn(defaults, id) && !(id === 'instagramhq' && Object.hasOwn(defaults, 'instagram'))) || typeof state !== 'boolean')) throw new Error('保存された設定の形式が不正です。');
+      || Object.entries(value.enabled).some(([id, state]) => (!Object.hasOwn(defaults, id) && !(id === 'instagramhq' && Object.hasOwn(defaults, 'instagram')) && !retiredModules.includes(id)) || typeof state !== 'boolean')) throw new Error('保存された設定の形式が不正です。');
     const merged = { ...defaults, ...value.enabled };
+    for (const id of retiredModules) if (!Object.hasOwn(defaults, id)) delete merged[id];
     if (Object.hasOwn(merged, 'instagramhq')) {
       merged.instagram = value.enabled.instagram !== false || merged.instagramhq;
       delete merged.instagramhq;
@@ -91,17 +94,25 @@
     await native.storage.sync.remove(oldKeys);
     return next;
   }
+  // Registration fields compared with Chrome's defaults filled in. Chrome stores match patterns sorted;
+  // their order has no meaning, while script and style order does.
+  const registrationShape = script => JSON.stringify([[...script.matches || []].sort(), [...script.excludeMatches || []].sort(), script.js || [], script.css || [],
+    script.world || 'ISOLATED', script.runAt || 'document_idle', Boolean(script.allFrames), Boolean(script.matchOriginAsFallback)]);
   async function reconcile(next) {
     const owned = new Set(config.registrations.map(script => script.id));
-    const existing = await native.scripting.getRegisteredContentScripts();
-    const ids = existing.filter(script => owned.has(script.id) || /^tools-instagramhq-\d+$/.test(script.id)).map(script => script.id);
-    if (ids.length) await native.scripting.unregisterContentScripts({ ids });
     const wanted = config.registrations.filter(script => next.enabled[script.module]);
+    const wantedShapes = new Map(wanted.map(script => [script.id, registrationShape(script)]));
+    const existing = await native.scripting.getRegisteredContentScripts();
+    // Keep registrations that are already correct. Re-registering on every worker start left a
+    // window in which a loading page received a module's script without its CSS, or nothing.
+    const kept = new Set(existing.filter(script => wantedShapes.get(script.id) === registrationShape(script)).map(script => script.id));
+    const ids = existing.filter(script => !kept.has(script.id) && (owned.has(script.id) || /^tools-instagramhq-\d+$/.test(script.id) || retiredModules.some(id => script.id.startsWith(`tools-${id}-`)))).map(script => script.id);
+    if (ids.length) await native.scripting.unregisterContentScripts({ ids });
     const failed = [];
-    let registered = 0;
+    let registered = kept.size;
     // Register one entry at a time. Chrome validates a whole registration batch
     // atomically, so one unsupported entry must not disable every page feature.
-    for (const script of wanted) {
+    for (const script of wanted.filter(script => !kept.has(script.id))) {
       const { module, ...registration } = script;
       try { await native.scripting.registerContentScripts([registration]); registered += 1; }
       catch { failed.push(script); }

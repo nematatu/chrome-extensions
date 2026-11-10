@@ -31,6 +31,12 @@ test('legacy Instagram backup maps four independent module states to better-ig',
   assert.deepEqual(transfer.parseBackup(JSON.parse(JSON.stringify(result))),result);
  }
 });
+test('backups from before a module was removed still import without its flag',()=>{
+ transfer.configure([{id:'instagram'},{id:'gofile'}]);
+ const result=transfer.parseBackup({format:'nematatu-tools',version:1,settings:{enabled:{instagram:true,gofile:false,youtube:true}},instagram:{savedMedia:{}}});
+ assert.deepEqual(result.settings.enabled,{instagram:true,gofile:false});
+ assert.throws(()=>transfer.parseBackup({format:'nematatu-tools',version:1,settings:{enabled:{instagram:true,youtube:'yes'}},instagram:{savedMedia:{}}}));
+});
 test('legacy HQ preferences are accepted but current explicit settings win',()=>{
  assert.deepEqual(portable.validate({instagramhq:{enabled:true,rotateLive:false},instagram:{enabled:false,downloadEnabled:true}}),{instagram:{enabled:false,rotateLive:false,downloadEnabled:true}});
  assert.throws(()=>portable.validate({instagramhq:{downloadEnabled:true}}));

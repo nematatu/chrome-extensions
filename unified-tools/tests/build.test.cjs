@@ -87,7 +87,7 @@ test('all 19 modules build deterministically with valid manifest and complete re
  }
  const worker=await fs.readFile(path.join(a,'worker.js'),'utf8');
  for(const module of sourceModules.filter(module=>module.worker))assert.ok(worker.includes(`modules/${module.id}/${module.worker}`));
- const offscreen=await fs.readFile(path.join(a,'offscreen.html'),'utf8');assert.equal([...offscreen.matchAll(/<iframe /g)].length,4);assert.ok(offscreen.indexOf('offscreen-host.js')<offscreen.indexOf('<iframe'));
+ const offscreen=await fs.readFile(path.join(a,'offscreen.html'),'utf8');assert.equal([...offscreen.matchAll(/<iframe /g)].length,3);assert.ok(offscreen.indexOf('offscreen-host.js')<offscreen.indexOf('<iframe'));
  run(a);assert.deepEqual(list,await files(a));
  }finally{await fs.rm(temp,{recursive:true,force:true});}
 });
@@ -104,10 +104,18 @@ test('generated wrappers bind API to module and preserve vendor/global exports',
   for(const file of module.files.filter(file=>file.startsWith('vendor/')))assert.deepEqual(await fs.readFile(path.join(temp,'modules',module.id,file)),await fs.readFile(path.join(root,module.source,file)));
  }
  const context=vm.createContext({globalThis:null,MyToolsClient:{moduleChrome:()=>({})}});context.globalThis=context;
- for(const [id,file,name] of [['instagram','core.js','IGMediaCore'],['gofile','core.js','GofileBulkCore'],['pagemedia','core.js','PageMediaBulkCore'],['badspi','quality-core.js','BadspiImageCore'],['instagram','quality-core.js','InstagramHighQualityCore'],['stripchat','core.js','StripchatLiveHoverCore'],['momoniji','download-core.js','MomonijiDownloads'],['momoniji','library-core.js','MomonijiLibrary'],['youtube','clip.js','YouTubeFiveSecondClip']]) {
+ for(const [id,file,name] of [['instagram','core.js','IGMediaCore'],['gofile','core.js','GofileBulkCore'],['pagemedia','core.js','PageMediaBulkCore'],['badspi','quality-core.js','BadspiImageCore'],['instagram','quality-core.js','InstagramHighQualityCore'],['stripchat','core.js','StripchatLiveHoverCore'],['momoniji','download-core.js','MomonijiDownloads'],['momoniji','library-core.js','MomonijiLibrary'],['ytqueue','core.js','YPQCore']]) {
   vm.runInContext(await fs.readFile(path.join(temp,'modules',id,file),'utf8'),context);assert.ok(context[name],name);
  }
  }finally{await fs.rm(temp,{recursive:true,force:true});}
+});
+test('every registered module has a manager label and group, and no label is left for a removed module',async()=>{
+ const source=await fs.readFile(path.join(root,'unified-tools/popup.jsx'),'utf8');
+ const table=source.match(/const presentation = \{([\s\S]*?)\n\};/)[1];
+ const labelled=[...table.matchAll(/^\s+(\w+): \['[^']+', '([^']+)'\]/gm)];
+ const groups=JSON.parse(source.match(/const groups = (\[.*\]);/)[1].replace(/'/g,'"'));
+ assert.deepEqual(labelled.map(match=>match[1]).sort(),(await registry()).map(module=>module.id).sort());
+ for(const [,id,group] of labelled)assert.ok(groups.includes(group),`${id} uses unknown group ${group}`);
 });
 test('build refuses to delete an unmarked existing directory',async()=>{
  const temp=await fs.mkdtemp(path.join(os.tmpdir(),'my-tools-protect-'));

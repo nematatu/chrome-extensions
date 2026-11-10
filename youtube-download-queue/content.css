@@ -1,0 +1,45 @@
+.ypq-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--mt-on-accent);
+  background: var(--mt-overlay);
+  cursor: pointer;
+}
+.ypq-mark svg { width: 18px; height: 18px; stroke-width: 2.5; }
+.ypq-mark:focus-visible { outline: 2px solid var(--mt-indigo-8); outline-offset: 2px; }
+.ypq-mark[data-status="queued"],
+.ypq-mark[data-status="downloaded"] { background: var(--mt-green-9); cursor: default; }
+.ypq-mark[data-status="pending"] { cursor: progress; }
+.ypq-mark[data-status="pending"] svg { animation: ypq-spin 1s linear infinite; }
+
+.ypq-mark--thumbnail { position: absolute; top: 6px; left: 6px; z-index: 3; }
+.ypq-mark--thumbnail[data-status="add"] { opacity: 0; transition: opacity 250ms ease-out; }
+:hover > .ypq-mark--thumbnail[data-status="add"],
+.ypq-mark--thumbnail[data-status="add"]:focus-visible { opacity: 1; }
+
+.ypq-mark--title { margin-right: 8px; vertical-align: middle; position: relative; top: -2px; }
+
+.ypq-toast {
+  position: fixed;
+  left: 24px;
+  bottom: 24px;
+  z-index: 2147483647;
+  max-width: min(480px, calc(100vw - 48px));
+  padding: 10px 14px;
+  border-radius: 6px;
+  color: var(--mt-on-accent);
+  background: var(--mt-overlay);
+  font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.ypq-toast[hidden] { display: none; }
+
+@keyframes ypq-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .ypq-mark, .ypq-mark svg { animation: none !important; transition: none !important; }
+}

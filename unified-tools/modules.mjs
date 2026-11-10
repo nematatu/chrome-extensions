@@ -498,31 +498,25 @@ export const modules = [
     }
   },
   {
-    "id": "youtube",
-    "name": "YouTube 範囲指定MP4クリップ",
-    "source": "youtube-five-second-clip",
+    "id": "ytqueue",
+    "name": "YouTube ダウンロードキュー",
+    "source": "youtube-download-queue",
     "files": [
       "ui-kit.js",
       "ui-tokens.css",
       "UI-LICENSES.txt",
       "background.js",
-      "clip.js",
-      "collector.js",
+      "content.css",
       "content.js",
-      "convert.mjs",
-      "offscreen.html",
-      "offscreen.mjs",
+      "core.js",
+      "popup.css",
       "popup.html",
-      "popup.js",
-      "stream-cache.js",
-      "vendor/mediabunny-LICENSE",
-      "vendor/mediabunny.mjs"
+      "popup.js"
     ],
     "worker": "background.js",
     "popup": "popup.html",
-    "offscreen": "offscreen.html",
     "startTypes": [
-      "clip"
+      "ypq:add"
     ],
     "contentStorage": {
       "local": [],

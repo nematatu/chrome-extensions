@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube ダウンロードキュー",
+  "version": "1.0.0",
+  "description": "YouTube の動画を Auto-YTDLP の links.txt へワンクリックで追加し、登録済み・ダウンロード済みを表示します。",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtGZQU/7qTqdQ5xsHHETRL/WcsGSbE1lfMEamkE9o/NRUhFd8vEWKv+tUqFEiK96fCEh9DPDndTHoCWXF56gMcEYqvOM0rS8La16PHSFwPhbNRpDvkXwNMIvPfQcj5dS1epCWOAM8L2skgT/7fMZQmDpxrZTNzZEdkPMR9bRBY4WUFprJYBASYjEqoU71p4fD7X2wmlpo5yVHc3tUdRJF/46aFp0YrQdhZT4E9QXP73iYVQ8jCQ/kVRQECdKK0AyTveW9G3hTgcI8z4P9Xamf6cVi1bVCo0MpAZyTcFn1ShWlcOXChyrC23gxYbhu2mNEfRmfipj4TGAipsi9d7NbHQIDAQAB",
+  "minimum_chrome_version": "120",
+  "permissions": [
+    "nativeMessaging"
+  ],
+  "host_permissions": [
+    "https://www.youtube.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "YouTube ダウンロードキュー",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.youtube.com/*"
+      ],
+      "js": [
+        "ui-kit.js",
+        "core.js",
+        "content.js"
+      ],
+      "css": [
+        "ui-tokens.css",
+        "content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
