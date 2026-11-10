@@ -197,6 +197,8 @@
 
   async function readResponse(url, options, deps) {
     const limit = options.limit || MAX_SEGMENT_BYTES;
+    // The requested window is buffered in memory, also when a server ignores Range, so it must fit the limit.
+    if (options.range && options.range.length > limit) fail("HLS_TOO_LARGE");
     const request = deps.request || deps.fetch || root.fetch;
     if (typeof request !== "function") fail("HLS_FETCH_FAILED");
     const timeout = timeoutSignal(deps.signal, deps.timeoutMs || 60000);

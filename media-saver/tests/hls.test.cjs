@@ -253,3 +253,25 @@ test("relative references resolve against the URL a redirected manifest was fina
   assert.deepEqual(requested.filter(url => !url.startsWith(base)), ["http://test.local/moved/master.m3u8", "http://test.local/moved/master.m3u8"]);
   assert.ok((await outputBuffer(output)).length > 10000);
 });
+
+test("a byte range larger than the segment limit is refused before it is requested", async () => {
+  const limit = 64 * 1024 * 1024;
+  const playlist = ["#EXTM3U", "#EXT-X-VERSION:4", "#EXT-X-TARGETDURATION:1",
+    "#EXTINF:1.0,", `#EXT-X-BYTERANGE:${limit + 1}@0`, "all.ts", "#EXT-X-ENDLIST"].join("\n");
+  const requested = [];
+  const request = async url => {
+    requested.push(url);
+    if (url.endsWith(".m3u8")) return new Response(playlist, { headers: { "content-type": "application/vnd.apple.mpegurl" } });
+    // A server that ignores Range and keeps streaming past the limit.
+    let sent = 0;
+    return new Response(new ReadableStream({
+      pull(controller) {
+        if (sent > limit + 4 * 1024 * 1024) return controller.close();
+        controller.enqueue(new Uint8Array(1024 * 1024));
+        sent += 1024 * 1024;
+      }
+    }), { headers: { "content-type": "video/mp2t" } });
+  };
+  await assert.rejects(H.assemble("https://cdn.example.com/list.m3u8", { request, muxjs: hls, mp4, output: H.memoryOutput() }), /^Error: HLS_TOO_LARGE$/);
+  assert.deepEqual(requested, ["https://cdn.example.com/list.m3u8"]);
+});

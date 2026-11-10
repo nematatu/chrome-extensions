@@ -146,7 +146,7 @@ media-saver/
 ```bash
 cd media-saver
 
-# 単体テスト（44 件）
+# 単体テスト（45 件）
 node --test tests/*.test.cjs
 
 # 実ブラウザー統合テスト（20 チェック）
