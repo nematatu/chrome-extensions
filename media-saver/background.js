@@ -322,18 +322,15 @@ async function restoreJobs() {
       if (job.downloads.length < (Number(job.expectedDownloads) || job.downloads.length)) {
         job.state = "failed"; job.error = "INTERRUPTED"; continue;
       }
-      let allComplete = job.downloads.length > 0;
       for (const entry of job.downloads) {
         try {
           const [download] = await chrome.downloads.search({ id: entry.id });
-          if (!download) { entry.state = "failed"; job.error = "INTERRUPTED"; allComplete = false; continue; }
+          if (!download) { entry.state = "failed"; job.error = "INTERRUPTED"; continue; }
           entry.state = download.state === "complete" ? "complete" : download.state === "interrupted" ? "failed" : "downloading";
           if (download.state === "interrupted" && !job.error) job.error = download.error || "DOWNLOAD_FAILED";
-          if (download.state !== "complete") allComplete = false;
-        } catch { allComplete = false; }
+        } catch {}
       }
-      if (allComplete) { job.state = "completed"; job.progress = 1; }
-      else if (job.downloads.every(entry => entry.state === "failed")) job.state = "failed";
+      await settleDownloads(job);
     } else if (job.state === "preparing") {
       const response = await sendOffscreen({ action: "query", token: job.token });
       if (!response?.ok || !response.present) { job.state = "failed"; job.error = "INTERRUPTED"; }
@@ -461,6 +458,20 @@ async function beginDownloads(job, outputs) {
   schedulePersistJobs();
 }
 
+// Used both for live download events and after a worker restart: every output saved completes the job,
+// and one failed output fails it, stops the outputs still downloading, and frees the job's files.
+async function settleDownloads(job) {
+  const { downloads } = job;
+  if (downloads.length && downloads.length >= (job.expectedDownloads || downloads.length) && downloads.every(entry => entry.state === "complete")) {
+    job.state = "completed"; job.progress = 1;
+    await releaseJob(job);
+  } else if (downloads.some(entry => entry.state === "failed")) {
+    job.state = "failed";
+    for (const entry of downloads) if (entry.state === "downloading") { try { await chrome.downloads.cancel(entry.id); } catch {} }
+    await releaseJob(job);
+  }
+}
+
 async function releaseJob(job) {
   if (!job?.token || job.released) return;
   job.released = true;
@@ -492,15 +503,7 @@ chrome.downloads.onChanged.addListener(async delta => {
     const ratio = job.total > 0 ? Math.min(1, job.received / job.total) : 0;
     job.progress = Math.max(job.progress || 0, 0.9 + ratio * 0.1);
   }
-  if (job.downloads.length >= (job.expectedDownloads || job.downloads.length) &&
-      job.downloads.length > 0 && job.downloads.every(item => item.state === "complete")) {
-    job.state = "completed"; job.progress = 1;
-    await releaseJob(job);
-  } else if (job.downloads.some(item => item.state === "failed")) {
-    job.state = "failed";
-    for (const item of job.downloads) if (item.state === "downloading") { try { await chrome.downloads.cancel(item.id); } catch {} }
-    await releaseJob(job);
-  }
+  await settleDownloads(job);
   pushJobs();
   schedulePersistJobs();
   if (job.state === "completed" || job.state === "failed") void pump();

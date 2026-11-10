@@ -417,10 +417,13 @@ async function main() {
     await popup.getByRole('button', { name: /メディア/ }).click();
 
     const tabFor = url => worker.evaluate(async target => (await chrome.tabs.query({})).find(tab => tab.url === target)?.id, url);
+    let lastStates = '';
     const finished = ids => waitFor(async () => {
       const jobs = (await rpc({ type: 'ms:jobs' })).jobs.filter(job => ids.includes(job.id));
-      return jobs.length === ids.length && jobs.every(job => ['completed', 'failed', 'canceled'].includes(job.state)) ? jobs : null;
-    }, `${ids.length} jobs to finish`, 120000);
+      const pending = jobs.filter(job => !['completed', 'failed', 'canceled'].includes(job.state));
+      lastStates = pending.slice(0, 5).map(job => `${job.title}:${job.state}`).join(', ');
+      return jobs.length === ids.length && !pending.length ? jobs : null;
+    }, `${ids.length} jobs to finish`, 300000).catch(error => { throw new Error(`${error.message} (found ${lastStates || 'missing jobs'})`); });
 
     // On a public page, URLs read from manifests and redirect targets face the same private-network check
     // as the media URL. fetch follows a redirect before exposing it, so that one request is sent, but its
@@ -521,8 +524,42 @@ async function main() {
     const history = (await rpc({ type: 'ms:jobs' })).jobs;
     assert.equal(history.length, 60);
     assert.ok(history.every(job => job.state === 'completed' && bulk.includes(job.id)));
-    await rpc({ type: 'ms:set-settings', settings: original });
     pass('Unfinished jobs are always persisted, all 110 complete, and finished history keeps the 60 newest');
+
+    // A real worker restart restores a DASH job whose video was saved but whose audio download failed. It must
+    // end as failed, not stay "saving" forever, so the job queued behind it (concurrency 1) still runs.
+    const terminalDownloads = await worker.evaluate(async urls => {
+      const ids = [];
+      for (const [url, filename] of urls) ids.push(await chrome.downloads.download({ url, filename, conflictAction: 'uniquify' }));
+      for (let tries = 0; tries < 100; tries++) {
+        const items = await Promise.all(ids.map(async id => (await chrome.downloads.search({ id }))[0]));
+        if (items.every(item => item && item.state !== 'in_progress')) return items.map(item => [item.id, item.state]);
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      return [];
+    }, [[`${base}/media/tiny.png?restore=video`, 'MediaSaver/restore-video.png'], [`${base}/media/missing.png`, 'MediaSaver/restore-audio.png']]);
+    assert.deepEqual(terminalDownloads.map(([, state]) => state), ['complete', 'interrupted']);
+    await delay(500); // let any pending history write land before adding to it
+    await worker.evaluate(async ([pageUrl, queuedUrl, ids]) => {
+      const now = Date.now();
+      const jobs = (await chrome.storage.session.get('jobs')).jobs || [];
+      jobs.push({ id: 'restore-dash', token: crypto.randomUUID(), kind: 'dash', url: pageUrl, pageUrl, title: 'restore-dash', state: 'downloading',
+        progress: 0.9, downloads: ids.map(id => ({ id, state: 'downloading' })), expectedDownloads: 2, outputs: [], createdAt: now });
+      jobs.push({ id: 'restore-queued', token: crypto.randomUUID(), kind: 'image', url: queuedUrl, pageUrl, title: 'restore-queued', state: 'queued',
+        progress: 0, downloads: [], outputs: [], createdAt: now + 1 });
+      await chrome.storage.session.set({ jobs });
+    }, [`${base}/gallery.html`, `${base}/media/tiny.png?restore=queued`, terminalDownloads.map(([id]) => id)]);
+    // Playwright keeps one handle and reattaches it to the restarted worker, whose fresh global lacks the marker.
+    await worker.evaluate(() => { self.beforeRestart = true; });
+    const workers = await context.newCDPSession(popup);
+    await workers.send('ServiceWorker.enable');
+    await workers.send('ServiceWorker.stopAllWorkers');
+    await rpc({ type: 'ms:jobs' }); // wakes the worker, which restores the stored jobs
+    await waitFor(() => worker.evaluate(() => !self.beforeRestart).catch(() => false), 'the service worker to restart');
+    const restored = await finished(['restore-dash', 'restore-queued']);
+    assert.deepEqual(restored.map(job => [job.id, job.state]).sort(), [['restore-dash', 'failed'], ['restore-queued', 'completed']]);
+    await rpc({ type: 'ms:set-settings', settings: original });
+    pass('After a real worker restart, a DASH job with a failed output fails and the job queued behind it still runs');
 
     const options = await context.newPage();
     await options.setViewportSize({ width: 1120, height: 900 });

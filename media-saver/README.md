@@ -149,7 +149,7 @@ cd media-saver
 # 単体テスト（44 件）
 node --test tests/*.test.cjs
 
-# 実ブラウザー統合テスト（19 チェック）
+# 実ブラウザー統合テスト（20 チェック）
 PLAYWRIGHT_MODULE=/path/to/node_modules/playwright node tests/browser.cjs
 ```
 
@@ -159,6 +159,7 @@ PLAYWRIGHT_MODULE=/path/to/node_modules/playwright node tests/browser.cjs
 - 300件を超える一括保存の拒否、110件のジョブの完了、未完了ジョブの永続化、完了履歴の60件への整理も確認します。
 - 別の場所へリダイレクトされた HLS / DASH のマニフェストが、最終的な URL を基準に画質取得・保存できることを確認します。
 - Chrome がダウンロードを開始している最中にキャンセルしたとき、そのダウンロードを止め、次のファイルを保存しないことを確認します。
+- サービスワーカーを実際に停止して再起動させます。片方の出力だけ失敗した DASH ジョブが「失敗」になり、その後ろに並んだジョブが処理されることを確認します。
 - Playwright はこのリポジトリの依存関係ではありません。`PLAYWRIGHT_MODULE` にインストール済みの `playwright` ディレクトリを指定してください。
 - テストのスクリーンショットは `test-results/` に出力され、Git の対象外です。
 
