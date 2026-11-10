@@ -119,10 +119,19 @@ function startServer() {
       held.then(() => serveFixture(request, response, url.pathname.replace(/^\/held\//, '/media/')));
       return;
     }
+    // /stall sends the start of a body and then nothing, so a download of it stays in progress.
+    if (url.pathname === '/stall') {
+      response.writeHead(200, { 'content-type': 'application/octet-stream', 'content-length': 1024 * 1024 });
+      response.write(Buffer.alloc(1024));
+      stalled.push(response);
+      return;
+    }
     serveFixture(request, response, url.pathname);
   });
+  const stalled = [];
   server.requests = requests;
   server.release = () => release();
+  server.endStalls = () => { for (const response of stalled.splice(0)) response.destroy(); };
   return new Promise(resolve => {
     server.listen(0, '127.0.0.1', () => resolve(server));
   });
@@ -526,29 +535,35 @@ async function main() {
     assert.ok(history.every(job => job.state === 'completed' && bulk.includes(job.id)));
     pass('Unfinished jobs are always persisted, all 110 complete, and finished history keeps the 60 newest');
 
-    // A real worker restart restores a DASH job whose video was saved but whose audio download failed. It must
-    // end as failed, not stay "saving" forever, so the job queued behind it (concurrency 1) still runs.
-    const terminalDownloads = await worker.evaluate(async urls => {
+    // A real worker restart restores two DASH jobs that can never finish: one whose video was saved but whose
+    // audio failed, and one that recorded only its first output, still downloading. Both must fail, stop the
+    // download still running, and release their files, so the job queued behind them (concurrency 1) still runs.
+    const restoreDownloads = await worker.evaluate(async urls => {
       const ids = [];
       for (const [url, filename] of urls) ids.push(await chrome.downloads.download({ url, filename, conflictAction: 'uniquify' }));
       for (let tries = 0; tries < 100; tries++) {
         const items = await Promise.all(ids.map(async id => (await chrome.downloads.search({ id }))[0]));
-        if (items.every(item => item && item.state !== 'in_progress')) return items.map(item => [item.id, item.state]);
+        if (items.every(Boolean) && items[0].state !== 'in_progress' && items[1].state !== 'in_progress' && items[2].bytesReceived > 0) {
+          return items.map(item => [item.id, item.state]);
+        }
         await new Promise(resolve => setTimeout(resolve, 100));
       }
       return [];
-    }, [[`${base}/media/tiny.png?restore=video`, 'MediaSaver/restore-video.png'], [`${base}/media/missing.png`, 'MediaSaver/restore-audio.png']]);
-    assert.deepEqual(terminalDownloads.map(([, state]) => state), ['complete', 'interrupted']);
+    }, [[`${base}/media/tiny.png?restore=video`, 'MediaSaver/restore-video.png'], [`${base}/media/missing.png`, 'MediaSaver/restore-audio.png'],
+      [`${base}/stall`, 'MediaSaver/restore-partial.bin']]);
+    assert.deepEqual(restoreDownloads.map(([, state]) => state), ['complete', 'interrupted', 'in_progress']);
+    const [savedId, failedId, runningId] = restoreDownloads.map(([id]) => id);
     await delay(500); // let any pending history write land before adding to it
-    await worker.evaluate(async ([pageUrl, queuedUrl, ids]) => {
+    await worker.evaluate(async ([pageUrl, queuedUrl, dashIds, partialIds]) => {
       const now = Date.now();
       const jobs = (await chrome.storage.session.get('jobs')).jobs || [];
-      jobs.push({ id: 'restore-dash', token: crypto.randomUUID(), kind: 'dash', url: pageUrl, pageUrl, title: 'restore-dash', state: 'downloading',
-        progress: 0.9, downloads: ids.map(id => ({ id, state: 'downloading' })), expectedDownloads: 2, outputs: [], createdAt: now });
+      const dash = (id, ids) => ({ id, token: crypto.randomUUID(), kind: 'dash', url: pageUrl, pageUrl, title: id, state: 'downloading',
+        progress: 0.9, downloads: ids.map(download => ({ id: download, state: 'downloading' })), expectedDownloads: 2, outputs: [], createdAt: now });
+      jobs.push(dash('restore-dash', dashIds), dash('restore-partial', partialIds));
       jobs.push({ id: 'restore-queued', token: crypto.randomUUID(), kind: 'image', url: queuedUrl, pageUrl, title: 'restore-queued', state: 'queued',
         progress: 0, downloads: [], outputs: [], createdAt: now + 1 });
       await chrome.storage.session.set({ jobs });
-    }, [`${base}/gallery.html`, `${base}/media/tiny.png?restore=queued`, terminalDownloads.map(([id]) => id)]);
+    }, [`${base}/gallery.html`, `${base}/media/tiny.png?restore=queued`, [savedId, failedId], [runningId]]);
     // Playwright keeps one handle and reattaches it to the restarted worker, whose fresh global lacks the marker.
     await worker.evaluate(() => { self.beforeRestart = true; });
     const workers = await context.newCDPSession(popup);
@@ -556,10 +571,21 @@ async function main() {
     await workers.send('ServiceWorker.stopAllWorkers');
     await rpc({ type: 'ms:jobs' }); // wakes the worker, which restores the stored jobs
     await waitFor(() => worker.evaluate(() => !self.beforeRestart).catch(() => false), 'the service worker to restart');
-    const restored = await finished(['restore-dash', 'restore-queued']);
-    assert.deepEqual(restored.map(job => [job.id, job.state]).sort(), [['restore-dash', 'failed'], ['restore-queued', 'completed']]);
+    const restored = await finished(['restore-dash', 'restore-partial', 'restore-queued']);
+    assert.deepEqual(restored.map(job => [job.id, job.state, job.error]).sort(),
+      [['restore-dash', 'failed', 'SERVER_BAD_CONTENT'], ['restore-partial', 'failed', 'INTERRUPTED'], ['restore-queued', 'completed', null]]);
+    const stopped = await waitFor(async () => {
+      const [item] = await worker.evaluate(id => chrome.downloads.search({ id }), runningId);
+      return item.state !== 'in_progress' ? item : null;
+    }, 'the partial job download to stop');
+    assert.deepEqual([stopped.state, stopped.error], ['interrupted', 'USER_CANCELED']);
+    await waitFor(async () => {
+      const jobs = await stored();
+      return ['restore-dash', 'restore-partial'].every(id => jobs.find(job => job.id === id)?.released === true);
+    }, 'both failed jobs to release their files');
+    server.endStalls();
     await rpc({ type: 'ms:set-settings', settings: original });
-    pass('After a real worker restart, a DASH job with a failed output fails and the job queued behind it still runs');
+    pass('After a real worker restart, DASH jobs that cannot finish fail, stop and release, and the queued job still runs');
 
     const options = await context.newPage();
     await options.setViewportSize({ width: 1120, height: 900 });
@@ -637,6 +663,7 @@ async function main() {
     console.log(`Screenshots: ${output}`);
   } finally {
     await context?.close().catch(() => {});
+    server.endStalls();
     await new Promise(resolve => server.close(resolve));
     fs.rmSync(temporary, { recursive: true, force: true });
   }

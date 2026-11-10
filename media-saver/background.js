@@ -319,9 +319,6 @@ async function restoreJobs() {
   }
   for (const job of jobCache.values()) {
     if (job.state === "downloading" && Array.isArray(job.downloads)) {
-      if (job.downloads.length < (Number(job.expectedDownloads) || job.downloads.length)) {
-        job.state = "failed"; job.error = "INTERRUPTED"; continue;
-      }
       for (const entry of job.downloads) {
         try {
           const [download] = await chrome.downloads.search({ id: entry.id });
@@ -330,7 +327,11 @@ async function restoreJobs() {
           if (download.state === "interrupted" && !job.error) job.error = download.error || "DOWNLOAD_FAILED";
         } catch {}
       }
-      await settleDownloads(job);
+      // Outputs that were never started cannot finish, so the job fails like one with a failed output.
+      if (job.downloads.length < (Number(job.expectedDownloads) || job.downloads.length)) {
+        job.error = "INTERRUPTED";
+        await failJob(job);
+      } else await settleDownloads(job);
     } else if (job.state === "preparing") {
       const response = await sendOffscreen({ action: "query", token: job.token });
       if (!response?.ok || !response.present) { job.state = "failed"; job.error = "INTERRUPTED"; }
@@ -450,26 +451,26 @@ async function beginDownloads(job, outputs) {
   if (job.state === "downloading" && job.downloads.length === 0) {
     job.state = "failed"; job.error = "NO_OUTPUT";
   }
-  if (job.state === "failed") {
-    for (const entry of job.downloads) { try { await chrome.downloads.cancel(entry.id); } catch {} }
-    await releaseJob(job);
-  }
+  if (job.state === "failed") await failJob(job);
   pushJobs();
   schedulePersistJobs();
 }
 
 // Used both for live download events and after a worker restart: every output saved completes the job,
-// and one failed output fails it, stops the outputs still downloading, and frees the job's files.
+// and one failed output fails it.
 async function settleDownloads(job) {
   const { downloads } = job;
   if (downloads.length && downloads.length >= (job.expectedDownloads || downloads.length) && downloads.every(entry => entry.state === "complete")) {
     job.state = "completed"; job.progress = 1;
     await releaseJob(job);
-  } else if (downloads.some(entry => entry.state === "failed")) {
-    job.state = "failed";
-    for (const entry of downloads) if (entry.state === "downloading") { try { await chrome.downloads.cancel(entry.id); } catch {} }
-    await releaseJob(job);
-  }
+  } else if (downloads.some(entry => entry.state === "failed")) await failJob(job);
+}
+
+// Every way a downloading job fails ends here: outputs still downloading are stopped and the files freed.
+async function failJob(job) {
+  job.state = "failed";
+  for (const entry of job.downloads) if (entry.state === "downloading") { try { await chrome.downloads.cancel(entry.id); } catch {} }
+  await releaseJob(job);
 }
 
 async function releaseJob(job) {
