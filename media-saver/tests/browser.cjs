@@ -502,6 +502,36 @@ async function main() {
     await worker.evaluate(() => { chrome.downloads.download = self.downloadGate.original; });
     pass('Cancelling while a download is starting cancels it and starts no further output');
 
+    // A queued job cancelled while the queue is still starting an earlier job must not start afterwards.
+    await worker.evaluate(() => {
+      const original = sendOffscreen;
+      let open;
+      self.startGate = { original, started: [], opened: new Promise(resolve => { open = resolve; }) };
+      self.startGate.open = () => open();
+      sendOffscreen = async message => {
+        if (message.action === 'start') {
+          self.startGate.started.push(message.job.token);
+          await self.startGate.opened;
+        }
+        return original(message);
+      };
+    });
+    const pair = await rpc({ type: 'ms:start', tabId, items: [
+      { url: `${base}/media/tiny.png?queue=first`, kind: 'image', title: 'queue-first' },
+      { url: `${base}/media/tiny.png?queue=second`, kind: 'image', title: 'queue-second' }
+    ] });
+    await waitFor(() => worker.evaluate(() => self.startGate.started.length === 1), 'the first start to be in flight');
+    assert.deepEqual(await rpc({ type: 'ms:cancel', jobId: pair.jobs[1] }), { ok: true });
+    await worker.evaluate(() => self.startGate.open());
+    const pairJobs = await finished(pair.jobs);
+    await delay(500);
+    const startedTokens = await worker.evaluate(() => self.startGate.started);
+    await worker.evaluate(() => { sendOffscreen = self.startGate.original; });
+    const [firstJob, secondJob] = pair.jobs.map(id => pairJobs.find(job => job.id === id));
+    assert.deepEqual([firstJob.state, secondJob.state], ['completed', 'canceled']);
+    assert.deepEqual(startedTokens, [firstJob.token]);
+    pass('A queued job cancelled while an earlier job is starting stays cancelled and never starts');
+
     // More items than the old 50-item batch limit are all queued; more than the detector keeps (300) are refused whole.
     const original = (await rpc({ type: 'ms:settings' })).settings;
     await rpc({ type: 'ms:set-settings', settings: { ...original, concurrency: 1 } });

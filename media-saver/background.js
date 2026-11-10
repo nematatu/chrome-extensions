@@ -386,6 +386,8 @@ async function pump() {
     const queued = [...jobCache.values()].filter(job => job.state === "queued").sort((left, right) => (left.createdAt || 0) - (right.createdAt || 0));
     for (const job of queued) {
       if (slots <= 0) break;
+      // Starting an earlier job awaits the offscreen document, and this one may have been cancelled meanwhile.
+      if (job.state !== "queued") continue;
       slots--;
       job.state = "preparing";
       job.progress = 0;
