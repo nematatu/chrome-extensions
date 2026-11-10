@@ -591,6 +591,32 @@ async function main() {
     assert.deepEqual(blobLog.revoked, blobLog.created);
     pass('A DASH job whose audio fails after its video finished revokes the video file instead of leaking it');
 
+    // Cancelling while a finished output is being closed must not leave an object URL behind for the
+    // disposed job. getFile() completes, then waits until the cancellation has disposed the job.
+    await evaluateInOffscreen(context, `(() => {
+      self.blobLog = { created: [], revoked: [] };
+      const getFile = FileSystemFileHandle.prototype.getFile;
+      let open;
+      self.fileGate = { hits: 0, getFile, opened: new Promise(resolve => { open = resolve; }) };
+      self.fileGate.open = () => open();
+      FileSystemFileHandle.prototype.getFile = async function () {
+        const file = await getFile.call(this);
+        self.fileGate.hits++;
+        await self.fileGate.opened;
+        return file;
+      };
+    })()`);
+    const closing = await rpc({ type: 'ms:start', tabId, items: [{ url: `${base}/media/tiny.png?closing=1`, kind: 'image', title: 'cancel-while-closing' }] });
+    await waitFor(() => evaluateInOffscreen(context, 'self.fileGate.hits === 1'), 'the output to be closing');
+    assert.deepEqual(await rpc({ type: 'ms:cancel', jobId: closing.jobs[0] }), { ok: true });
+    await evaluateInOffscreen(context, 'self.fileGate.open()');
+    await delay(1000);
+    const closingLog = await evaluateInOffscreen(context, '(() => { FileSystemFileHandle.prototype.getFile = self.fileGate.getFile; return self.blobLog; })()');
+    assert.deepEqual(closingLog.created.filter(url => !closingLog.revoked.includes(url)), []);
+    const [closingJob] = (await rpc({ type: 'ms:jobs' })).jobs.filter(job => job.id === closing.jobs[0]);
+    assert.equal(closingJob.state, 'canceled');
+    pass('Cancelling while a finished output is being closed leaves no object URL behind');
+
     // A byte range above the segment limit is refused before it is requested, since a server may ignore
     // Range and send everything.
     const hugeSeen = server.requests.length;

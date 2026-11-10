@@ -275,3 +275,19 @@ test("a byte range larger than the segment limit is refused before it is request
   await assert.rejects(H.assemble("https://cdn.example.com/list.m3u8", { request, muxjs: hls, mp4, output: H.memoryOutput() }), /^Error: HLS_TOO_LARGE$/);
   assert.deepEqual(requested, ["https://cdn.example.com/list.m3u8"]);
 });
+
+test("a variant with its own audio ignores the master's separate audio rendition", async () => {
+  const serve = fixtureRequest();
+  const requested = [];
+  const master = ["#EXTM3U", "#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"aud\",NAME=\"main\",URI=\"hls-av/stream_1.m3u8\"",
+    "#EXT-X-STREAM-INF:BANDWIDTH=100000,AUDIO=\"aud\"", "list.m3u8"].join("\n");
+  const request = async (url, init) => {
+    requested.push(url);
+    if (url === "http://test.local/muxed-master.m3u8") return new Response(master, { headers: { "content-type": "application/vnd.apple.mpegurl" } });
+    return serve(url, init);
+  };
+  const output = H.memoryOutput();
+  await H.assemble("http://test.local/muxed-master.m3u8", { request, muxjs: hls, mp4, output, progress() {} });
+  assert.deepEqual(trackKinds(await outputBuffer(output)).sort(), ["soun", "vide"]);
+  assert.deepEqual(requested.filter(url => /seg_1_\d+\.ts$/.test(url)), []);
+});

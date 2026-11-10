@@ -53,6 +53,9 @@ async function createOutput(job, index) {
         writer = null;
         const file = await handle.getFile();
         if (!file.size) throw new Error("STORAGE_FAILED");
+        // A cancellation during the awaits above has already disposed the job, which would never revoke
+        // an object URL created now.
+        if (job.disposed) throw new Error("CANCELED");
         // OPFS files have an empty type. Wrap the file in a typed Blob so
         // chrome.downloads and the saved file expose the real MIME type. Blob
         // composition references the same bytes instead of copying them.

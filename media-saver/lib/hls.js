@@ -452,7 +452,8 @@
       transmuxer.push(firstBytes); transmuxer.flush();
       if (conversionError) fail(conversionError);
       if (!pending.length) fail("HLS_BAD_SEGMENT");
-      const firstTracks = trackInfo(pending[0].initSegment);
+      // With remux off, mux.js emits video and audio as separate entries, so every entry is inspected.
+      const firstTracks = pending.flatMap(part => trackInfo(part.initSegment));
       const trackKinds = new Set(firstTracks.map(track => track.kind));
       if (!trackKinds.has("vide") && !trackKinds.has("soun")) fail("HLS_UNSUPPORTED");
       let audioSegments = plan.audioSegments || [];
