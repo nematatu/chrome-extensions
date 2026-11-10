@@ -149,7 +149,7 @@ cd media-saver
 # 単体テスト（45 件）
 node --test tests/*.test.cjs
 
-# 実ブラウザー統合テスト（21 チェック）
+# 実ブラウザー統合テスト（22 チェック）
 PLAYWRIGHT_MODULE=/path/to/node_modules/playwright node tests/browser.cjs
 ```
 
@@ -160,6 +160,7 @@ PLAYWRIGHT_MODULE=/path/to/node_modules/playwright node tests/browser.cjs
 - 別の場所へリダイレクトされた HLS / DASH のマニフェストが、最終的な URL を基準に画質取得・保存できることを確認します。
 - Chrome がダウンロードを開始している最中にキャンセルしたとき、そのダウンロードを止め、次のファイルを保存しないことを確認します。
 - 前のジョブを開始している間に待機中のジョブをキャンセルしたとき、そのジョブが開始されないことを確認します。
+- DASH の映像の保存後に音声が失敗したとき、映像の Blob URL を解放することを確認します。オフスクリーン文書の中は、CDP で確認します。
 - サービスワーカーを実際に停止して再起動させます。次の2つの DASH ジョブを対象に確認します。
   - 片方の出力だけ失敗したジョブ
   - 1本目の出力だけ記録されたジョブ

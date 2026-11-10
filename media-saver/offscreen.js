@@ -269,11 +269,18 @@ async function runDash(job) {
   if (plan.audio) tracks.push({ track: plan.audio, role: "audio" });
   job.segments = tracks.reduce((sum, item) => sum + (item.track.segments?.length || 1), 0);
   job.duration = plan.duration;
+  // Outputs reach job.outputs (and disposeJob) only once every track is done, since a job with outputs
+  // reports itself ready. A failed job revokes the tracks it already finished here instead.
   const outputs = [];
-  for (let index = 0; index < tracks.length; index++) {
-    if (job.disposed) throw new Error("CANCELED");
-    outputs.push(await runDashTrack(job, index, tracks[index].track, tracks[index].role));
-    job.completed = job.segments;
+  try {
+    for (let index = 0; index < tracks.length; index++) {
+      if (job.disposed) throw new Error("CANCELED");
+      outputs.push(await runDashTrack(job, index, tracks[index].track, tracks[index].role));
+      job.completed = job.segments;
+    }
+  } catch (error) {
+    for (const output of outputs) URL.revokeObjectURL(output.blobUrl);
+    throw error;
   }
   job.outputs = outputs;
   report(job, "ready", { progress: 1 }, true);

@@ -103,6 +103,13 @@ function startServer() {
     const unsafe = unsafeResponse(url.pathname, privateMedia);
     if (unsafe) { sendText(request, response, ...unsafe); return; }
     // Manifests that moved: relative references must resolve against where they ended up.
+    // A DASH manifest whose video track exists but whose audio segments are missing.
+    if (url.pathname === '/broken-audio/manifest.mpd') {
+      const manifest = fs.readFileSync(path.join(fixtures, 'dash-list/manifest.mpd'), 'utf8');
+      sendText(request, response, 'application/dash+xml', manifest.replace(/(sourceURL|media)="([^"]+)"/g,
+        (match, attribute, file) => `${attribute}="/media/dash-list/${/^(init|chunk)-1/.test(file) ? 'missing-' : ''}${file}"`));
+      return;
+    }
     const moved = { '/moved/master.m3u8': '/media/hls-av/master.m3u8', '/moved/manifest.mpd': '/media/dash-template/manifest.mpd' }[url.pathname];
     if (moved) {
       response.writeHead(302, { location: moved });
@@ -169,6 +176,29 @@ function serveFixture(request, response, pathname) {
   response.writeHead(status, headers);
   if (request.method === 'HEAD') { response.end(); return; }
   fs.createReadStream(found.file, { start, end }).pipe(response);
+}
+
+// The offscreen document is not a Playwright page, so evaluate in it over the browser's CDP Target domain.
+async function evaluateInOffscreen(context, expression) {
+  const cdp = await context.browser().newBrowserCDPSession();
+  try {
+    const { targetInfos } = await cdp.send('Target.getTargets');
+    const target = targetInfos.find(info => info.url.endsWith('/offscreen.html'));
+    if (!target) throw new Error('no offscreen document');
+    const { sessionId } = await cdp.send('Target.attachToTarget', { targetId: target.targetId, flatten: false });
+    const reply = new Promise(resolve => cdp.on('Target.receivedMessageFromTarget', event => {
+      const message = JSON.parse(event.message);
+      if (message.id === 1) resolve(message);
+    }));
+    await cdp.send('Target.sendMessageToTarget', { sessionId, message: JSON.stringify({
+      id: 1, method: 'Runtime.evaluate', params: { expression, awaitPromise: true, returnByValue: true }
+    }) });
+    const { result } = await reply;
+    if (result.exceptionDetails) throw new Error(result.exceptionDetails.text);
+    return result.result.value;
+  } finally {
+    await cdp.detach().catch(() => {});
+  }
 }
 
 async function waitFor(check, label, timeout = 30000) {
@@ -531,6 +561,22 @@ async function main() {
     assert.deepEqual([firstJob.state, secondJob.state], ['completed', 'canceled']);
     assert.deepEqual(startedTokens, [firstJob.token]);
     pass('A queued job cancelled while an earlier job is starting stays cancelled and never starts');
+
+    // When the audio track of a DASH job fails after the video track finished, the video's object URL,
+    // which keeps the file alive, is revoked instead of being left behind.
+    await evaluateInOffscreen(context, `(() => {
+      const create = URL.createObjectURL, revoke = URL.revokeObjectURL;
+      self.blobLog = { created: [], revoked: [] };
+      URL.createObjectURL = blob => { const url = create(blob); self.blobLog.created.push(url); return url; };
+      URL.revokeObjectURL = url => { self.blobLog.revoked.push(url); return revoke(url); };
+    })()`);
+    const broken = await rpc({ type: 'ms:start', tabId, items: [{ url: `${base}/broken-audio/manifest.mpd`, kind: 'dash', title: 'broken-audio' }] });
+    const [brokenJob] = await finished(broken.jobs);
+    assert.deepEqual([brokenJob.state, brokenJob.error], ['failed', 'NOT_FOUND']);
+    const blobLog = await evaluateInOffscreen(context, 'self.blobLog');
+    assert.equal(blobLog.created.length, 1, JSON.stringify(blobLog));
+    assert.deepEqual(blobLog.revoked, blobLog.created);
+    pass('A DASH job whose audio fails after its video finished revokes the video file instead of leaking it');
 
     // More items than the old 50-item batch limit are all queued; more than the detector keeps (300) are refused whole.
     const original = (await rpc({ type: 'ms:settings' })).settings;
