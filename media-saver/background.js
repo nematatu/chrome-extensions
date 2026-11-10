@@ -335,7 +335,11 @@ async function restoreJobs() {
     } else if (job.state === "preparing") {
       const response = await sendOffscreen({ action: "query", token: job.token });
       if (!response?.ok || !response.present) { job.state = "failed"; job.error = "INTERRUPTED"; }
-      else if (response.phase === "ready" && Array.isArray(response.outputs)) {
+      else if (response.phase === "failed") {
+        // The failure was reported while this worker was gone, so nobody released the job.
+        job.state = "failed"; job.error = response.error || "PROCESSING_FAILED";
+        await releaseJob(job);
+      } else if (response.phase === "ready" && Array.isArray(response.outputs)) {
         job.state = "downloading";
         await beginDownloads(job, response.outputs);
       }

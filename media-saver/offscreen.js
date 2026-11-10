@@ -370,7 +370,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
   if (message.action === "query") {
-    sendResponse({ ok: true, present: true, phase: job.disposed ? "failed" : job.outputs?.length ? "ready" : "downloading",
+    sendResponse({ ok: true, present: true, phase: job.disposed || job.error ? "failed" : job.outputs?.length ? "ready" : "downloading",
       received: job.received, total: job.total, progress: job.progress, error: job.error,
       outputs: job.outputs?.map(({ blobUrl, size, mime, extension, role }) => ({ blobUrl, size, mime, extension, role })) });
     return undefined;

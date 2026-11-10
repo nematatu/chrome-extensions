@@ -629,17 +629,28 @@ async function main() {
       [`${base}/stall`, 'MediaSaver/restore-partial.bin']]);
     assert.deepEqual(restoreDownloads.map(([, state]) => state), ['complete', 'interrupted', 'in_progress']);
     const [savedId, failedId, runningId] = restoreDownloads.map(([id]) => id);
+    // An offscreen job that failed while its progress message was lost: started directly, so no job record
+    // receives the failure, and the offscreen document keeps it until its TTL.
+    const lostToken = await worker.evaluate(async url => {
+      const token = crypto.randomUUID();
+      await sendOffscreen({ action: 'start', job: { token, kind: 'image', url, pageUrl: url } });
+      for (let tries = 0; tries < 100 && !(await sendOffscreen({ action: 'query', token })).error; tries++) await new Promise(resolve => setTimeout(resolve, 100));
+      return token;
+    }, `${base}/media/missing.png?restore=preparing`);
+    assert.equal((await worker.evaluate(token => sendOffscreen({ action: 'query', token }), lostToken)).error, 'NOT_FOUND');
     await delay(500); // let any pending history write land before adding to it
-    await worker.evaluate(async ([pageUrl, queuedUrl, dashIds, partialIds]) => {
+    await worker.evaluate(async ([pageUrl, queuedUrl, dashIds, partialIds, preparingToken]) => {
       const now = Date.now();
       const jobs = (await chrome.storage.session.get('jobs')).jobs || [];
       const dash = (id, ids) => ({ id, token: crypto.randomUUID(), kind: 'dash', url: pageUrl, pageUrl, title: id, state: 'downloading',
         progress: 0.9, downloads: ids.map(download => ({ id: download, state: 'downloading' })), expectedDownloads: 2, outputs: [], createdAt: now });
       jobs.push(dash('restore-dash', dashIds), dash('restore-partial', partialIds));
+      jobs.push({ id: 'restore-preparing', token: preparingToken, kind: 'image', url: pageUrl, pageUrl, title: 'restore-preparing', state: 'preparing',
+        progress: 0, downloads: [], outputs: [], createdAt: now });
       jobs.push({ id: 'restore-queued', token: crypto.randomUUID(), kind: 'image', url: queuedUrl, pageUrl, title: 'restore-queued', state: 'queued',
         progress: 0, downloads: [], outputs: [], createdAt: now + 1 });
       await chrome.storage.session.set({ jobs });
-    }, [`${base}/gallery.html`, `${base}/media/tiny.png?restore=queued`, [savedId, failedId], [runningId]]);
+    }, [`${base}/gallery.html`, `${base}/media/tiny.png?restore=queued`, [savedId, failedId], [runningId], lostToken]);
     // Playwright keeps one handle and reattaches it to the restarted worker, whose fresh global lacks the marker.
     await worker.evaluate(() => { self.beforeRestart = true; });
     const workers = await context.newCDPSession(popup);
@@ -647,9 +658,9 @@ async function main() {
     await workers.send('ServiceWorker.stopAllWorkers');
     await rpc({ type: 'ms:jobs' }); // wakes the worker, which restores the stored jobs
     await waitFor(() => worker.evaluate(() => !self.beforeRestart).catch(() => false), 'the service worker to restart');
-    const restored = await finished(['restore-dash', 'restore-partial', 'restore-queued']);
-    assert.deepEqual(restored.map(job => [job.id, job.state, job.error]).sort(),
-      [['restore-dash', 'failed', 'SERVER_BAD_CONTENT'], ['restore-partial', 'failed', 'INTERRUPTED'], ['restore-queued', 'completed', null]]);
+    const restored = await finished(['restore-dash', 'restore-partial', 'restore-preparing', 'restore-queued']);
+    assert.deepEqual(restored.map(job => [job.id, job.state, job.error]).sort(), [['restore-dash', 'failed', 'SERVER_BAD_CONTENT'],
+      ['restore-partial', 'failed', 'INTERRUPTED'], ['restore-preparing', 'failed', 'NOT_FOUND'], ['restore-queued', 'completed', null]]);
     const stopped = await waitFor(async () => {
       const [item] = await worker.evaluate(id => chrome.downloads.search({ id }), runningId);
       return item.state !== 'in_progress' ? item : null;
@@ -657,11 +668,12 @@ async function main() {
     assert.deepEqual([stopped.state, stopped.error], ['interrupted', 'USER_CANCELED']);
     await waitFor(async () => {
       const jobs = await stored();
-      return ['restore-dash', 'restore-partial'].every(id => jobs.find(job => job.id === id)?.released === true);
-    }, 'both failed jobs to release their files');
+      return ['restore-dash', 'restore-partial', 'restore-preparing'].every(id => jobs.find(job => job.id === id)?.released === true);
+    }, 'the failed jobs to release their files');
+    assert.equal((await worker.evaluate(token => sendOffscreen({ action: 'query', token }), lostToken)).ok, false);
     server.endStalls();
     await rpc({ type: 'ms:set-settings', settings: original });
-    pass('After a real worker restart, DASH jobs that cannot finish fail, stop and release, and the queued job still runs');
+    pass('After a real worker restart, jobs that cannot finish fail, stop and release, and the queued job still runs');
 
     const options = await context.newPage();
     await options.setViewportSize({ width: 1120, height: 900 });
