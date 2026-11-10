@@ -115,6 +115,8 @@ const requestFor = pageUrl => MediaSaverCommon.guardFetch(fetch, pageUrl);
 
 async function fetchWithLimit(job, url, limit, range) {
   if (!validateUrl(url)) throw new Error("UNSUPPORTED");
+  // A server may ignore Range and send the whole file, so the requested window itself must fit the limit.
+  if (range && range.length > limit) throw new Error("TOO_LARGE");
   const response = await requestFor(job.pageUrl)(url, requestOptions(job, range));
   if (response.status === 429) throw new Error("RATE_LIMITED");
   if ([401, 403].includes(response.status)) throw new Error("AUTH_REQUIRED");
@@ -130,44 +132,32 @@ async function fetchWithLimit(job, url, limit, range) {
   return response;
 }
 
+// Every byte a job saves to disk passes through here. Both limits are checked before a chunk is written,
+// and the transfer is cancelled once the window is complete or anything fails.
 async function appendResponse(job, response, output, limit, range) {
   const reader = response.body.getReader();
-  if (range && response.status !== 206) {
-    // The server ignored Range. Keep only the requested window and stop early.
-    const end = range.offset + range.length;
-    let position = 0, written = 0;
-    while (position < end) {
+  // A server that ignored Range sends the whole file, so only the requested window is kept.
+  const skip = range && response.status !== 206 ? range.offset : 0;
+  const wanted = range ? range.length : Infinity;
+  let position = 0, size = 0;
+  try {
+    while (size < wanted) {
       const { value, done } = await reader.read();
       if (done) break;
       if (job.disposed) throw new Error("CANCELED");
-      const start = Math.max(0, range.offset - position);
-      const stop = Math.min(value.byteLength, end - position);
-      if (stop > start) {
-        const part = value.subarray(start, stop);
-        await output.write(part);
-        job.received += part.byteLength;
-        written += part.byteLength;
-      }
+      const part = value.subarray(Math.max(0, skip - position), Math.max(0, Math.min(value.byteLength, skip + wanted - position)));
       position += value.byteLength;
+      if (!part.byteLength) continue;
+      size += part.byteLength;
+      if (size > limit || job.received + part.byteLength > MAX_FILE_BYTES) throw new Error("TOO_LARGE");
+      job.received += part.byteLength;
+      await output.write(part);
+      report(job, "downloading");
     }
-    if (written !== range.length) throw new Error("UNSUPPORTED");
-    if (job.received > MAX_FILE_BYTES) throw new Error("TOO_LARGE");
+  } finally {
     try { await reader.cancel(); } catch {}
-    return;
   }
-  let size = 0;
-  const maximum = range ? Math.max(limit, range.length) : limit;
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    if (job.disposed) throw new Error("CANCELED");
-    size += value.byteLength;
-    if (size > maximum) { try { await reader.cancel(); } catch {} throw new Error("TOO_LARGE"); }
-    job.received += value.byteLength;
-    if (job.received > MAX_FILE_BYTES) throw new Error("TOO_LARGE");
-    await output.write(value);
-  }
-  if (range && size < range.length) throw new Error("UNSUPPORTED");
+  if (range && size !== range.length) throw new Error("UNSUPPORTED");
 }
 
 // Returns the text and the URL it was finally served from, which relative references in a manifest use.
@@ -197,16 +187,7 @@ async function downloadDirect(job, url, output, role) {
   const filenameHint = MediaSaverCommon.parseContentDisposition(disposition);
   job.filenameHint = job.filenameHint || filenameHint;
   job.total = Number(response.headers.get("content-length")) || 0;
-  const reader = response.body.getReader();
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    if (job.disposed) throw new Error("CANCELED");
-    job.received += value.byteLength;
-    if (job.received > MAX_FILE_BYTES) throw new Error("TOO_LARGE");
-    await output.write(value);
-    report(job, "downloading");
-  }
+  await appendResponse(job, response, output, MAX_FILE_BYTES, null);
   const extension = MediaSaverCommon.extensionForMime(type) || MediaSaverCommon.extensionOf(response.url || url) || "mp4";
   const mime = type || "application/octet-stream";
   return { output, extension, mime, role, filenameHint };

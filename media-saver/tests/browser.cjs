@@ -110,6 +110,14 @@ function startServer() {
         (match, attribute, file) => `${attribute}="/media/dash-list/${/^(init|chunk)-1/.test(file) ? 'missing-' : ''}${file}"`));
       return;
     }
+    // A DASH manifest whose first video segment asks for a 200 MiB byte range, above the 128 MiB segment limit.
+    if (url.pathname === '/huge-range/manifest.mpd') {
+      const manifest = fs.readFileSync(path.join(fixtures, 'dash-list/manifest.mpd'), 'utf8')
+        .replace(/(sourceURL|media)="([^"]+)"/g, '$1="/media/dash-list/$2"')
+        .replace('media="/media/dash-list/chunk-0-00001.m4s"', 'media="/media/dash-list/chunk-0-00001.m4s?huge=1" mediaRange="0-209715199"');
+      sendText(request, response, 'application/dash+xml', manifest);
+      return;
+    }
     const moved = { '/moved/master.m3u8': '/media/hls-av/master.m3u8', '/moved/manifest.mpd': '/media/dash-template/manifest.mpd' }[url.pathname];
     if (moved) {
       response.writeHead(302, { location: moved });
@@ -133,6 +141,11 @@ function startServer() {
       stalled.push(response);
       return;
     }
+    // /no-range/<fixture> ignores Range and always sends the whole file, as some servers do.
+    if (url.pathname.startsWith('/no-range/')) {
+      serveFixture(request, response, url.pathname.replace(/^\/no-range\//, '/media/'), false);
+      return;
+    }
     serveFixture(request, response, url.pathname);
   });
   const stalled = [];
@@ -144,7 +157,7 @@ function startServer() {
   });
 }
 
-function serveFixture(request, response, pathname) {
+function serveFixture(request, response, pathname, honorRange = true) {
   const found = fixtureFile(pathname);
   if (!found) {
     response.writeHead(404, { 'content-type': 'text/plain' });
@@ -152,7 +165,7 @@ function serveFixture(request, response, pathname) {
     return;
   }
   let start = 0, end = found.size - 1, status = 200;
-  const range = /^bytes=(\d+)-(\d*)$/i.exec(String(request.headers.range || ''));
+  const range = honorRange && /^bytes=(\d+)-(\d*)$/i.exec(String(request.headers.range || ''));
   if (range) {
     start = Number(range[1]);
     end = range[2] ? Math.min(Number(range[2]), found.size - 1) : found.size - 1;
@@ -577,6 +590,28 @@ async function main() {
     assert.equal(blobLog.created.length, 1, JSON.stringify(blobLog));
     assert.deepEqual(blobLog.revoked, blobLog.created);
     pass('A DASH job whose audio fails after its video finished revokes the video file instead of leaking it');
+
+    // A byte range above the segment limit is refused before it is requested, since a server may ignore
+    // Range and send everything.
+    const hugeSeen = server.requests.length;
+    const huge = await rpc({ type: 'ms:start', tabId, items: [{ url: `${base}/huge-range/manifest.mpd`, kind: 'dash', title: 'huge-range' }] });
+    const [hugeJob] = await finished(huge.jobs);
+    assert.deepEqual([hugeJob.state, hugeJob.error], ['failed', 'TOO_LARGE']);
+    const hugeRequests = server.requests.slice(hugeSeen);
+    assert.ok(hugeRequests.includes('/media/dash-list/init-0.m4s'), hugeRequests.join('\n'));
+    assert.deepEqual(hugeRequests.filter(request => request.includes('huge=1')), []);
+    pass('A DASH byte range above the segment limit fails as too large without being requested');
+
+    // Byte-range DASH saves the same bytes whether the server honors Range (206) or ignores it (200).
+    for (const prefix of ['/media', '/no-range']) {
+      const ranged = await rpc({ type: 'ms:start', tabId, items: [{ url: `${base}${prefix}/dash-single/manifest.mpd`, kind: 'dash', title: `ranged${prefix.replace('/', '-')}` }] });
+      const [rangedJob] = await finished(ranged.jobs);
+      assert.deepEqual([rangedJob.state, rangedJob.error], ['completed', null], prefix);
+      const saved = Object.fromEntries((await downloadsFor(rangedJob)).map(entry => [entry.mime, fs.readFileSync(entry.filename)]));
+      assert.deepEqual(saved['video/mp4'], fs.readFileSync(path.join(fixtures, 'dash-single/manifest-stream0.mp4')), prefix);
+      assert.deepEqual(saved['audio/mp4'], fs.readFileSync(path.join(fixtures, 'dash-single/manifest-stream1.mp4')), prefix);
+    }
+    pass('DASH byte ranges save byte-identical files whether the server honors or ignores Range');
 
     // More items than the old 50-item batch limit are all queued; more than the detector keeps (300) are refused whole.
     const original = (await rpc({ type: 'ms:settings' })).settings;
