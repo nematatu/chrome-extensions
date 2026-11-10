@@ -17,8 +17,9 @@ const ERROR_TEXT = {
   DOWNLOAD_FAILED: "Chromeへの保存に失敗しました", INTERRUPTED: "拡張機能の再起動で中断されました",
   INVALID_OUTPUT: "保存データを作成できませんでした", NO_OUTPUT: "保存するデータがありません",
   PROCESSING_FAILED: "処理に失敗しました", UNSUPPORTED: "この形式は非対応です",
+  UNSAFE_TARGET: "公開ページからローカルネットワークの URL は取得しません",
   PAGE_UNSUPPORTED: "このページでは保存できません", START_FAILED: "ダウンロードを開始できませんでした",
-  BUSY: "同時処理の上限に達しています"
+  BUSY: "同時処理の上限に達しています", TOO_MANY_ITEMS: "一度に保存できるのは300件までです"
 };
 
 const state = {

@@ -7,6 +7,7 @@ const SETTINGS_KEY = "settings";
 const JOBS_KEY = "jobs";
 const MAX_ITEMS = 300;
 const MAX_HISTORY = 60;
+const FINISHED = ["completed", "failed", "canceled"];
 
 let settings = null;
 let initPromise = null;
@@ -296,7 +297,7 @@ async function probeMedia(tabId, url, kind) {
   if (!["hls", "dash"].includes(kind) || !C.isHttpUrl(url)) return { ok: false, error: "UNSUPPORTED" };
   const tab = await chrome.tabs.get(tabId).catch(() => null);
   const pageUrl = tab && /^https?:/i.test(tab.url || "") ? tab.url : "";
-  if (!C.isSafeTarget(url, pageUrl)) return { ok: false, error: "UNSUPPORTED" };
+  if (!C.isSafeTarget(url, pageUrl)) return { ok: false, error: "UNSAFE_TARGET" };
   const cached = probeCache.get(url);
   if (cached && cached.expires > Date.now()) return { ok: true, result: cached.result };
   const response = await sendOffscreen({ action: "probe", url, kind, pageUrl });
@@ -313,7 +314,7 @@ async function restoreJobs() {
   const now = Date.now();
   for (const job of stored) {
     if (!job || typeof job.id !== "string" || typeof job.token !== "string") continue;
-    if (["completed", "failed", "canceled"].includes(job.state) && now - (job.createdAt || 0) > 24 * 60 * 60 * 1000) continue;
+    if (FINISHED.includes(job.state) && now - (job.createdAt || 0) > 24 * 60 * 60 * 1000) continue;
     jobCache.set(job.id, job);
   }
   for (const job of jobCache.values()) {
@@ -346,17 +347,25 @@ async function restoreJobs() {
   if (jobCache.size) void pump();
 }
 
+// Unfinished jobs are always kept, so a restarted worker can resume them; only finished jobs are
+// limited, to the MAX_HISTORY newest.
+function trimHistory() {
+  const finished = [...jobCache.values()].filter(job => FINISHED.includes(job.state))
+    .sort((left, right) => (right.createdAt || 0) - (left.createdAt || 0));
+  for (const job of finished.slice(MAX_HISTORY)) jobCache.delete(job.id);
+}
+
 function schedulePersistJobs() {
   clearTimeout(jobsPersistTimer);
   jobsPersistTimer = setTimeout(async () => {
     jobsPersistTimer = null;
-    const jobs = [...jobCache.values()].slice(-MAX_HISTORY);
-    try { await chrome.storage.session.set({ [JOBS_KEY]: jobs }); } catch { /* quota */ }
+    trimHistory();
+    try { await chrome.storage.session.set({ [JOBS_KEY]: [...jobCache.values()] }); } catch { /* quota */ }
   }, 300);
 }
 
 function publicJobs() {
-  return [...jobCache.values()].sort((left, right) => (right.createdAt || 0) - (left.createdAt || 0)).slice(0, MAX_HISTORY).map(job => ({
+  return [...jobCache.values()].sort((left, right) => (right.createdAt || 0) - (left.createdAt || 0)).map(job => ({
     id: job.id, token: job.token, kind: job.kind, title: job.title, pageUrl: job.pageUrl,
     state: job.state, progress: job.progress || 0, received: job.received || 0, total: job.total || 0,
     segments: job.segments || 0, completedSegments: job.completed || 0, error: job.error || null,
@@ -518,8 +527,12 @@ async function startJobs(tabId, items) {
   if (!tab || !/^https?:/i.test(tab.url || "")) return { ok: false, error: "PAGE_UNSUPPORTED" };
   const pageUrl = tab.url;
   const pageTitle = tab.title || "";
+  const list = Array.isArray(items) ? items : [];
+  // The popup can select every detected item, so a batch holds up to MAX_ITEMS. A larger one is refused
+  // whole, which leaves the popup's selection in place.
+  if (list.length > MAX_ITEMS) return { ok: false, error: "TOO_MANY_ITEMS" };
   const created = [];
-  for (const item of (Array.isArray(items) ? items : []).slice(0, 50)) {
+  for (const item of list) {
     if (!item || !C.isHttpUrl(item.url) || !C.isSafeTarget(item.url, pageUrl)) continue;
     const job = startJobRecord(tabId, item, tab, pageTitle);
     if (jobCache.has(job.id)) { created.push(job.id); continue; }
@@ -618,7 +631,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse(await cancelJob(String(message.jobId || "")));
       } else if (message.type === "ms:clear-jobs") {
         for (const [id, job] of jobCache) {
-          if (["completed", "failed", "canceled"].includes(job.state)) jobCache.delete(id);
+          if (FINISHED.includes(job.state)) jobCache.delete(id);
         }
         schedulePersistJobs(); pushJobs(); sendResponse({ ok: true });
       } else if (message.type === "ms:show") {

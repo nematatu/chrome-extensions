@@ -11,7 +11,8 @@
  *
  * The test loads the unpacked extension in Chromium, serves the real media
  * fixtures over HTTP, and verifies detection, the popup, HLS/DASH assembly,
- * downloads, and the options page.
+ * downloads, and the options page. public.test resolves to the same server, so
+ * a page there counts as public and 127.0.0.1 as a private network address.
  */
 
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
@@ -65,54 +66,93 @@ function fixtureFile(urlPath) {
   } catch { return null; }
 }
 
+function sendText(request, response, type, text) {
+  const body = Buffer.from(text);
+  response.writeHead(200, { 'content-type': type, 'content-length': body.length, 'cache-control': 'no-store' });
+  response.end(request.method === 'HEAD' ? undefined : body);
+}
+
+// Manifests on a public page that point at the private server address, and a redirect there.
+function unsafeResponse(pathname, privateMedia) {
+  if (pathname === '/unsafe/master.m3u8') {
+    return ['application/vnd.apple.mpegurl', `#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=100000,RESOLUTION=160x90\n${privateMedia}hls-fmp4/stream.m3u8?leak=hls\n`];
+  }
+  if (pathname === '/unsafe/manifest.mpd') {
+    const manifest = fs.readFileSync(path.join(fixtures, 'dash-list/manifest.mpd'), 'utf8');
+    return ['application/dash+xml', manifest.replace(/(sourceURL|media)="([^"]+)"/g, `$1="${privateMedia}dash-list/$2?leak=dash"`)];
+  }
+  return null;
+}
+
 function startServer() {
+  let release;
+  const held = new Promise(resolve => { release = resolve; });
+  const requests = [];
   const server = http.createServer((request, response) => {
     const url = new URL(request.url || '/', 'http://127.0.0.1');
+    requests.push(url.pathname + url.search);
     if (url.pathname === '/' || url.pathname === '/gallery.html') {
-      const body = Buffer.from(gallery);
-      response.writeHead(200, {
-        'content-type': 'text/html; charset=utf-8',
-        'content-length': body.length,
-        'cache-control': 'no-store'
-      });
-      response.end(request.method === 'HEAD' ? undefined : body);
+      sendText(request, response, 'text/html; charset=utf-8', gallery);
       return;
     }
-    const found = fixtureFile(url.pathname);
-    if (!found) {
-      response.writeHead(404, { 'content-type': 'text/plain' });
-      response.end('not found');
+    if (url.pathname === '/public.html') {
+      sendText(request, response, 'text/html; charset=utf-8', '<!doctype html><title>Public page</title><p>Public page</p>');
       return;
     }
-    let start = 0, end = found.size - 1, status = 200;
-    const range = /^bytes=(\d+)-(\d*)$/i.exec(String(request.headers.range || ''));
-    if (range) {
-      start = Number(range[1]);
-      end = range[2] ? Math.min(Number(range[2]), found.size - 1) : found.size - 1;
-      if (start > end || start >= found.size) {
-        response.writeHead(416, { 'content-range': `bytes */${found.size}` });
-        response.end();
-        return;
-      }
-      status = 206;
+    const privateMedia = `http://127.0.0.1:${server.address().port}/media/`;
+    const unsafe = unsafeResponse(url.pathname, privateMedia);
+    if (unsafe) { sendText(request, response, ...unsafe); return; }
+    if (url.pathname === '/unsafe/redirect.png') {
+      response.writeHead(302, { location: `${privateMedia}tiny.png?leak=redirect` });
+      response.end();
+      return;
     }
-    const headers = {
-      'content-type': contentType(found.file),
-      'content-length': end - start + 1,
-      'accept-ranges': 'bytes',
-      'cache-control': 'no-store',
-      'access-control-allow-origin': '*',
-      'access-control-allow-headers': 'range',
-      'access-control-expose-headers': 'content-length, content-range, content-disposition'
-    };
-    if (status === 206) headers['content-range'] = `bytes ${start}-${end}/${found.size}`;
-    response.writeHead(status, headers);
-    if (request.method === 'HEAD') { response.end(); return; }
-    fs.createReadStream(found.file, { start, end }).pipe(response);
+    // /held/<fixture> answers only after server.release(), keeping its job busy until then.
+    if (url.pathname.startsWith('/held/')) {
+      held.then(() => serveFixture(request, response, url.pathname.replace(/^\/held\//, '/media/')));
+      return;
+    }
+    serveFixture(request, response, url.pathname);
   });
+  server.requests = requests;
+  server.release = () => release();
   return new Promise(resolve => {
     server.listen(0, '127.0.0.1', () => resolve(server));
   });
+}
+
+function serveFixture(request, response, pathname) {
+  const found = fixtureFile(pathname);
+  if (!found) {
+    response.writeHead(404, { 'content-type': 'text/plain' });
+    response.end('not found');
+    return;
+  }
+  let start = 0, end = found.size - 1, status = 200;
+  const range = /^bytes=(\d+)-(\d*)$/i.exec(String(request.headers.range || ''));
+  if (range) {
+    start = Number(range[1]);
+    end = range[2] ? Math.min(Number(range[2]), found.size - 1) : found.size - 1;
+    if (start > end || start >= found.size) {
+      response.writeHead(416, { 'content-range': `bytes */${found.size}` });
+      response.end();
+      return;
+    }
+    status = 206;
+  }
+  const headers = {
+    'content-type': contentType(found.file),
+    'content-length': end - start + 1,
+    'accept-ranges': 'bytes',
+    'cache-control': 'no-store',
+    'access-control-allow-origin': '*',
+    'access-control-allow-headers': 'range',
+    'access-control-expose-headers': 'content-length, content-range, content-disposition'
+  };
+  if (status === 206) headers['content-range'] = `bytes ${start}-${end}/${found.size}`;
+  response.writeHead(status, headers);
+  if (request.method === 'HEAD') { response.end(); return; }
+  fs.createReadStream(found.file, { start, end }).pipe(response);
 }
 
 async function waitFor(check, label, timeout = 30000) {
@@ -162,6 +202,7 @@ async function main() {
   fs.mkdirSync(downloads, { recursive: true });
   const server = await startServer();
   const base = `http://127.0.0.1:${server.address().port}`;
+  const publicBase = `http://public.test:${server.address().port}`;
   let context = null;
   const checks = [];
   const pass = name => { checks.push(name); console.log(`PASS ${name}`); };
@@ -177,7 +218,8 @@ async function main() {
         `--disable-extensions-except=${extension}`,
         `--load-extension=${extension}`,
         '--no-proxy-server',
-        '--disable-component-update'
+        '--disable-component-update',
+        '--host-resolver-rules=MAP public.test 127.0.0.1'
       ]
     });
     let worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
@@ -366,6 +408,67 @@ async function main() {
     assert.ok(listed.length >= 5);
     assert.ok(listed.filter(job => job.kind === 'dash').every(job => job.downloads.length === 2));
     await popup.getByRole('button', { name: /メディア/ }).click();
+
+    const tabFor = url => worker.evaluate(async target => (await chrome.tabs.query({})).find(tab => tab.url === target)?.id, url);
+    const finished = ids => waitFor(async () => {
+      const jobs = (await rpc({ type: 'ms:jobs' })).jobs.filter(job => ids.includes(job.id));
+      return jobs.length === ids.length && jobs.every(job => ['completed', 'failed', 'canceled'].includes(job.state)) ? jobs : null;
+    }, `${ids.length} jobs to finish`, 120000);
+
+    // On a public page, URLs read from manifests and redirect targets face the same private-network check
+    // as the media URL. fetch follows a redirect before exposing it, so that one request is sent, but its
+    // response is rejected unread.
+    const publicPage = await context.newPage();
+    await publicPage.goto(`${publicBase}/public.html`);
+    const publicTab = await tabFor(`${publicBase}/public.html`);
+    const seen = server.requests.length;
+    const unsafe = await rpc({ type: 'ms:start', tabId: publicTab, items: [
+      { url: `${publicBase}/unsafe/master.m3u8`, kind: 'hls', title: 'unsafe-hls' },
+      { url: `${publicBase}/unsafe/manifest.mpd`, kind: 'dash', title: 'unsafe-dash' },
+      { url: `${publicBase}/unsafe/redirect.png`, kind: 'image', title: 'unsafe-redirect' }
+    ] });
+    assert.equal(unsafe.ok, true);
+    const unsafeJobs = await finished(unsafe.jobs);
+    assert.deepEqual(unsafeJobs.map(job => [job.state, job.error, job.downloads.length]), Array(3).fill(['failed', 'UNSAFE_TARGET', 0]));
+    const requested = server.requests.slice(seen);
+    for (const manifest of ['/unsafe/master.m3u8', '/unsafe/manifest.mpd', '/unsafe/redirect.png']) assert.ok(requested.includes(manifest), manifest);
+    assert.deepEqual(requested.filter(request => /leak=(hls|dash)/.test(request)), []);
+    await publicPage.close();
+    pass('Private-network URLs from public-page manifests are never requested, and a redirect there is rejected');
+
+    // More items than the old 50-item batch limit are all queued; more than the detector keeps (300) are refused whole.
+    const original = (await rpc({ type: 'ms:settings' })).settings;
+    await rpc({ type: 'ms:set-settings', settings: { ...original, concurrency: 1 } });
+    const images = (key, count) => Array.from({ length: count }, (_, index) => ({ url: `${base}/media/tiny.png?${key}=${index}`, kind: 'image', title: `${key}-${index}` }));
+    const before = (await rpc({ type: 'ms:jobs' })).jobs.length;
+    assert.deepEqual(await rpc({ type: 'ms:start', tabId, items: images('over', 301) }), { ok: false, error: 'TOO_MANY_ITEMS' });
+    assert.equal((await rpc({ type: 'ms:jobs' })).jobs.length, before);
+    const firstBatch = await rpc({ type: 'ms:start', tabId, items: [{ url: `${base}/held/tiny.png`, kind: 'image', title: 'held' }, ...images('a', 59)] });
+    assert.equal(firstBatch.jobs.length, 60);
+    const secondBatch = await rpc({ type: 'ms:start', tabId, items: images('b', 50) });
+    assert.equal(secondBatch.jobs.length, 50);
+    const bulk = [...firstBatch.jobs, ...secondBatch.jobs];
+    pass('A 60-item batch is queued in full and a batch over 300 items is refused without queuing any');
+
+    // With the held job blocking the queue, every unfinished job must be in session storage, where a restarted
+    // service worker reloads them from; finished jobs are then trimmed to the 60 newest.
+    const unfinished = state => !['completed', 'failed', 'canceled'].includes(state);
+    const stored = () => worker.evaluate(async () => (await chrome.storage.session.get('jobs')).jobs || []);
+    const live = (await rpc({ type: 'ms:jobs' })).jobs.filter(job => bulk.includes(job.id) && unfinished(job.state));
+    assert.ok(live.length > 100, `only ${live.length} unfinished jobs`);
+    await waitFor(async () => {
+      const ids = new Set((await stored()).filter(job => unfinished(job.state)).map(job => job.id));
+      return live.every(job => ids.has(job.id));
+    }, 'every unfinished job to be persisted', 5000);
+    server.release();
+    const bulkJobs = await finished(bulk);
+    assert.ok(bulkJobs.every(job => job.state === 'completed'), JSON.stringify(bulkJobs.filter(job => job.state !== 'completed')));
+    await waitFor(async () => (await stored()).length === 60, 'persisted history to be trimmed to 60');
+    const history = (await rpc({ type: 'ms:jobs' })).jobs;
+    assert.equal(history.length, 60);
+    assert.ok(history.every(job => job.state === 'completed' && bulk.includes(job.id)));
+    await rpc({ type: 'ms:set-settings', settings: original });
+    pass('Unfinished jobs are always persisted, all 110 complete, and finished history keeps the 60 newest');
 
     const options = await context.newPage();
     await options.setViewportSize({ width: 1120, height: 900 });

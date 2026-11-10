@@ -252,6 +252,20 @@
     return isPrivateHost(pageUrl) || hostOf(target) === hostOf(pageUrl);
   }
 
+  // Every request a job makes, including URLs read from manifests, faces the same check as the media URL.
+  // fetch follows redirects without exposing them, so the final URL is checked before the body is read.
+  function guardFetch(request, pageUrl) {
+    return async (url, init) => {
+      if (!isSafeTarget(url, pageUrl)) throw new Error("UNSAFE_TARGET");
+      const response = await request(url, init);
+      if (response.url && !isSafeTarget(response.url, pageUrl)) {
+        try { await response.body?.cancel(); } catch {}
+        throw new Error("UNSAFE_TARGET");
+      }
+      return response;
+    };
+  }
+
   function idFor(value) {
     return `${shortId(value)}-${String(value).length.toString(36)}`;
   }
@@ -261,7 +275,7 @@
     classify, extensionOf, extensionForMime, hostOf, isBlacklisted, sanitizeSegment,
     dateStamp, formatBytes, formatDuration, formatBitrate, basenameFromUrl, titleFromUrl,
     parseContentDisposition, buildFilename, normalizeSettings, shortId, isHttpUrl,
-    isPrivateHost, isSafeTarget, idFor
+    isPrivateHost, isSafeTarget, guardFetch, idFor
   };
   root.MediaSaverCommon = api;
   if (typeof module === "object" && module.exports) module.exports = api;

@@ -9,7 +9,7 @@ let directoryPromise = null;
 function errorCode(error, fallback) {
   const code = error && error.message;
   const known = [...MediaSaverHls.ERROR_CODES, ...MediaSaverDash.ERROR_CODES, "NOT_MEDIA", "CANCELED",
-    "TOO_LARGE", "STORAGE_FAILED", "TIMEOUT", "RATE_LIMITED", "AUTH_REQUIRED", "NOT_FOUND", "UNSUPPORTED"];
+    "TOO_LARGE", "STORAGE_FAILED", "TIMEOUT", "RATE_LIMITED", "AUTH_REQUIRED", "NOT_FOUND", "UNSUPPORTED", "UNSAFE_TARGET"];
   return known.includes(code) ? code : (fallback || "UNSUPPORTED");
 }
 
@@ -110,9 +110,12 @@ function requestOptions(job, range) {
   };
 }
 
+// The only way this document reaches the network: every URL, from the page or from a manifest, is checked.
+const requestFor = pageUrl => MediaSaverCommon.guardFetch(fetch, pageUrl);
+
 async function fetchWithLimit(job, url, limit, range) {
   if (!validateUrl(url)) throw new Error("UNSUPPORTED");
-  const response = await fetch(url, requestOptions(job, range));
+  const response = await requestFor(job.pageUrl)(url, requestOptions(job, range));
   if (response.status === 429) throw new Error("RATE_LIMITED");
   if ([401, 403].includes(response.status)) throw new Error("AUTH_REQUIRED");
   if ([404, 410].includes(response.status)) throw new Error("NOT_FOUND");
@@ -217,7 +220,7 @@ async function runHls(job) {
   const output = await createOutput(job, 0);
   job.writers = [output];
   const result = await MediaSaverHls.assemble(job.url, {
-    fetch, pageUrl: job.pageUrl, signal: job.controller.signal,
+    request: requestFor(job.pageUrl), pageUrl: job.pageUrl, signal: job.controller.signal,
     variantUrl: job.quality?.url || "", maxHeight: Number(job.quality?.height) || 0,
     output: { write: (data, position) => output.write(data, position) },
     progress({ bytes, completed: done, total }) {
@@ -334,7 +337,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       try {
         let result;
         if (message.kind === "hls") {
-          result = await MediaSaverHls.probe(message.url, { fetch, pageUrl: message.pageUrl });
+          result = await MediaSaverHls.probe(message.url, { request: requestFor(message.pageUrl), pageUrl: message.pageUrl });
         } else if (message.kind === "dash") {
           const text = await readText({ controller: new AbortController(), pageUrl: message.pageUrl, disposed: false }, message.url, 4 * 1024 * 1024);
           result = MediaSaverDash.probe(text, message.url);

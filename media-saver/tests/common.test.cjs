@@ -50,6 +50,18 @@ test("isSafeTarget blocks public pages from reading private hosts", () => {
   assert.equal(C.isSafeTarget("javascript:alert(1)", "https://example.com/"), false);
 });
 
+test("guardFetch checks every request before it is sent and the final URL after redirects", async () => {
+  const sent = [];
+  const request = async url => { sent.push(url); return { url: url.endsWith("/moved") ? "http://10.0.0.1/admin" : url, body: null }; };
+  const guarded = C.guardFetch(request, "https://example.com/watch");
+  assert.equal((await guarded("https://cdn.example.com/segment.ts")).url, "https://cdn.example.com/segment.ts");
+  await assert.rejects(guarded("http://127.0.0.1/private.m3u8"), /^Error: UNSAFE_TARGET$/);
+  assert.deepEqual(sent, ["https://cdn.example.com/segment.ts"]);
+  await assert.rejects(guarded("https://cdn.example.com/moved"), /^Error: UNSAFE_TARGET$/);
+  const fromPrivatePage = C.guardFetch(request, "http://127.0.0.1/page");
+  assert.equal((await fromPrivatePage("http://127.0.0.1/clip.ts")).url, "http://127.0.0.1/clip.ts");
+});
+
 test("sanitizeSegment removes traversal, control and reserved characters", () => {
   assert.equal(C.sanitizeSegment("../../etc/passwd"), ".._etc_passwd");
   assert.equal(C.sanitizeSegment("a\u0000b\nc"), "abc");

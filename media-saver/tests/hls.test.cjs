@@ -7,6 +7,7 @@ const os = require("node:os");
 const path = require("node:path");
 const { execFileSync } = require("node:child_process");
 const H = require("../lib/hls.js");
+const C = require("../lib/common.js");
 const { fixtures, loadMux, fixtureRequest, outputBuffer, hasBox, topLevelBoxes, trackKinds } = require("./helpers.cjs");
 
 const hls = loadMux();
@@ -220,4 +221,17 @@ test("assemble reports encrypted and live playlists with stable error codes", as
     H.assemble("https://example.com/list.m3u8", { request, muxjs: hls, mp4, output: H.memoryOutput() }),
     /HLS_ENCRYPTED/
   );
+});
+
+test("assemble never requests a private-network variant listed by a public master playlist", async () => {
+  const requested = [];
+  const master = "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=100000,RESOLUTION=160x90\nhttp://127.0.0.1/private.m3u8\n";
+  const request = C.guardFetch(async url => {
+    requested.push(url);
+    return new Response(master, { headers: { "content-type": "application/vnd.apple.mpegurl" } });
+  }, "https://example.com/watch");
+  await assert.rejects(H.assemble("https://media.example.com/master.m3u8", {
+    request, muxjs: hls, mp4, output: H.memoryOutput(), progress() {}
+  }), /^Error: UNSAFE_TARGET$/);
+  assert.deepEqual(requested, ["https://media.example.com/master.m3u8"]);
 });
