@@ -1,0 +1,37 @@
+# Cross-judge verdict for all repository extensions
+
+Select Candidate A with the constraints below. Candidate A is a credible base, rather than a proof that unchanged sources can already be combined. Candidate B identifies the same real shared-resource boundaries but moves them into many authoritative source entry points. That adds standalone regression exposure without a demonstrated user benefit over a bounded generated adapter.
+
+I read both candidate reports, the current build/registry, the offscreen probe source, and selected existing worker APIs. `rg --files` independently found 19 source manifests, including Momoniji's nested extension directory. Candidate A's current-build limitations are directly visible in build.mjs. Worker/session/message, TRUSTED_CONTEXTS, getURL origin and filename ownership conflicts are grounded in existing sources. The parent reports the real Chromium iframe probe passed; I inspected the runnable probe, but did not independently rerun it. This evidence resolves basic iframe runtime messaging/Blob-origin feasibility only. It does not prove concurrent HLS conversion, cancellation or worker restart recovery.
+
+## Rubric
+
+- Existing-feature correctness. A wins on preserving domain engines, import graphs and source behavior. B's factories can be made correct, but broad source conversion increases the regression surface. Neither report is yet a completed implementation or feature test record.
+- Isolation. Both require explicit per-module storage, message and assets boundaries. A wins only if all production contexts are covered, including directly executed scripting functions and module popup frames. A label supplied by a content sender is not authorization.
+- One offscreen owner. A's root plus isolated frames is preferred after the reported probe. It avoids global/vendor mixing in B. The broker remains responsible for one creation promise, frame readiness, surviving workers and independent cancellation.
+- Maintainability and minimal changes. A wins if it supports only native APIs actually observed in the 19 source modules and fails visibly on an unsupported capability. Do not build a general Chrome API emulator.
+- Observable verification. Neither wins by description alone. A's concrete regression matrix is a good required gate. Source tests plus isolated fixtures are insufficient without shared-resource and generated-package tests.
+
+## Blocking details to specify before implementation
+
+1. Inventory every browser API and execution path. Include scripting.executeScript files and serialized functions, executeScript return values, runtime.connect/ports if present, runtime.lastError callback behavior, permissions, commands, tabs events, action events and management-only sender URL rules. An injected function containing free `chrome` references does not capture an outer lexical adapter. Either generate a supported wrapper for that exact path or make a narrow explicit source seam. Fail builds on discovered unsupported paths instead of silently bypassing isolation.
+
+2. Do not wrap every classic content file in a private IIFE without checking cross-file globals. Classic files from one manifest can depend on preceding file bindings. Imported worker core globals may also need to remain visible. Preserve each original module's binding environment and load order without sharing that binding environment with another module. Extension page preloads must be established before original classic and ESM scripts. Prove the chosen adapter injection using a generated module page rather than relying on Object.create alone.
+
+3. Define message trust per context. Distinguish root management page, module page, content frame and module offscreen frame from actual sender URL/tab metadata. Senders within the same extension origin are not isolated principals against malicious extension code, so do not claim that kind of sandbox. Content calls must be limited to that host's allowed module operation/key set. Preserve original synchronous return/response semantics, do not await listener registration and retain only one native responder for each envelope.
+
+4. Keep migration non-destructive. Existing two-module keys and v1 backups must remain readable. Namespace migration must be idempotent and versioned, must not clear old keys until verified writes succeed, and must not silently discard existing jobs. A merge must not downgrade saved timestamps or remove a newly added module's default setting. Portable data is a schema allowlist; do not export arbitrary native storage.
+
+5. Specify offscreen readiness and recovery. CreateDocument should not resolve until that module frame's original listener can answer; a created iframe is insufficient. On worker restart re-discover the live frames without recreating converters or dropping blobs. A module's close releases only its frame after its own active work and unreleased blobs are gone. No arbitrary module can spoof another module's readiness or task result. The reported small probe must become a checked-in regression fixture plus real three-engine concurrent task coverage.
+
+6. Implement exactly one native filename suggestion listener. Record per-module abstention/claim, preserve async-return-true semantics, bound a stalled listener and call native suggest exactly once. A wrong module cannot claim another's download merely because byExtensionId now matches. Prove download events that precede download() ID resolution and conflicting/no claims. Avoid logging filenames, signed media URLs or tokens when showing errors.
+
+7. Define disabled behavior across all entry points. Registered worker recovery/cancellation remains active; new starts from context menus, keyboard commands, action opening, webRequest collection and UI retries are gated. Root toggles must stop Sushida capture immediately. Module storage/badge/menu initialization must not recreate disabled side effects on startup. Existing in-page UI can await reload, but its actions must return a disabled result immediately.
+
+8. Preserve every manifest surface. Include optional origins, command behavior, WAR paths/use_dynamic_url, ESM imports, content-script attributes, minimum versions and CSP constraints. Verify Birdscore's request-permission user gesture from the embedded page. Check permissions union separately from content match union so broad one-module privileges do not authorize another module's content IPC.
+
+## Implementation and completion gate
+
+Use A as the base, graft B's explicit asset-origin split, actual sender policy, declared content-storage operations and per-module portable validators. First implement and test adapters against representative hard modules. Then add the entire 19-record registry and assert source inventory equals registry inventory. The UI should derive records from that same registry so a new module cannot be installed but invisible.
+
+Before declaring completion, require generated artifact build/load, all source regressions, one observable operation and disabled state for every module, same-site coexistence, concurrent shared offscreen engines, namespace collision/no-leak tests, filename arbitration, worker/browser restart, settings migration and actual file import/export. Keep external-site limitations separate from fixture success. No live-site test result may be inferred from a mocked page, and no all-module compatibility claim follows from the iframe probe alone.

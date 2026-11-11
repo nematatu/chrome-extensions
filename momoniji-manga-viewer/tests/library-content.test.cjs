@@ -15,6 +15,7 @@ const saved = (overrides = {}) => ({ url: ROOT, title: 'テスト漫画', readLa
 function setup({ html = workHtml(), url = ROOT, entries = [], fetch, send } = {}) {
   const dom = new JSDOM(html, { url, runScripts: 'outside-only' });
   const messages = [], listeners = [], fetched = [];
+  dom.window.eval(fs.readFileSync(path.join(extension, 'ui-kit.js'), 'utf8'));
   dom.window.chrome = {
     runtime: {
       id: ID,
@@ -51,7 +52,7 @@ test('current work keeps reading-list and completed image-save states separate',
     await tick();
     const state = env.document.getElementById('momoniji-library-page-state').shadowRoot;
     assert.equal(state.getElementById('read-later').getAttribute('aria-pressed'), 'true');
-    assert.match(state.getElementById('read-later').textContent, /後で読むに保存済み/);
+    assert.match(state.getElementById('read-later').textContent, /保存済み/);
     assert.equal(state.getElementById('library-download-status').hidden, false);
     assert.match(state.getElementById('library-download-status').textContent, /6ページ/);
     await env.receive({ type: 'MOMONIJI_LIBRARY_CHANGED', entries: [saved({ readLater: false, downloadedAt: 100, downloadedCount: 6 })] });

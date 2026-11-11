@@ -1,0 +1,149 @@
+--- a/instagram-media-downloader/content.js
++++ b/instagram-media-downloader/content.js
+@@ -538,6 +538,29 @@
+   });
+   observer.observe(document.documentElement, { subtree: true, childList: true, attributes: true,
+     attributeFilter: ["src", "srcset", "poster", "style", "class", "aria-hidden"] });
++  window.addEventListener("keydown", event => {
++    if (event.key !== "ArrowDown" || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.isComposing) return;
++    if (event.composedPath().some(node => node instanceof HTMLElement &&
++        (node.isContentEditable || node.matches('input,textarea,select,[role="textbox"],[role="combobox"]')))) return;
++    layout();
++    const routeCode = codeFromURL(location.href), story = storyRoute();
++    let candidates = [...entries].filter(([el, entry]) => {
++      if (entry.tools.classList.contains("hidden") || entry.tools.dataset.mode === "profile") return false;
++      const code = scopeCode(el), dialog = el.closest('[role="dialog"]');
++      if (routeCode) return code === routeCode || (routeCode.length > 20 && code && routeCode.startsWith(code));
++      return story || (dialog && code) || reelPath.test(location.pathname) ||
++        (el.tagName === "VIDEO" && !el.closest("article") && reelLikeRect(el));
++    });
++    if (candidates.some(([el]) => el.closest('[role="dialog"]'))) candidates = candidates.filter(([el]) => el.closest('[role="dialog"]'));
++    candidates.sort(([a], [b]) => {
++      const distance = el => { const rect = el.getBoundingClientRect(); return Math.hypot((rect.left + rect.right) / 2 - innerWidth / 2, (rect.top + rect.bottom) / 2 - innerHeight / 2); };
++      return distance(a) - distance(b);
++    });
++    const primary = candidates[0]?.[1].tools.querySelector("button");
++    if (!primary) return;
++    event.preventDefault(); event.stopImmediatePropagation();
++    if (!event.repeat) primary.click();
++  }, true);
+   document.addEventListener("scroll", schedule, true);
+   window.addEventListener("resize", schedule);
+   document.addEventListener("load", refresh, true);
+--- a/instagram-media-downloader/README.md
++++ b/instagram-media-downloader/README.md
+@@ -23,6 +23,12 @@
+ - ページ全体の一括保存は、拡張のポップアップから実行できます。ページに読み込まれた投稿リンクが対象です。プロフィール全履歴の自動巡回はしません。画面左下の固定ボタンは表示しません。
+ 
+ 個別保存ボタンは画像・動画の表示領域を基準に配置します。投稿の一括保存ボタンは文字を表示せずアイコンのみで、通常の投稿表示では同じ投稿内のInstagram保存（ブックマーク）ボタンを検出して、その左隣に高さを中央揃えして配置します。リール動画では、動画右側の縦並びアクション列からハート（いいね）ボタンを検出し、その中央の上に配置します。保存ボタンやハートを検出できない場合は、従来どおり画像・動画の右下に表示します。縦横比、`object-fit`、`object-position`、スクロール、ウインドウ幅、カルーセル切り替えに追随します。ストーリーではヘッダーとの重なりを避けるため、上端から64px下に配置します。
++
++## キーボードで保存する
++
++投稿詳細、リール、ストーリーを表示中に `↓` キーを押すと、表示中の画像・動画1件を保存します。ホームから投稿詳細のダイアログや全画面リールを開いた場合も対象です。ホームの通常フィードとプロフィールの投稿一覧では動作しません。
++
++コメントなどの文字入力中、セレクト操作中、修飾キー（Shift・Control・Alt・Command）との同時押し、変換中は反応しません。押し続けても保存を繰り返さず、対象表示中はInstagramの次項目への移動も止めます。保存対象が表示されていない場合は通常のキー操作を維持します。
+ 
+ ## 保存済みの表示
+ 
+--- a/instagram-media-downloader/tests/browser.cjs
++++ b/instagram-media-downloader/tests/browser.cjs
+@@ -453,6 +453,99 @@
+     checks.push('非表示メディアがあっても現在画像のボタンを表示');
+     await page.evaluate(() => { document.querySelector('main').innerHTML = ''; });
+     await page.waitForFunction(() => document.querySelector('#igmd-root').shadowRoot.querySelectorAll('.tools').length === 0); checks.push('DOM削除時のボタン除去');
++    await page.setViewportSize({ width: 1120, height: 850 });
++    const keyEvent = options => page.evaluate(options => {
++      const event = new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true, ...options });
++      (document.activeElement || document.body).dispatchEvent(event);
++      return event.defaultPrevented;
++    }, options);
++    const keyboardDownload = async expectedURL => {
++      const previous = (await state()).at(-1)?.id;
++      await page.keyboard.press('ArrowDown');
++      let latest;
++      for (let attempt = 0; attempt < 100; attempt++) {
++        latest = (await state()).at(-1);
++        if (latest?.id !== previous) break;
++        await page.waitForTimeout(50);
++      }
++      assert.notEqual(latest?.id, previous, 'shortcut starts a new download job');
++      for (let attempt = 0; attempt < 100; attempt++) {
++        latest = (await state()).find(job => job.id === latest.id);
++        if (latest?.items.every(item => item.state === 'complete')) break;
++        await page.waitForTimeout(50);
++      }
++      assert.ok(latest.items.every(item => item.state === 'complete'), 'new shortcut job completed');
++      await done(1);
++      assert.equal(latest.items.length, 1);
++      const [download] = await worker.evaluate(id => chrome.downloads.search({ id }), latest.items[0].downloadId);
++      assert.equal(download.state, 'complete'); assert.equal(download.url, expectedURL);
++      return latest;
++    };
++    await page.goto('https://www.instagram.com/p/BA/'); await single().waitFor();
++    await page.evaluate(() => {
++      window.fixtureArrowNavigation = 0;
++      document.addEventListener('keydown', event => { if (event.key === 'ArrowDown') window.fixtureArrowNavigation++; });
++    });
++    await page.evaluate(() => document.body.insertAdjacentHTML('afterbegin', '<article style="position:fixed;left:8px;top:170px;width:200px;height:240px"><a href="/p/BC/"></a><img src="https://scontent.cdninstagram.com/landscape.png" style="width:200px;height:200px;object-fit:cover"></article>'));
++    await page.waitForFunction(() => document.querySelector('#igmd-root').shadowRoot.querySelectorAll('.tools:not(.hidden)').length === 2);
++    const keyPost = await keyboardDownload(`${cdn}portrait.png`);
++    const [keyFile] = await worker.evaluate(id => chrome.downloads.search({ id }), keyPost.items[0].downloadId);
++    assert.deepEqual(fs.readFileSync(keyFile.filename), portrait);
++    assert.equal(await page.evaluate(() => window.fixtureArrowNavigation), 0);
++    assert.equal(await keyEvent({ repeat: true }), true);
++    await page.waitForTimeout(200);
++    assert.equal((await state()).at(-1).id, keyPost.id);
++    assert.equal(await page.evaluate(() => window.fixtureArrowNavigation), 0);
++    checks.push('↓キーは推薦投稿を除いた投稿詳細の現在画像1件を実保存し、長押し再保存と次項目移動を抑止');
++    for (const modifier of ['altKey', 'ctrlKey', 'metaKey', 'shiftKey', 'isComposing']) assert.equal(await keyEvent({ [modifier]: true }), false, modifier);
++    await page.evaluate(() => {
++      document.body.insertAdjacentHTML('afterbegin', '<input id="key-input"><textarea id="key-textarea"></textarea><select id="key-select"><option>1</option></select><div id="key-editor" contenteditable="true"><span>コメント</span></div><div id="key-textbox" role="textbox" tabindex="0"></div>');
++    });
++    for (const id of ['key-input', 'key-textarea', 'key-select', 'key-editor', 'key-textbox']) {
++      await page.locator(`#${id}`).focus(); assert.equal(await keyEvent({}), false, id);
++    }
++    await page.waitForTimeout(200); assert.equal((await state()).at(-1).id, keyPost.id);
++    checks.push('入力欄・選択欄・コメント編集・修飾キー・変換中は↓保存を実行しない');
++    await page.goto('https://www.instagram.com/'); await single().waitFor();
++    assert.equal(await keyEvent({}), false);
++    await page.goto('https://www.instagram.com/alice/'); await all().waitFor();
++    assert.equal(await keyEvent({}), false);
++    await page.waitForTimeout(200); assert.equal((await state()).at(-1).id, keyPost.id);
++    checks.push('ホームのフィードとプロフィール一覧では↓キーを横取りしない');
++    await page.goto('https://www.instagram.com/'); await single().waitFor();
++    await page.evaluate(() => {
++      document.querySelector('#media').removeAttribute('id');
++      document.body.insertAdjacentHTML('beforeend', '<div id="key-post-dialog" role="dialog" style="position:fixed;inset:0;z-index:100;background:#111;display:grid;place-items:center"><article><a href="/p/BA/"></a><img id="media" src="https://scontent.cdninstagram.com/landscape.png" style="width:600px;height:400px;object-fit:contain"></article></div>');
++    });
++    await page.locator('#media').evaluate(el => el.decode());
++    await page.waitForFunction(() => document.querySelector('#igmd-root').shadowRoot.querySelectorAll('.tools:not(.hidden)').length === 1);
++    await keyboardDownload(`${cdn}landscape.png`);
++    assert.equal(new URL(page.url()).pathname, '/');
++    checks.push('ホームURLのまま開いた投稿詳細ダイアログでは背景を保存せず現在画像1件を保存');
++    await page.goto(`https://www.instagram.com/p/${longCode}/?img_index=1`); await single().waitFor();
++    await page.locator('#permalink').evaluate(el => el.href = '/p/BA/');
++    await keyboardDownload(`${cdn}portrait.png`);
++    checks.push('長い投稿URLで短い正規投稿リンクが返っても↓キーで個別保存');
++    await page.goto('https://www.instagram.com/reel/BB/'); await single().waitFor();
++    await keyboardDownload(`${cdn}clip.mp4`);
++    await page.goto('https://www.instagram.com/reels/BB/'); await single().waitFor();
++    await keyboardDownload(`${cdn}clip.mp4`);
++    await page.evaluate(() => {
++      document.querySelector('#reel-overlay').setAttribute('role', 'dialog');
++      document.querySelector('#reel-overlay').insertAdjacentHTML('afterbegin', '<a href="/reel/BB/"></a>');
++      history.replaceState({}, '', '/reels/');
++    });
++    await single().waitFor(); await keyboardDownload(`${cdn}clip.mp4`);
++    await page.evaluate(() => history.replaceState({}, '', '/'));
++    await keyboardDownload(`${cdn}clip.mp4`);
++    checks.push('通常リール・全画面リール・IDなしリール画面・ホームから開いた全画面リールで↓キーからMP4保存');
++    await page.goto('https://www.instagram.com/stories/alice/101/'); await storySingle().waitFor();
++    await keyboardDownload(`${cdn}portrait.png`);
++    const keyStory = (await state()).at(-1).id;
++    await page.evaluate(() => document.body.insertAdjacentHTML('beforeend', '<div role="dialog" style="position:fixed;inset:0;background:#222;z-index:1000">別の画面</div>'));
++    assert.equal(await keyEvent({}), false);
++    await page.waitForTimeout(200); assert.equal((await state()).at(-1).id, keyStory);
++    checks.push('↓キーで現在ストーリー1件を保存し、別画面に覆われている間は保存しない');
+     const popup = await context.newPage(); await popup.goto(`chrome-extension://${extensionId}/popup.html`);
+     const exportButton = popup.getByRole('button', { name: '保存履歴を書き出す', exact: true });
+     await exportButton.waitFor();

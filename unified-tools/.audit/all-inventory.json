@@ -1,0 +1,3310 @@
+{
+  "sourceExtensionCount": 19,
+  "scope": "All source manifests excluding node_modules and generated dist; My Tools itself is generated and not counted",
+  "inventoryMethod": "All manifest JSON parsed; explicit production source/asset list excludes tests and original vendor source; line evidence extracted from production files; manual integration notes from relevant source reads",
+  "extensions": [
+    {
+      "directory": "GooglePhoto-utils",
+      "manifest": {
+        "manifest_version": 3,
+        "name": "Google Photos Album Sorter",
+        "description": "Keyboard shortcuts for sorting Google Photos preview items into albums.",
+        "version": "0.1.0",
+        "content_scripts": [
+          {
+            "matches": [
+              "https://photos.google.com/*"
+            ],
+            "js": [
+              "src/page-bridge.js"
+            ],
+            "run_at": "document_start",
+            "world": "MAIN"
+          },
+          {
+            "matches": [
+              "https://photos.google.com/*"
+            ],
+            "js": [
+              "src/content.js"
+            ],
+            "css": [
+              "src/content.css"
+            ],
+            "run_at": "document_idle"
+          }
+        ],
+        "permissions": [
+          "storage"
+        ]
+      },
+      "productionAssets": [
+        "src/content.css",
+        "src/content.js",
+        "src/page-bridge.js"
+      ],
+      "chromeApis": {
+        "storage.local.set": [
+          "src/content.js:544",
+          "src/content.js:724"
+        ],
+        "storage.local.get": [
+          "src/content.js:664"
+        ]
+      },
+      "eventsAndLifecycleEvidence": [],
+      "messageTypeLiterals": [
+        "button",
+        "search",
+        "text"
+      ],
+      "resourceReferenceEvidence": [],
+      "storageEvidence": [
+        {
+          "at": "src/content.js:4",
+          "text": "const STORAGE_KEY = \"gpu-albums-v2\";"
+        },
+        {
+          "at": "src/content.js:5",
+          "text": "const COLLAPSED_KEY = \"gpu-panel-collapsed-v1\";"
+        },
+        {
+          "at": "src/content.js:544",
+          "text": "await chrome.storage.local.set({ [STORAGE_KEY]: toSave });"
+        },
+        {
+          "at": "src/content.js:664",
+          "text": "result = await chrome.storage.local.get(result);"
+        },
+        {
+          "at": "src/content.js:724",
+          "text": "await chrome.storage.local.set({ [COLLAPSED_KEY]: next });"
+        }
+      ],
+      "testFiles": [],
+      "storage": {
+        "local": [
+          "gpu-albums-v2",
+          "gpu-panel-collapsed-v1"
+        ]
+      },
+      "verification": "Google Photos preview keyboard shortcuts; RPC success/fallback; panel collapse persistence",
+      "notes": [
+        "content script local access requires scoped storage bridge under TRUSTED_CONTEXTS",
+        "MAIN page bridge must retain document_start"
+      ],
+      "safePortableSettings": {
+        "area": "local",
+        "keys": {
+          "gpu-panel-collapsed-v1": "boolean"
+        },
+        "evidence": [
+          "src/content.js:5",
+          "src/content.js:662",
+          "src/content.js:724"
+        ],
+        "status": "Optional safe UI preference only. gpu-albums-v2 holds Google Photos album identity/history and is not a simple settings field; omit unless explicit validated history migration added."
+      }
+    },
+    {
+      "directory": "badspi-hq-downloader",
+      "manifest": {
+        "manifest_version": 3,
+        "name": "バドスピ 高画質画像ダウンローダー",
+        "version": "1.1.1",
+        "description": "バドスピの画像を高画質で開き、拡大表示にダウンロードボタンを追加します。",
+        "permissions": [
+          "downloads"
+        ],
+        "host_permissions": [
+          "https://www.badspi.jp/*"
+        ],
+        "background": {
+          "service_worker": "background.js"
+        },
+        "content_scripts": [
+          {
+            "matches": [
+              "https://www.badspi.jp/*"
+            ],
+            "js": [
+              "quality-core.js",
+              "content.js"
+            ],
+            "css": [
+              "content.css"
+            ],
+            "run_at": "document_idle"
+          }
+        ]
+      },
+      "productionAssets": [
+        "LICENSE",
+        "background.js",
+        "content.css",
+        "content.js",
+        "quality-core.js"
+      ],
+      "chromeApis": {
+        "runtime.onMessage.addListener": [
+          "background.js:1"
+        ],
+        "downloads.download": [
+          "background.js:7"
+        ],
+        "runtime.sendMessage": [
+          "content.js:63"
+        ]
+      },
+      "eventsAndLifecycleEvidence": [
+        {
+          "at": "background.js:1",
+          "text": "chrome.runtime.onMessage.addListener((message) => {"
+        }
+      ],
+      "messageTypeLiterals": [
+        "badspi-download",
+        "button"
+      ],
+      "resourceReferenceEvidence": [],
+      "storageEvidence": [],
+      "testFiles": [
+        "quality-core.test.cjs"
+      ],
+      "starts": [
+        "badspi-download"
+      ],
+      "verification": "quality-core unit tests; lightbox download image bytes",
+      "safePortableSettings": {
+        "keys": {},
+        "status": "No portable user settings found in inspected production code; history requires own explicit validator."
+      }
+    },
+    {
+      "directory": "birdcore-popup",
+      "manifest": {
+        "manifest_version": 3,
+        "name": "Birdscore Popup",
+        "short_name": "Birdscore",
+        "version": "0.1.4",
+        "description": "BIRDSCOREのライブスコアをポップアップ表示",
+        "homepage_url": "https://www.birdscore.live/",
+        "action": {
+          "default_popup": "popup.html",
+          "default_title": "Birdscore",
+          "default_icon": {
+            "16": "icons/icon16.png",
+            "32": "icons/icon32.png",
+            "48": "icons/icon48.png",
+            "128": "icons/icon128.png"
+          }
+        },
+        "icons": {
+          "16": "icons/icon16.png",
+          "32": "icons/icon32.png",
+          "48": "icons/icon48.png",
+          "128": "icons/icon128.png"
+        },
+        "permissions": [
+          "storage",
+          "windows"
+        ],
+        "optional_host_permissions": [
+          "https://www.birdscore.live/*",
+          "https://raw.githubusercontent.com/*"
+        ],
+        "commands": {
+          "_execute_action": {
+            "suggested_key": {
+              "default": "Alt+B",
+              "mac": "Alt+B"
+            },
+            "description": "Birdscore Popupを開く"
+          }
+        }
+      },
+      "productionAssets": [
+        "config.json",
+        "court-youtube.json",
+        "icons/icon128.png",
+        "icons/icon16.png",
+        "icons/icon32.png",
+        "icons/icon48.png",
+        "popup.css",
+        "popup.html",
+        "popup.js",
+        "team-aliases.json"
+      ],
+      "chromeApis": {
+        "storage.local.get": [
+          "popup.js:82",
+          "popup.js:201"
+        ],
+        "storage.local.set": [
+          "popup.js:87"
+        ],
+        "permissions.contains": [
+          "popup.js:96"
+        ],
+        "permissions.request": [
+          "popup.js:101"
+        ],
+        "runtime.getURL": [
+          "popup.js:379",
+          "popup.js:398",
+          "popup.js:1337"
+        ],
+        "windows.create": [
+          "popup.js:1338"
+        ]
+      },
+      "eventsAndLifecycleEvidence": [],
+      "messageTypeLiterals": [
+        "button",
+        "popup"
+      ],
+      "resourceReferenceEvidence": [
+        {
+          "at": "popup.html:7",
+          "text": "<link rel=\"stylesheet\" href=\"popup.css\" />"
+        },
+        {
+          "at": "popup.html:81",
+          "text": "<script src=\"popup.js\"></script>"
+        },
+        {
+          "at": "popup.js:379",
+          "text": "const res = await fetch(chrome.runtime.getURL(\"team-aliases.json\"));"
+        },
+        {
+          "at": "popup.js:398",
+          "text": "const res = await fetch(chrome.runtime.getURL(\"court-youtube.json\"));"
+        },
+        {
+          "at": "popup.js:567",
+          "text": "const match = html.match(/<script[^>]+src=\\\"([^\\\"]*\\/static\\/js\\/main\\.[^\\\"]+\\.js)\\\"/i);"
+        },
+        {
+          "at": "popup.js:637",
+          "text": "const mainMatch = html.match(/<script[^>]+src=\\\"([^\\\"]*main\\.[^\\\"]+\\.js)\\\"/i);"
+        },
+        {
+          "at": "popup.js:1337",
+          "text": "const url = chrome.runtime.getURL(\"popup.html?mode=window\");"
+        }
+      ],
+      "storageEvidence": [
+        {
+          "at": "popup.js:82",
+          "text": "chrome.storage.local.get([key], result => resolve(result[key]));"
+        },
+        {
+          "at": "popup.js:87",
+          "text": "chrome.storage.local.set(value, () => resolve());"
+        },
+        {
+          "at": "popup.js:201",
+          "text": "chrome.storage.local.get(keys, resolve);"
+        }
+      ],
+      "testFiles": [],
+      "storage": {
+        "local": [
+          "remoteConfig",
+          "currentTournament",
+          "cachedLiveHtml",
+          "cachedFinishedHtml",
+          "cachedLiveCount",
+          "cachedFinishedCount",
+          "cachedTopbarRight",
+          "cachedTournamentName",
+          "cachedTournamentLink",
+          "dynamic fetch cache keys via storageGet(key)"
+        ]
+      },
+      "verification": "actual popup scoreboard + optional permission click + window mode",
+      "notes": [
+        "_execute_action Alt+B action shortcut must become named command routed to this module UI",
+        "config.json is present but CONFIG is inline; team-aliases.json and court-youtube.json fetched locally",
+        "package test script is placeholder failure; no actual automatic test found"
+      ],
+      "safePortableSettings": {
+        "keys": {},
+        "status": "No portable user settings found in inspected production code; history requires own explicit validator."
+      }
+    },
+    {
+      "directory": "gofile-bulk-video-downloader",
+      "manifest": {
+        "manifest_version": 3,
+        "name": "Gofile 動画・画像一括ダウンローダー",
+        "version": "1.1.1",
+        "description": "Gofileの共有ページにある動画と画像を、プレビュー付き進捗表示からまとめて安全に保存します。",
+        "minimum_chrome_version": "111",
+        "permissions": [
+          "downloads",
+          "scripting",
+          "storage",
+          "unlimitedStorage"
+        ],
+        "host_permissions": [
+          "https://gofile.io/*"
+        ],
+        "incognito": "not_allowed",
+        "background": {
+          "service_worker": "background.js"
+        },
+        "content_scripts": [
+          {
+            "matches": [
+              "https://gofile.io/d/*"
+            ],
+            "js": [
+              "page-bridge.js"
+            ],
+            "run_at": "document_start",
+            "world": "MAIN"
+          },
+          {
+            "matches": [
+              "https://gofile.io/d/*"
+            ],
+            "js": [
+              "core.js",
+              "content.js"
+            ],
+            "run_at": "document_idle"
+          }
+        ]
+      },
+      "productionAssets": [
+        "background.js",
+        "collector.js",
+        "content.js",
+        "core.js",
+        "page-bridge.js"
+      ],
+      "chromeApis": {
+        "storage.local.get": [
+          "background.js:75",
+          "background.js:114"
+        ],
+        "storage.local.remove": [
+          "background.js:108",
+          "background.js:174",
+          "background.js:176",
+          "background.js:247"
+        ],
+        "storage.local.set": [
+          "background.js:168",
+          "background.js:198",
+          "background.js:235"
+        ],
+        "tabs.sendMessage": [
+          "background.js:480"
+        ],
+        "downloads.search": [
+          "background.js:491"
+        ],
+        "runtime.id": [
+          "background.js:713"
+        ],
+        "downloads.download": [
+          "background.js:839"
+        ],
+        "scripting.executeScript": [
+          "background.js:939"
+        ],
+        "downloads.cancel": [
+          "background.js:1076",
+          "background.js:1109"
+        ],
+        "runtime.onMessage.addListener": [
+          "background.js:1290",
+          "content.js:873"
+        ],
+        "downloads.onChanged.addListener": [
+          "background.js:1300"
+        ],
+        "downloads.onErased": [
+          "background.js:1371"
+        ],
+        "downloads.onErased.addListener": [
+          "background.js:1372"
+        ],
+        "runtime.onInstalled.addListener": [
+          "background.js:1423"
+        ],
+        "runtime.onStartup.addListener": [
+          "background.js:1427"
+        ],
+        "storage.local.setAccessLevel": [
+          "background.js:1431",
+          "background.js:1432"
+        ],
+        "runtime.sendMessage": [
+          "content.js:720"
+        ]
+      },
+      "eventsAndLifecycleEvidence": [
+        {
+          "at": "background.js:1290",
+          "text": "chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {"
+        },
+        {
+          "at": "background.js:1300",
+          "text": "chrome.downloads.onChanged.addListener((delta) => {"
+        },
+        {
+          "at": "background.js:1372",
+          "text": "chrome.downloads.onErased.addListener((downloadId) => {"
+        },
+        {
+          "at": "background.js:1423",
+          "text": "chrome.runtime.onInstalled.addListener(() => {"
+        },
+        {
+          "at": "background.js:1427",
+          "text": "chrome.runtime.onStartup.addListener(() => {"
+        },
+        {
+          "at": "content.js:873",
+          "text": "chrome.runtime.onMessage.addListener((message) => {"
+        }
+      ],
+      "messageTypeLiterals": [
+        "button",
+        "gofile-bulk:cancel",
+        "gofile-bulk:dismiss",
+        "gofile-bulk:retry",
+        "gofile-bulk:start",
+        "gofile-bulk:status",
+        "gofile-bulk:updated",
+        "string"
+      ],
+      "resourceReferenceEvidence": [
+        {
+          "at": "background.js:3",
+          "text": "importScripts(\"core.js\", \"collector.js\");"
+        }
+      ],
+      "storageEvidence": [
+        {
+          "at": "background.js:75",
+          "text": "Object.assign(output, await chrome.storage.local.get(keys.slice(index, index + STORAGE_WRITE_CHUNK_SIZE)));"
+        },
+        {
+          "at": "background.js:108",
+          "text": "await chrome.storage.local.remove(STORAGE_PENDING_KEY);"
+        },
+        {
+          "at": "background.js:114",
+          "text": "const indexStored = await chrome.storage.local.get([STORAGE_INDEX_KEY, STORAGE_PENDING_KEY]);"
+        },
+        {
+          "at": "background.js:168",
+          "text": "await chrome.storage.local.set(values);"
+        },
+        {
+          "at": "background.js:174",
+          "text": "if (typeof chrome.storage.local.remove !== \"function\") return;"
+        },
+        {
+          "at": "background.js:176",
+          "text": "await chrome.storage.local.remove(keys.slice(index, index + STORAGE_WRITE_CHUNK_SIZE));"
+        },
+        {
+          "at": "background.js:198",
+          "text": "if (pending) await chrome.storage.local.set({ [STORAGE_PENDING_KEY]: pending });"
+        },
+        {
+          "at": "background.js:235",
+          "text": "await chrome.storage.local.set({"
+        },
+        {
+          "at": "background.js:247",
+          "text": "if (pending) await chrome.storage.local.remove(STORAGE_PENDING_KEY);"
+        },
+        {
+          "at": "background.js:1431",
+          "text": "if (chrome.storage.local.setAccessLevel) {"
+        },
+        {
+          "at": "background.js:1432",
+          "text": "void chrome.storage.local.setAccessLevel({ accessLevel: \"TRUSTED_CONTEXTS\" }).catch(() => undefined);"
+        }
+      ],
+      "testFiles": [
+        "background.test.cjs",
+        "collector.test.cjs",
+        "core.test.cjs",
+        "manifest.test.cjs",
+        "page-bridge.test.cjs"
+      ],
+      "storage": {
+        "local": [
+          "gofileBulkDownloadIndexV2",
+          "gofileBulkDownloadPendingV2",
+          "gofileBulkDownloadV2:*"
+        ]
+      },
+      "verification": "node --test *.test.cjs; generated-extension real Downloads API fixture",
+      "notes": [
+        "TRUSTED_CONTEXTS must be retained; pending queue contains signed URLs and must not enter portable JSON"
+      ],
+      "safePortableSettings": {
+        "keys": {},
+        "status": "No portable user settings found in inspected production code; history requires own explicit validator."
+      }
+    },
+    {
+      "directory": "inhigh-tv-match-links",
+      "manifest": {
+        "manifest_version": 3,
+        "name": "インハイTV 試合リンク",
+        "version": "0.1.0",
+        "description": "BIRD SCOREの試合からインハイTV公式アーカイブの試合開始位置へ移動します。",
+        "content_scripts": [
+          {
+            "matches": [
+              "https://www.birdscore.live/web/interhigh-2026-wakayama-team/*",
+              "https://www.birdscore.live/web/interhigh-2026-wakayama-Individual/*"
+            ],
+            "css": [
+              "birdscore-content.css"
+            ],
+            "js": [
+              "birdscore-content.js"
+            ],
+            "run_at": "document_idle"
+          },
+          {
+            "matches": [
+              "https://inhightv.sportsbull.jp/summer/archive/*"
+            ],
+            "css": [
+              "inhigh-content.css"
+            ],
+            "js": [
+              "inhigh-content.js"
+            ],
+            "run_at": "document_idle"
+          }
+        ],
+        "web_accessible_resources": [
+          {
+            "resources": [
+              "data/matches.json"
+            ],
+            "matches": [
+              "https://www.birdscore.live/*",
+              "https://inhightv.sportsbull.jp/*"
+            ]
+          }
+        ]
+      },
+      "productionAssets": [
+        "birdscore-content.css",
+        "birdscore-content.js",
+        "data/matches.json",
+        "inhigh-content.css",
+        "inhigh-content.js"
+      ],
+      "chromeApis": {
+        "runtime.getURL": [
+          "birdscore-content.js:120"
+        ]
+      },
+      "eventsAndLifecycleEvidence": [],
+      "messageTypeLiterals": [],
+      "resourceReferenceEvidence": [
+        {
+          "at": "birdscore-content.js:120",
+          "text": "const response = await fetch(chrome.runtime.getURL(DATA_PATH));"
+        }
+      ],
+      "storageEvidence": [],
+      "testFiles": [],
+      "verification": "BIRDSCORE link injection from data/matches.json and archive seeks",
+      "notes": [
+        "matches.json is fetched via runtime.getURL and is web-accessible"
+      ],
+      "safePortableSettings": {
+        "keys": {},
+        "status": "No portable user settings found in inspected production code; history requires own explicit validator."
+      }
+    },
+    {
+      "directory": "inhigh-tv-skip-extension",
+      "manifest": {
+        "manifest_version": 3,
+        "name": "インハイTV スキップ操作",
+        "version": "1.1.0",
+        "description": "インハイTVの動画に戻る・進むボタンと、矢印キー・スペースキー操作を追加します。",
+        "permissions": [
+          "storage"
+        ],
+        "content_scripts": [
+          {
+            "matches": [
+              "https://inhightv.sportsbull.jp/*"
+            ],
+            "css": [
+              "content.css"
+            ],
+            "js": [
+              "content.js"
+            ],
+            "run_at": "document_idle"
+          }
+        ],
+        "action": {
+          "default_title": "インハイTV スキップ設定",
+          "default_popup": "options.html"
+        },
+        "options_ui": {
+          "page": "options.html",
+          "open_in_tab": true
+        }
+      },
+      "productionAssets": [
+        "content.css",
+        "content.js",
+        "options.css",
+        "options.html",
+        "options.js"
+      ],
+      "chromeApis": {
+        "storage.sync.get": [
+          "content.js:35",
+          "options.js:44"
+        ],
+        "runtime.lastError": [
+          "content.js:36",
+          "options.js:45",
+          "options.js:66",
+          "options.js:84"
+        ],
+        "storage.onChanged.addListener": [
+          "content.js:315"
+        ],
+        "storage.sync.set": [
+          "options.js:65",
+          "options.js:83"
+        ]
+      },
+      "eventsAndLifecycleEvidence": [
+        {
+          "at": "content.js:315",
+          "text": "chrome.storage.onChanged.addListener((changes, areaName) => {"
+        }
+      ],
+      "messageTypeLiterals": [
+        "button",
+        "checkbox",
+        "number",
+        "submit"
+      ],
+      "resourceReferenceEvidence": [
+        {
+          "at": "options.html:7",
+          "text": "<link rel=\"stylesheet\" href=\"options.css\" />"
+        },
+        {
+          "at": "options.html:63",
+          "text": "<script src=\"options.js\"></script>"
+        }
+      ],
+      "storageEvidence": [
+        {
+          "at": "content.js:35",
+          "text": "chrome.storage.sync.get(DEFAULT_SETTINGS, (stored) => {"
+        },
+        {
+          "at": "content.js:315",
+          "text": "chrome.storage.onChanged.addListener((changes, areaName) => {"
+        },
+        {
+          "at": "options.js:44",
+          "text": "chrome.storage.sync.get(DEFAULT_SETTINGS, (stored) => {"
+        },
+        {
+          "at": "options.js:65",
+          "text": "chrome.storage.sync.set(nextSettings, () => {"
+        },
+        {
+          "at": "options.js:83",
+          "text": "chrome.storage.sync.set(DEFAULT_SETTINGS, () => {"
+        }
+      ],
+      "testFiles": [
+        "tests/player-harness.html",
+        "tests/player-harness.js"
+      ],
+      "storage": {
+        "sync": [
+          "skipSeconds",
+          "keyboardEnabled"
+        ]
+      },
+      "verification": "tests/player-harness.html; options save; arrow/space focus exclusions",
+      "safePortableSettings": {
+        "area": "sync",
+        "keys": {
+          "skipSeconds": "integer 1..300",
+          "keyboardEnabled": "boolean"
+        },
+        "evidence": [
+          "options.js:4-9",
+          "options.js:18-24",
+          "options.js:60-67"
+        ],
+        "status": "existing clamp and type; portable parser should reject rather than clamp malformed JSON"
+      }
+    },
+    {
+      "directory": "instagram-high-quality-images",
+      "manifest": {
+        "manifest_version": 3,
+        "name": "Instagram High Quality Images",
+        "version": "2.3.0",
+        "description": "Instagramの投稿画像を最大解像度で表示し、縦長のInstagram Liveを横向き表示します。",
+        "permissions": [
+          "storage",
+          "activeTab"
+        ],
+        "action": {
+          "default_title": "Instagram High Quality Images",
+          "default_popup": "popup.html"
+        },
+        "content_scripts": [
+          {
+            "matches": [
+              "https://www.instagram.com/*"
+            ],
+            "js": [
+              "quality-core.js",
+              "content.js"
+            ],
+            "css": [
+              "content.css"
+            ],
+            "run_at": "document_idle"
+          }
+        ],
+        "minimum_chrome_version": "116"
+      },
+      "productionAssets": [
+        "LICENSE",
+        "content.css",
+        "content.js",
+        "popup.css",
+        "popup.html",
+        "popup.js",
+        "quality-core.js"
+      ],
+      "chromeApis": {
+        "storage.sync.get": [
+          "content.js:152",
+          "popup.js:10"
+        ],
+        "storage.onChanged.addListener": [
+          "content.js:158"
+        ],
+        "runtime.onMessage.addListener": [
+          "content.js:166"
+        ],
+        "storage.sync.set": [
+          "popup.js:16",
+          "popup.js:21"
+        ],
+        "tabs.query": [
+          "popup.js:28"
+        ],
+        "tabs.sendMessage": [
+          "popup.js:34"
+        ],
+        "runtime.lastError": [
+          "popup.js:35"
+        ]
+      },
+      "eventsAndLifecycleEvidence": [
+        {
+          "at": "content.js:158",
+          "text": "chrome.storage.onChanged.addListener((changes, area) => {"
+        },
+        {
+          "at": "content.js:166",
+          "text": "chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {"
+        }
+      ],
+      "messageTypeLiterals": [
+        "checkbox",
+        "instagram-hq-status"
+      ],
+      "resourceReferenceEvidence": [
+        {
+          "at": "popup.html:7",
+          "text": "<link rel=\"stylesheet\" href=\"popup.css\" />"
+        },
+        {
+          "at": "popup.html:31",
+          "text": "<script src=\"popup.js\"></script>"
+        }
+      ],
+      "storageEvidence": [
+        {
+          "at": "content.js:152",
+          "text": "chrome.storage.sync.get({ enabled: true, rotateLive: true }, (settings) => {"
+        },
+        {
+          "at": "content.js:158",
+          "text": "chrome.storage.onChanged.addListener((changes, area) => {"
+        },
+        {
+          "at": "popup.js:10",
+          "text": "chrome.storage.sync.get({ enabled: true, rotateLive: true }, ({ enabled, rotateLive }) => {"
+        },
+        {
+          "at": "popup.js:16",
+          "text": "chrome.storage.sync.set({ enabled: checkbox.checked });"
+        },
+        {
+          "at": "popup.js:21",
+          "text": "chrome.storage.sync.set({ rotateLive: rotateLiveCheckbox.checked });"
+        }
+      ],
+      "testFiles": [
+        "quality-core.test.cjs",
+        "tests/browser.cjs"
+      ],
+      "storage": {
+        "sync": [
+          "enabled",
+          "rotateLive"
+        ]
+      },
+      "verification": "npm test; npm run test:browser; popup status and Live rotation",
+      "notes": [
+        "enabled conflicts with KLTRA local only if storage areas incorrectly conflated; namespace every module nevertheless"
+      ],
+      "safePortableSettings": {
+        "area": "sync",
+        "keys": {
+          "enabled": "boolean",
+          "rotateLive": "boolean"
+        },
+        "evidence": [
+          "popup.js:10-21"
+        ],
+        "status": "exact types from checkbox writes"
+      }
+    },
+    {
+      "directory": "instagram-media-downloader",
+      "manifest": {
+        "manifest_version": 3,
+        "name": "Instagram Media Downloader",
+        "version": "1.0.0",
+        "description": "Instagramの投稿・ストーリー・リールを個別または一括で保存します。",
+        "minimum_chrome_version": "116",
+        "permissions": [
+          "downloads",
+          "storage",
+          "alarms"
+        ],
+        "host_permissions": [
+          "https://*.cdninstagram.com/*",
+          "https://*.fbcdn.net/*"
+        ],
+        "background": {
+          "service_worker": "background.js"
+        },
+        "action": {
+          "default_title": "Instagram Media Downloader",
+          "default_popup": "popup.html"
+        },
+        "content_scripts": [
+          {
+            "matches": [
+              "https://www.instagram.com/*"
+            ],
+            "js": [
+              "core.js",
+              "bridge.js"
+            ],
+            "world": "MAIN",
+            "run_at": "document_start"
+          },
+          {
+            "matches": [
+              "https://www.instagram.com/*"
+            ],
+            "js": [
+              "core.js",
+              "instagram-api.js",
+              "content.js"
+            ],
+            "run_at": "document_idle"
+          }
+        ]
+      },
+      "productionAssets": [
+        "background.js",
+        "bridge.js",
+        "content.js",
+        "core.js",
+        "instagram-api.js",
+        "popup.css",
+        "popup.html",
+        "popup.js"
+      ],
+      "chromeApis": {
+        "storage.local.get": [
+          "background.js:9"
+        ],
+        "storage.session.get": [
+          "background.js:16"
+        ],
+        "storage.session.set": [
+          "background.js:19"
+        ],
+        "tabs.sendMessage": [
+          "background.js:31",
+          "background.js:234",
+          "popup.js:7"
+        ],
+        "storage.local.set": [
+          "background.js:49",
+          "background.js:121"
+        ],
+        "downloads.search": [
+          "background.js:58",
+          "background.js:95",
+          "background.js:209"
+        ],
+        "runtime.id": [
+          "background.js:97"
+        ],
+        "downloads.download": [
+          "background.js:141"
+        ],
+        "alarms.create": [
+          "background.js:159"
+        ],
+        "alarms.clear": [
+          "background.js:160"
+        ],
+        "runtime.onMessage.addListener": [
+          "background.js:166",
+          "content.js:91"
+        ],
+        "runtime.getURL": [
+          "background.js:168"
+        ],
+        "downloads.cancel": [
+          "background.js:207"
+        ],
+        "downloads.onChanged.addListener": [
+          "background.js:223"
+        ],
+        "alarms.onAlarm.addListener": [
+          "background.js:226"
+        ],
+        "storage.onChanged.addListener": [
+          "background.js:231"
+        ],
+        "tabs.query": [
+          "background.js:233",
+          "popup.js:5"
+        ],
+        "runtime.sendMessage": [
+          "content.js:86",
+          "popup.js:14"
+        ]
+      },
+      "eventsAndLifecycleEvidence": [
+        {
+          "at": "background.js:159",
+          "text": "await chrome.alarms.create(\"ig-download-queue\", { periodInMinutes: 1 });"
+        },
+        {
+          "at": "background.js:160",
+          "text": "} else await chrome.alarms.clear(\"ig-download-queue\");"
+        },
+        {
+          "at": "background.js:166",
+          "text": "chrome.runtime.onMessage.addListener((message, sender, respond) => {"
+        },
+        {
+          "at": "background.js:223",
+          "text": "chrome.downloads.onChanged.addListener(delta => {"
+        },
+        {
+          "at": "background.js:226",
+          "text": "chrome.alarms.onAlarm.addListener(alarm => {"
+        },
+        {
+          "at": "background.js:231",
+          "text": "chrome.storage.onChanged.addListener((changes, area) => {"
+        },
+        {
+          "at": "content.js:91",
+          "text": "chrome.runtime.onMessage.addListener(msg => {"
+        }
+      ],
+      "messageTypeLiterals": [
+        "application/json",
+        "button",
+        "ig-download-history",
+        "ig-download-history-changed",
+        "ig-download-page",
+        "ig-download-pause",
+        "ig-download-progress",
+        "ig-download-start",
+        "ig-download-status"
+      ],
+      "resourceReferenceEvidence": [
+        {
+          "at": "background.js:2",
+          "text": "importScripts(\"core.js\");"
+        },
+        {
+          "at": "background.js:168",
+          "text": "const popup = sender.url === chrome.runtime.getURL(\"popup.html\");"
+        },
+        {
+          "at": "popup.html:2",
+          "text": "<html lang=\"ja\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><link rel=\"stylesheet\" href=\"popup.css\"><title>Instagram Media Downloader</title></head>"
+        },
+        {
+          "at": "popup.html:3",
+          "text": "<body><div class=\"mark\" aria-hidden=\"true\">↓</div><h1>Instagram<br>Media Downloader</h1><p>気に入った瞬間を、手元に。</p><div class=\"card\"><strong>投稿・ストーリー・リール</strong><p>画像・動画の右上の ↓ で個別保存。<br>重なったアイコンで一括保存できます。</p></div><button id=\"save\">表示済みの投稿を一括保存</button><button id=\"export-history\" disabled>保存履歴を読み込み中…</but"
+        }
+      ],
+      "storageEvidence": [
+        {
+          "at": "background.js:9",
+          "text": "const value = await chrome.storage.local.get([\"savedMedia\", \"savedHistoryMigratedV1\"]);"
+        },
+        {
+          "at": "background.js:16",
+          "text": "chrome.storage.session.get(\"jobs\").then(result => { jobs = result.jobs || []; }),"
+        },
+        {
+          "at": "background.js:19",
+          "text": "const save = () => chrome.storage.session.set({ jobs });"
+        },
+        {
+          "at": "background.js:49",
+          "text": "await chrome.storage.local.set({ savedMedia: validated });"
+        },
+        {
+          "at": "background.js:121",
+          "text": "await chrome.storage.local.set({ savedMedia: candidate, savedHistoryMigratedV1: true });"
+        },
+        {
+          "at": "background.js:231",
+          "text": "chrome.storage.onChanged.addListener((changes, area) => {"
+        }
+      ],
+      "testFiles": [
+        "tests/api.test.cjs",
+        "tests/background.test.cjs",
+        "tests/browser.cjs",
+        "tests/core.test.cjs",
+        "tests/fixtures/clip.mp4",
+        "tests/verify-saved-media.py"
+      ],
+      "storage": {
+        "local": [
+          "savedMedia",
+          "savedHistoryMigratedV1"
+        ],
+        "session": [
+          "jobs"
+        ]
+      },
+      "verification": "npm test; npm run test:browser; downloads, history checks, story/reel controls",
+      "starts": [
+        "ig-download-start"
+      ],
+      "notes": [
+        "session jobs conflicts with YouTube jobs unless namespace adapter",
+        "history RPC already avoids content local storage access"
+      ],
+      "safePortableSettings": {
+        "keys": {},
+        "status": "No portable user settings found in inspected production code; history requires own explicit validator."
+      }
+    },
+    {
+      "directory": "kltra-danmaku",
+      "manifest": {
+        "manifest_version": 3,
+        "name": "KLTRA 弾幕チャット",
+        "version": "1.0.0",
+        "description": "KLTRATV の Cbox チャットとステッカーを配信画面に弾幕表示し、日本語に翻訳します。",
+        "permissions": [
+          "storage"
+        ],
+        "host_permissions": [
+          "https://translate.googleapis.com/*"
+        ],
+        "background": {
+          "service_worker": "background.js"
+        },
+        "action": {
+          "default_title": "KLTRA 弾幕設定",
+          "default_popup": "popup.html"
+        },
+        "content_scripts": [
+          {
+            "matches": [
+              "https://kltratv13.blogspot.com/p/galaxy.html"
+            ],
+            "css": [
+              "danmaku.css"
+            ],
+            "js": [
+              "translation.js",
+              "page.js"
+            ],
+            "run_at": "document_idle"
+          },
+          {
+            "matches": [
+              "https://www3.cbox.ws/box/*"
+            ],
+            "js": [
+              "chat.js"
+            ],
+            "run_at": "document_idle",
+            "all_frames": true
+          }
+        ]
+      },
+      "productionAssets": [
+        "background.js",
+        "chat.js",
+        "danmaku.css",
+        "page.js",
+        "popup.css",
+        "popup.html",
+        "popup.js",
+        "translation.js"
+      ],
+      "chromeApis": {
+        "runtime.onMessage.addListener": [
+          "background.js:8",
+          "page.js:176"
+        ],
+        "runtime.id": [
+          "background.js:10"
+        ],
+        "storage.local.get": [
+          "page.js:195",
+          "popup.js:53"
+        ],
+        "runtime.lastError": [
+          "page.js:196"
+        ],
+        "storage.onChanged.addListener": [
+          "page.js:200"
+        ],
+        "storage.local.set": [
+          "popup.js:45"
+        ],
+        "tabs.query": [
+          "popup.js:75"
+        ],
+        "tabs.sendMessage": [
+          "popup.js:77",
+          "popup.js:119",
+          "popup.js:142"
+        ],
+        "runtime.sendMessage": [
+          "translation.js:222"
+        ]
+      },
+      "eventsAndLifecycleEvidence": [
+        {
+          "at": "background.js:8",
+          "text": "chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {"
+        },
+        {
+          "at": "page.js:176",
+          "text": "chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {"
+        },
+        {
+          "at": "page.js:200",
+          "text": "chrome.storage.onChanged.addListener((changes, area) => {"
+        }
+      ],
+      "messageTypeLiterals": [
+        "GET_STATUS",
+        "PREPARE_TRANSLATION",
+        "TOGGLE_FULLSCREEN",
+        "TRANSLATED",
+        "TRANSLATE_ONLINE",
+        "button",
+        "checkbox",
+        "range"
+      ],
+      "resourceReferenceEvidence": [
+        {
+          "at": "popup.html:7",
+          "text": "<link rel=\"stylesheet\" href=\"popup.css\">"
+        },
+        {
+          "at": "popup.html:8",
+          "text": "<script src=\"popup.js\" defer></script>"
+        }
+      ],
+      "storageEvidence": [
+        {
+          "at": "page.js:195",
+          "text": "chrome.storage.local.get(DEFAULTS, (values) => {"
+        },
+        {
+          "at": "page.js:200",
+          "text": "chrome.storage.onChanged.addListener((changes, area) => {"
+        },
+        {
+          "at": "popup.js:45",
+          "text": "await chrome.storage.local.set({ [key]: value });"
+        },
+        {
+          "at": "popup.js:53",
+          "text": "const values = await chrome.storage.local.get(DEFAULTS);"
+        }
+      ],
+      "testFiles": [
+        "tests/background.test.js",
+        "tests/browser-e2e.mjs",
+        "tests/chat.test.js",
+        "tests/translation.test.js"
+      ],
+      "storage": {
+        "local": [
+          "enabled",
+          "fontSize",
+          "transparency",
+          "position",
+          "speed",
+          "showName",
+          "translationEnabled",
+          "translationSource",
+          "translationEngine"
+        ]
+      },
+      "starts": [
+        "TRANSLATE_ONLINE"
+      ],
+      "verification": "tests/*.test.js and browser-e2e.mjs; nested Cbox frame + parent overlay/settings",
+      "notes": [
+        "content local reads require scoped storage IPC under TRUSTED_CONTEXTS",
+        "chat.js is all_frames and must preserve frame targeting; background validates exact PAGE_URL frameId=0"
+      ],
+      "safePortableSettings": {
+        "area": "local",
+        "keys": {
+          "enabled": "boolean",
+          "fontSize": "finite number 14..40",
+          "transparency": "finite number 0..100",
+          "position": "finite number 0..100",
+          "speed": "finite number 60..300",
+          "showName": "boolean",
+          "translationEnabled": "boolean",
+          "translationSource": "enum auto/id/en",
+          "translationEngine": "enum online/local"
+        },
+        "evidence": [
+          "popup.js:1-3",
+          "popup.js:35-45",
+          "popup.js:53-64"
+        ],
+        "status": "existing UI validation"
+      }
+    },
+    {
+      "directory": "koutairen-gallery-fix",
+      "manifest": {
+        "manifest_version": 3,
+        "name": "全国高体連バドミントン 写真送り修正",
+        "version": "1.0.0",
+        "description": "全国高体連バドミントン専門部サイトの写真を、ページ上の並び順どおりに1枚ずつ表示します。",
+        "content_scripts": [
+          {
+            "matches": [
+              "https://www.zenkoku-koutairen-bad.com/*",
+              "https://zenkoku-koutairen-bad.com/*"
+            ],
+            "js": [
+              "content.js"
+            ],
+            "css": [
+              "viewer.css"
+            ],
+            "run_at": "document_start"
+          }
+        ]
+      },
+      "productionAssets": [
+        "LICENSE",
+        "content.js",
+        "viewer.css"
+      ],
+      "chromeApis": {},
+      "eventsAndLifecycleEvidence": [],
+      "messageTypeLiterals": [
+        "button"
+      ],
+      "resourceReferenceEvidence": [],
+      "storageEvidence": [],
+      "testFiles": [],
+      "verification": "gallery click + keyboard next/previous ordering and close; no automatic tests found",
+      "safePortableSettings": {
+        "keys": {},
+        "status": "No portable user settings found in inspected production code; history requires own explicit validator."
+      }
+    },
+    {
+      "directory": "momoniji-manga-viewer/extension",
+      "manifest": {
+        "manifest_version": 3,
+        "name": "Momoniji 漫画ビューア・一括保存",
+        "version": "1.1.0",
+        "description": "Momoniji の漫画ビューア、作品別一括保存、右クリックから後で読むに登録して保存済みを確認できます。",
+        "minimum_chrome_version": "120",
+        "permissions": [
+          "downloads",
+          "storage",
+          "alarms",
+          "contextMenus"
+        ],
+        "host_permissions": [
+          "https://momoniji.com/*",
+          "https://www.momoniji.com/*"
+        ],
+        "background": {
+          "service_worker": "background.js"
+        },
+        "action": {
+          "default_title": "Momoniji・後で読む",
+          "default_popup": "popup.html"
+        },
+        "content_scripts": [
+          {
+            "matches": [
+              "https://momoniji.com/*",
+              "https://www.momoniji.com/*"
+            ],
+            "js": [
+              "vendor/manga-viewer.js",
+              "extract.js",
+              "library-core.js",
+              "library-content.js",
+              "content.js"
+            ],
+            "run_at": "document_idle"
+          }
+        ]
+      },
+      "productionAssets": [
+        "background.js",
+        "content.js",
+        "download-core.js",
+        "extract.js",
+        "library-content.js",
+        "library-core.js",
+        "popup.css",
+        "popup.html",
+        "popup.js",
+        "vendor/LICENSE.manga-viewer",
+        "vendor/manga-viewer.js",
+        "vendor/provenance.json"
+      ],
+      "chromeApis": {
+        "storage.local.get": [
+          "background.js:12",
+          "background.js:18",
+          "background.js:55"
+        ],
+        "storage.local.set": [
+          "background.js:13",
+          "background.js:20"
+        ],
+        "runtime.id": [
+          "background.js:17",
+          "background.js:100",
+          "background.js:119",
+          "background.js:122",
+          "background.js:176",
+          "library-content.js:211"
+        ],
+        "downloads.download": [
+          "background.js:23"
+        ],
+        "downloads.search": [
+          "background.js:24"
+        ],
+        "downloads.cancel": [
+          "background.js:25"
+        ],
+        "downloads.removeFile": [
+          "background.js:26"
+        ],
+        "tabs.sendMessage": [
+          "background.js:27",
+          "background.js:49",
+          "background.js:84",
+          "background.js:158",
+          "background.js:161",
+          "background.js:165",
+          "popup.js:293"
+        ],
+        "alarms.get": [
+          "background.js:30"
+        ],
+        "alarms.create": [
+          "background.js:30",
+          "background.js:32"
+        ],
+        "alarms.clear": [
+          "background.js:31",
+          "background.js:33"
+        ],
+        "storage.local.setAccessLevel": [
+          "background.js:38",
+          "background.js:38"
+        ],
+        "action.setBadgeText": [
+          "background.js:45"
+        ],
+        "action.setBadgeBackgroundColor": [
+          "background.js:46"
+        ],
+        "runtime.sendMessage": [
+          "background.js:47",
+          "content.js:160",
+          "library-content.js:51",
+          "popup.js:31"
+        ],
+        "tabs.query": [
+          "background.js:48",
+          "popup.js:291"
+        ],
+        "runtime.onMessage.addListener": [
+          "background.js:103",
+          "background.js:130",
+          "content.js:214",
+          "library-content.js:210"
+        ],
+        "contextMenus.removeAll": [
+          "background.js:146"
+        ],
+        "runtime.lastError": [
+          "background.js:146",
+          "background.js:148"
+        ],
+        "contextMenus.create": [
+          "background.js:147"
+        ],
+        "contextMenus.onClicked.addListener": [
+          "background.js:169"
+        ],
+        "downloads.onChanged.addListener": [
+          "background.js:170"
+        ],
+        "downloads.onErased.addListener": [
+          "background.js:171"
+        ],
+        "downloads.onDeterminingFilename.addListener": [
+          "background.js:172"
+        ],
+        "alarms.onAlarm.addListener": [
+          "background.js:185"
+        ],
+        "runtime.onStartup.addListener": [
+          "background.js:188"
+        ],
+        "runtime.onInstalled.addListener": [
+          "background.js:189"
+        ],
+        "tabs.create": [
+          "popup.js:107"
+        ],
+        "runtime.onMessage": [
+          "popup.js:282"
+        ]
+      },
+      "eventsAndLifecycleEvidence": [
+        {
+          "at": "background.js:30",
+          "text": "if (!(await chrome.alarms.get(RECOVERY_ALARM))) await chrome.alarms.create(RECOVERY_ALARM, { periodInMinutes: 1 });"
+        },
+        {
+          "at": "background.js:31",
+          "text": "} else await chrome.alarms.clear(RECOVERY_ALARM);"
+        },
+        {
+          "at": "background.js:32",
+          "text": "if (nextAttemptAt !== null) await chrome.alarms.create(RETRY_ALARM, { when: Math.max(Date.now() + 1000, nextAttemptAt) });"
+        },
+        {
+          "at": "background.js:33",
+          "text": "else await chrome.alarms.clear(RETRY_ALARM);"
+        },
+        {
+          "at": "background.js:103",
+          "text": "chrome.runtime.onMessage.addListener((message, sender, respond) => {"
+        },
+        {
+          "at": "background.js:130",
+          "text": "chrome.runtime.onMessage.addListener((message, sender, respond) => {"
+        },
+        {
+          "at": "background.js:146",
+          "text": "await new Promise((resolve, reject) => chrome.contextMenus.removeAll(() => chrome.runtime.lastError ? reject(new Library.LibraryError('INTERNAL_ERROR')) : resolve()));"
+        },
+        {
+          "at": "background.js:147",
+          "text": "await new Promise((resolve, reject) => chrome.contextMenus.create({ id: LIBRARY_MENU, title: 'この漫画を後で読むに保存', contexts: ['page', 'image', 'link'],"
+        },
+        {
+          "at": "background.js:169",
+          "text": "chrome.contextMenus.onClicked.addListener(handleLibraryContextClick);"
+        },
+        {
+          "at": "background.js:170",
+          "text": "chrome.downloads.onChanged.addListener(delta => { initialize().then(() => controller.changed(delta)).catch(() => {}); });"
+        },
+        {
+          "at": "background.js:171",
+          "text": "chrome.downloads.onErased.addListener(id => { initialize().then(() => controller.erased(id)).catch(() => {}); });"
+        },
+        {
+          "at": "background.js:172",
+          "text": "chrome.downloads.onDeterminingFilename.addListener((item, suggest) => {"
+        },
+        {
+          "at": "background.js:185",
+          "text": "chrome.alarms.onAlarm.addListener(alarm => {"
+        },
+        {
+          "at": "background.js:188",
+          "text": "chrome.runtime.onStartup.addListener(() => { initialize().catch(() => {}); initializeLibrary().catch(() => {}); setupLibraryMenu().catch(() => {}); });"
+        },
+        {
+          "at": "background.js:189",
+          "text": "chrome.runtime.onInstalled.addListener(() => { initialize().catch(() => {}); initializeLibrary().catch(() => {}); setupLibraryMenu().catch(() => {}); });"
+        },
+        {
+          "at": "content.js:214",
+          "text": "chrome.runtime.onMessage.addListener(message => {"
+        },
+        {
+          "at": "library-content.js:210",
+          "text": "chrome.runtime.onMessage.addListener((message, sender, respond) => {"
+        }
+      ],
+      "messageTypeLiterals": [
+        " ",
+        "ArrowDown",
+        "ArrowLeft",
+        "ArrowRight",
+        "ArrowUp",
+        "End",
+        "Escape",
+        "Home",
+        "MOMONIJI_DOWNLOAD_",
+        "MOMONIJI_DOWNLOAD_PROGRESS",
+        "MOMONIJI_DOWNLOAD_RETRY",
+        "MOMONIJI_DOWNLOAD_START",
+        "MOMONIJI_DOWNLOAD_STATUS",
+        "MOMONIJI_LIBRARY_CHANGED",
+        "MOMONIJI_LIBRARY_LIST",
+        "MOMONIJI_LIBRARY_NOTICE",
+        "MOMONIJI_LIBRARY_READ",
+        "MOMONIJI_LIBRARY_REMOVE",
+        "MOMONIJI_LIBRARY_RESOLVE",
+        "MOMONIJI_LIBRARY_SAVE",
+        "PageDown",
+        "PageUp",
+        "adsense",
+        "button",
+        "html",
+        "image",
+        "purchase",
+        "range",
+        "search"
+      ],
+      "resourceReferenceEvidence": [
+        {
+          "at": "background.js:3",
+          "text": "importScripts('download-core.js');"
+        },
+        {
+          "at": "background.js:4",
+          "text": "importScripts('library-core.js');"
+        },
+        {
+          "at": "popup.html:7",
+          "text": "<link rel=\"stylesheet\" href=\"popup.css\">"
+        },
+        {
+          "at": "popup.html:8",
+          "text": "<script src=\"library-core.js\" defer></script>"
+        },
+        {
+          "at": "popup.html:9",
+          "text": "<script src=\"popup.js\" defer></script>"
+        },
+        {
+          "at": "vendor/manga-viewer.js:36",
+          "text": "// Exported so callers can do `import MangaViewer, { icons } from '...';`"
+        },
+        {
+          "at": "vendor/manga-viewer.js:200",
+          "text": "const DANGEROUS_STYLE_RE = /(?:expression\\s*\\(|url\\s*\\(|@import|behaviou?r\\s*:|javascript\\s*:|vbscript\\s*:|data\\s*:(?!image\\/))/i;"
+        },
+        {
+          "at": "vendor/manga-viewer.js:205",
+          "text": "// (The viewer mounts in Shadow DOM, so external <link> styles cannot reach"
+        },
+        {
+          "at": "vendor/manga-viewer.js:1508",
+          "text": "tpl.innerHTML = String(svgString || '').replace(/<script\\b[^>]*>[\\s\\S]*?<\\/script>/gi, '');"
+        }
+      ],
+      "storageEvidence": [
+        {
+          "at": "background.js:12",
+          "text": "async load() { return (await chrome.storage.local.get(Library.STORAGE_KEY))[Library.STORAGE_KEY]; },"
+        },
+        {
+          "at": "background.js:13",
+          "text": "async save(state) { await chrome.storage.local.set({ [Library.STORAGE_KEY]: state }); },"
+        },
+        {
+          "at": "background.js:18",
+          "text": "async load() { return (await chrome.storage.local.get(Core.STORAGE_KEY))[Core.STORAGE_KEY]; },"
+        },
+        {
+          "at": "background.js:20",
+          "text": "await chrome.storage.local.set({ [Core.STORAGE_KEY]: state });"
+        },
+        {
+          "at": "background.js:38",
+          "text": "const storageAccessReady = chrome.storage.local.setAccessLevel ? chrome.storage.local.setAccessLevel({ accessLevel: 'TRUSTED_CONTEXTS' }) : Promise.resolve();"
+        },
+        {
+          "at": "background.js:55",
+          "text": "const stored = (await chrome.storage.local.get(Core.STORAGE_KEY))[Core.STORAGE_KEY];"
+        },
+        {
+          "at": "download-core.js:10",
+          "text": "const STORAGE_KEY = 'momonijiDownloadState';"
+        },
+        {
+          "at": "library-core.js:9",
+          "text": "const STORAGE_KEY = 'momonijiLibrary';"
+        }
+      ],
+      "testFiles": [
+        "tests/browser.cjs",
+        "tests/download-filenames.browser.cjs",
+        "tests/downloads.test.cjs",
+        "tests/extract.test.cjs",
+        "tests/filename-recovery.browser.cjs",
+        "tests/fixtures.cjs",
+        "tests/library-content.test.cjs",
+        "tests/library.browser.cjs",
+        "tests/library.live.cjs",
+        "tests/library.test.cjs",
+        "tests/live.cjs",
+        "tests/package.test.cjs",
+        "tests/popup.test.cjs",
+        "tests/unicode-downloads.test.cjs"
+      ],
+      "storage": {
+        "local": [
+          "momonijiLibrary",
+          "momonijiDownloadState"
+        ]
+      },
+      "starts": [
+        "MOMONIJI_DOWNLOAD_START",
+        "MOMONIJI_DOWNLOAD_RETRY",
+        "MOMONIJI_LIBRARY_SAVE"
+      ],
+      "verification": "parent package npm test, test:browser, test:filenames, test:recovery, test:library; live scripts require site",
+      "notes": [
+        "contextMenus.removeAll must be module scoped; gate menu click when disabled",
+        "alarms recovery/retry must continue for active job after disable",
+        "vendor manga-viewer.js and its license/provenance are production dependency"
+      ],
+      "safePortableSettings": {
+        "keys": {},
+        "status": "No portable user settings found in inspected production code; history requires own explicit validator."
+      }
+    },
+    {
+      "directory": "page-media-bulk-downloader",
+      "manifest": {
+        "manifest_version": 3,
+        "name": "ページ動画・画像 一括保存",
+        "version": "1.8.2",
+        "description": "対象サイトの一覧ツールバーから動画・画像を一括保存し、ページ内で進捗・キャンセル・再試行を確認します。",
+        "minimum_chrome_version": "111",
+        "permissions": [
+          "downloads",
+          "scripting",
+          "storage",
+          "unlimitedStorage",
+          "offscreen"
+        ],
+        "host_permissions": [
+          "https://video.twimg.news/*",
+          "https://twfiles.com/*",
+          "https://video.twimg1.com/*",
+          "https://gofile.run/*",
+          "https://gofile.ing/*",
+          "https://video.twimg-film.com/*",
+          "https://gofile.es/*",
+          "https://cdn4.file-photo.com/*",
+          "https://gofile.guru/*",
+          "https://cdn.twimg-image.com/*",
+          "https://gofile.pl/*",
+          "https://video.twimg-com.com/*",
+          "https://rwzugqnp.fun800.click/*",
+          "https://vid.fun800.click/*"
+        ],
+        "content_scripts": [
+          {
+            "matches": [
+              "https://video.twimg.news/d/*",
+              "https://twfiles.com/*",
+              "https://video.twimg1.com/*",
+              "https://gofile.run/*",
+              "https://gofile.ing/*",
+              "https://video.twimg-film.com/*",
+              "https://gofile.es/*",
+              "https://cdn4.file-photo.com/*",
+              "https://gofile.guru/*",
+              "https://cdn.twimg-image.com/*",
+              "https://gofile.pl/*",
+              "https://video.twimg-com.com/*"
+            ],
+            "js": [
+              "core.js",
+              "content.js"
+            ],
+            "run_at": "document_idle",
+            "all_frames": false,
+            "world": "ISOLATED"
+          }
+        ],
+        "incognito": "not_allowed",
+        "background": {
+          "service_worker": "background.js"
+        },
+        "content_security_policy": {
+          "extension_pages": "script-src 'self'; object-src 'none'"
+        }
+      },
+      "productionAssets": [
+        "background.js",
+        "collector.js",
+        "content.js",
+        "core.js",
+        "hls.js",
+        "hosted-collector.js",
+        "mp4.js",
+        "offscreen.html",
+        "offscreen.js",
+        "vendor/mux.js-LICENSE",
+        "vendor/mux.min.js"
+      ],
+      "chromeApis": {
+        "runtime.getURL": [
+          "background.js:31",
+          "background.js:47",
+          "background.js:48",
+          "background.js:112",
+          "offscreen.js:113"
+        ],
+        "runtime.getContexts": [
+          "background.js:32",
+          "background.js:33"
+        ],
+        "offscreen.createDocument": [
+          "background.js:35"
+        ],
+        "runtime.sendMessage": [
+          "background.js:42",
+          "content.js:759",
+          "offscreen.js:72"
+        ],
+        "downloads.download": [
+          "background.js:81",
+          "background.js:1126"
+        ],
+        "runtime.id": [
+          "background.js:112",
+          "background.js:407",
+          "background.js:794",
+          "background.js:954",
+          "background.js:1042",
+          "background.js:1710",
+          "offscreen.js:113"
+        ],
+        "storage.local.get": [
+          "background.js:202",
+          "background.js:241",
+          "background.js:812",
+          "background.js:1271",
+          "background.js:1398"
+        ],
+        "storage.local.remove": [
+          "background.js:235",
+          "background.js:310",
+          "background.js:312",
+          "background.js:383",
+          "background.js:1285",
+          "background.js:1316"
+        ],
+        "storage.local.set": [
+          "background.js:304",
+          "background.js:334",
+          "background.js:371"
+        ],
+        "tabs.sendMessage": [
+          "background.js:631"
+        ],
+        "downloads.search": [
+          "background.js:642"
+        ],
+        "tabs.get": [
+          "background.js:1240"
+        ],
+        "scripting.executeScript": [
+          "background.js:1248"
+        ],
+        "storage.session": [
+          "background.js:1317"
+        ],
+        "storage.session.remove": [
+          "background.js:1317"
+        ],
+        "downloads.cancel": [
+          "background.js:1477",
+          "background.js:1508"
+        ],
+        "runtime.onMessage.addListener": [
+          "background.js:1698",
+          "content.js:913",
+          "offscreen.js:111"
+        ],
+        "downloads.onDeterminingFilename.addListener": [
+          "background.js:1709"
+        ],
+        "downloads.onChanged.addListener": [
+          "background.js:1719"
+        ],
+        "downloads.onErased": [
+          "background.js:1791"
+        ],
+        "downloads.onErased.addListener": [
+          "background.js:1792"
+        ],
+        "runtime.onInstalled.addListener": [
+          "background.js:1843"
+        ],
+        "runtime.onStartup.addListener": [
+          "background.js:1847"
+        ],
+        "storage.local.setAccessLevel": [
+          "background.js:1851",
+          "background.js:1852"
+        ]
+      },
+      "eventsAndLifecycleEvidence": [
+        {
+          "at": "background.js:1698",
+          "text": "chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {"
+        },
+        {
+          "at": "background.js:1709",
+          "text": "chrome.downloads.onDeterminingFilename.addListener((download, suggest) => {"
+        },
+        {
+          "at": "background.js:1719",
+          "text": "chrome.downloads.onChanged.addListener((delta) => {"
+        },
+        {
+          "at": "background.js:1792",
+          "text": "chrome.downloads.onErased.addListener((downloadId) => {"
+        },
+        {
+          "at": "background.js:1843",
+          "text": "chrome.runtime.onInstalled.addListener(() => {"
+        },
+        {
+          "at": "background.js:1847",
+          "text": "chrome.runtime.onStartup.addListener(() => {"
+        },
+        {
+          "at": "content.js:913",
+          "text": "chrome.runtime.onMessage.addListener((message) => {"
+        },
+        {
+          "at": "offscreen.js:111",
+          "text": "chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {"
+        }
+      ],
+      "messageTypeLiterals": [
+        "aac",
+        "audio",
+        "button",
+        "combined",
+        "file",
+        "mdat",
+        "metadata",
+        "moof",
+        "page-media-bulk:cancel",
+        "page-media-bulk:dismiss",
+        "page-media-bulk:hls-task",
+        "page-media-bulk:hls-update",
+        "page-media-bulk:retry",
+        "page-media-bulk:start",
+        "page-media-bulk:status",
+        "page-media-bulk:updated",
+        "pat",
+        "pes",
+        "pmt",
+        "stbl",
+        "string",
+        "timed-metadata",
+        "traf",
+        "trak",
+        "trun",
+        "ts",
+        "vide",
+        "video",
+        "video/mp4",
+        "write"
+      ],
+      "resourceReferenceEvidence": [
+        {
+          "at": "background.js:3",
+          "text": "importScripts(\"core.js\", \"hls.js\", \"collector.js\", \"hosted-collector.js\");"
+        },
+        {
+          "at": "background.js:31",
+          "text": "const url = chrome.runtime.getURL(\"offscreen.html\");"
+        },
+        {
+          "at": "background.js:47",
+          "text": "return typeof value === \"string\" && value.startsWith(\"blob:\" + chrome.runtime.getURL(\"\"))"
+        },
+        {
+          "at": "background.js:48",
+          "text": "&& /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(value.slice((\"blob:\" + chrome.runtime.getURL(\"\")).length));"
+        },
+        {
+          "at": "background.js:112",
+          "text": "if (sender?.id !== chrome.runtime.id || sender.tab || sender.url !== chrome.runtime.getURL(\"offscreen.html\")) {"
+        },
+        {
+          "at": "collector.js:11",
+          "text": "function url(value) {"
+        },
+        {
+          "at": "collector.js:20",
+          "text": "const link = url(value);"
+        },
+        {
+          "at": "collector.js:26",
+          "text": "const link = url(value);"
+        },
+        {
+          "at": "collector.js:36",
+          "text": "items.push({url: link, kind, name: String(fileName || kind).slice(0, 512), thumbnail: url(thumbnail),"
+        },
+        {
+          "at": "collector.js:127",
+          "text": "if (entry.srcUrl) link = url(entry.srcUrl);"
+        },
+        {
+          "at": "collector.js:133",
+          "text": "} else if (entry.vidSrc) link = url(entry.vidSrc);"
+        },
+        {
+          "at": "collector.js:155",
+          "text": "else if (url(link) && STREAM.test(new URL(url(link)).pathname)) unsupported++;"
+        },
+        {
+          "at": "collector.js:160",
+          "text": "const source = [element.currentSrc, element.getAttribute('src'), element.getAttribute('data-src')].find(value => url(value));"
+        },
+        {
+          "at": "offscreen.html:3",
+          "text": "<body><script src=\"core.js\"></script><script src=\"vendor/mux.min.js\"></script><script src=\"mp4.js\"></script><script src=\"hls.js\"></script><script src=\"offscreen.js\"></script></body></html>"
+        },
+        {
+          "at": "offscreen.js:113",
+          "text": "if (sender?.id !== chrome.runtime.id || sender.tab || (sender.url && !sender.url.startsWith(chrome.runtime.getURL(\"\")))) {"
+        }
+      ],
+      "storageEvidence": [
+        {
+          "at": "background.js:202",
+          "text": "Object.assign(output, await chrome.storage.local.get(keys.slice(index, index + STORAGE_WRITE_CHUNK_SIZE)));"
+        },
+        {
+          "at": "background.js:235",
+          "text": "await chrome.storage.local.remove(STORAGE_PENDING_KEY);"
+        },
+        {
+          "at": "background.js:241",
+          "text": "const indexStored = await chrome.storage.local.get([STORAGE_INDEX_KEY, STORAGE_PENDING_KEY]);"
+        },
+        {
+          "at": "background.js:304",
+          "text": "await chrome.storage.local.set(values);"
+        },
+        {
+          "at": "background.js:310",
+          "text": "if (typeof chrome.storage.local.remove !== \"function\") return;"
+        },
+        {
+          "at": "background.js:312",
+          "text": "await chrome.storage.local.remove(keys.slice(index, index + STORAGE_WRITE_CHUNK_SIZE));"
+        },
+        {
+          "at": "background.js:334",
+          "text": "if (pending) await chrome.storage.local.set({ [STORAGE_PENDING_KEY]: pending });"
+        },
+        {
+          "at": "background.js:371",
+          "text": "await chrome.storage.local.set({"
+        },
+        {
+          "at": "background.js:383",
+          "text": "if (pending) await chrome.storage.local.remove(STORAGE_PENDING_KEY);"
+        },
+        {
+          "at": "background.js:812",
+          "text": "const stored = await chrome.storage.local.get(STORAGE_INDEX_KEY);"
+        },
+        {
+          "at": "background.js:1271",
+          "text": "const legacy = (await chrome.storage.local.get(\"pageMediaBatchV1\"))?.pageMediaBatchV1;"
+        },
+        {
+          "at": "background.js:1285",
+          "text": "await chrome.storage.local.remove(\"pageMediaBatchV1\");"
+        },
+        {
+          "at": "background.js:1316",
+          "text": "await chrome.storage.local.remove(\"pageMediaBatchV1\");"
+        },
+        {
+          "at": "background.js:1317",
+          "text": "if (chrome.storage.session) await chrome.storage.session.remove(\"pageMediaDraftV1\");"
+        },
+        {
+          "at": "background.js:1398",
+          "text": "const legacy = (await chrome.storage.local.get(\"pageMediaBatchV1\"))?.pageMediaBatchV1;"
+        },
+        {
+          "at": "background.js:1851",
+          "text": "if (chrome.storage.local.setAccessLevel) {"
+        },
+        {
+          "at": "background.js:1852",
+          "text": "void chrome.storage.local.setAccessLevel({ accessLevel: \"TRUSTED_CONTEXTS\" }).catch(() => undefined);"
+        },
+        {
+          "at": "offscreen.js:10",
+          "text": "const root = await navigator.storage.getDirectory();"
+        }
+      ],
+      "testFiles": [
+        "tests/background.test.cjs",
+        "tests/collector.test.cjs",
+        "tests/core.test.cjs",
+        "tests/destination.test.cjs",
+        "tests/fixture-server.cjs",
+        "tests/fixture.html",
+        "tests/fixtures/colors.jpg",
+        "tests/fixtures/generated-00.ts",
+        "tests/fixtures/generated-01.ts",
+        "tests/fixtures/generated.m3u8",
+        "tests/fixtures/geometry.png",
+        "tests/fixtures/offset-00.ts",
+        "tests/fixtures/offset-01.ts",
+        "tests/fixtures/offset-02.ts",
+        "tests/fixtures/offset-03.ts",
+        "tests/fixtures/offset-04.ts",
+        "tests/fixtures/offset-05.ts",
+        "tests/fixtures/offset-06.ts",
+        "tests/fixtures/offset-07.ts",
+        "tests/fixtures/offset.m3u8",
+        "tests/fixtures/sample.webm",
+        "tests/fixtures/short-audio/part-00.ts",
+        "tests/fixtures/short-audio/part-01.ts",
+        "tests/fixtures/short-audio/part-02.ts",
+        "tests/fixtures/short-audio/part-03.ts",
+        "tests/fixtures/short-audio/part-04.ts",
+        "tests/fixtures/short-audio/part-05.ts",
+        "tests/fixtures/short-audio/test.m3u8",
+        "tests/fixtures/vfr/part-00.ts",
+        "tests/fixtures/vfr/part-01.ts",
+        "tests/fixtures/vfr/part-02.ts",
+        "tests/fixtures/vfr/part-03.ts",
+        "tests/fixtures/vfr/part-04.ts",
+        "tests/fixtures/vfr/part-05.ts",
+        "tests/fixtures/vfr/vfr.m3u8",
+        "tests/harness.cjs",
+        "tests/hls-benchmark.cjs",
+        "tests/hls-repair-retry.test.cjs",
+        "tests/hls.test.cjs",
+        "tests/hosted-collector.test.cjs",
+        "tests/hosted-fixture.html",
+        "tests/launcher.test.cjs",
+        "tests/manifest.test.cjs",
+        "tests/migration.test.cjs",
+        "tests/mock-chrome.js",
+        "tests/mp4.test.cjs",
+        "tests/mux.cjs",
+        "tests/news-collector.test.cjs",
+        "tests/opfs-fixture.html",
+        "tests/opfs-fixture.js",
+        "tests/opfs.cjs",
+        "tests/signed-url.test.cjs",
+        "tests/transport.test.cjs"
+      ],
+      "storage": {
+        "local": [
+          "pageMediaBulkDownloadIndexV2",
+          "pageMediaBulkDownloadPendingV2",
+          "pageMediaBulkDownloadV2:*",
+          "pageMediaBatchV1 (legacy)"
+        ],
+        "session": [
+          "pageMediaDraftV1 (legacy)"
+        ]
+      },
+      "verification": "node --test tests/*.test.cjs; tests/harness.cjs, opfs.cjs, mux.cjs browser fixtures",
+      "notes": [
+        "offscreen shared coordination required",
+        "TRUSTED_CONTEXTS retained",
+        "onDeterminingFilename callback must always invoke suggest and restrict own downloads",
+        "blob validation currently startsWith(blob:+runtime.getURL(empty)); scoped getURL(empty) may wrongly add module path to blob origin"
+      ],
+      "safePortableSettings": {
+        "keys": {},
+        "status": "No portable user settings found in inspected production code; history requires own explicit validator."
+      }
+    },
+    {
+      "directory": "r2-image-preview",
+      "manifest": {
+        "manifest_version": 3,
+        "name": "R2 Image Preview",
+        "version": "0.1.1",
+        "description": "Cloudflare R2一覧に画像プレビューを表示します",
+        "permissions": [
+          "storage"
+        ],
+        "host_permissions": [
+          "https://dash.cloudflare.com/*/r2/*"
+        ],
+        "content_scripts": [
+          {
+            "matches": [
+              "https://dash.cloudflare.com/*/r2/*"
+            ],
+            "js": [
+              "content.js"
+            ],
+            "css": [
+              "content.css"
+            ],
+            "run_at": "document_idle"
+          }
+        ],
+        "options_page": "options.html"
+      },
+      "productionAssets": [
+        "content.css",
+        "content.js",
+        "options.css",
+        "options.html",
+        "options.js"
+      ],
+      "chromeApis": {
+        "storage.sync.get": [
+          "content.js:498",
+          "options.js:29"
+        ],
+        "storage.onChanged.addListener": [
+          "content.js:790"
+        ],
+        "storage.sync.set": [
+          "options.js:49"
+        ]
+      },
+      "eventsAndLifecycleEvidence": [
+        {
+          "at": "content.js:790",
+          "text": "chrome.storage.onChanged.addListener((changes, area) => {"
+        }
+      ],
+      "messageTypeLiterals": [
+        "checkbox",
+        "file",
+        "number",
+        "submit",
+        "text"
+      ],
+      "resourceReferenceEvidence": [
+        {
+          "at": "options.html:7",
+          "text": "<link rel=\"stylesheet\" href=\"options.css\" />"
+        },
+        {
+          "at": "options.html:59",
+          "text": "<script src=\"options.js\"></script>"
+        }
+      ],
+      "storageEvidence": [
+        {
+          "at": "content.js:3",
+          "text": "baseUrlTemplate: \"https://{bucket}.{accountId}.r2.cloudflarestorage.com/{key}\","
+        },
+        {
+          "at": "content.js:136",
+          "text": "if (normalizedTemplate.includes(\"r2.cloudflarestorage.com\")) {"
+        },
+        {
+          "at": "content.js:498",
+          "text": "chrome.storage.sync.get(DEFAULTS, (data) => {"
+        },
+        {
+          "at": "content.js:790",
+          "text": "chrome.storage.onChanged.addListener((changes, area) => {"
+        },
+        {
+          "at": "options.html:22",
+          "text": "placeholder=\"https://{bucket}.{accountId}.r2.cloudflarestorage.com/{key}\""
+        },
+        {
+          "at": "options.js:2",
+          "text": "baseUrlTemplate: \"https://{bucket}.{accountId}.r2.cloudflarestorage.com/{key}\","
+        },
+        {
+          "at": "options.js:29",
+          "text": "chrome.storage.sync.get(DEFAULTS, (data) => {"
+        },
+        {
+          "at": "options.js:49",
+          "text": "chrome.storage.sync.set(payload, () => {"
+        }
+      ],
+      "testFiles": [],
+      "storage": {
+        "sync": [
+          "baseUrlTemplate",
+          "maxWidth",
+          "maxHeight",
+          "hoverOnly",
+          "showNonImages"
+        ]
+      },
+      "verification": "options save then Cloudflare R2 SPA list/hover/image upload preview; no automatic tests found",
+      "safePortableSettings": {
+        "area": "sync",
+        "keys": {
+          "baseUrlTemplate": "string (existing trim only; no length/protocol validation)",
+          "maxWidth": "finite number 40..320 (HTML range; existing JS saves Number(value)||default)",
+          "maxHeight": "finite number 40..320 (HTML range; existing JS saves Number(value)||default)",
+          "hoverOnly": "boolean",
+          "showNonImages": "boolean"
+        },
+        "evidence": [
+          "options.js:1-7",
+          "options.js:39-49",
+          "options.html:30-34",
+          "content.js:123-151"
+        ],
+        "status": "Portable import must add max length and URL template validation; any such bound is new policy not existing guarantee. Recommended allow HTTPS credential-free template only, no query/hash, {key}/{bucket}/{accountId} supported. Templates containing tokens should never enter portable export."
+      }
+    },
+    {
+      "directory": "smashAndNetTV-better-photo-garally",
+      "manifest": {
+        "manifest_version": 3,
+        "name": "SMASH and NET. TV Photo Gallery Plus",
+        "version": "2.0.1",
+        "description": "SMASH and NET. TV のフォトギャラリーをキーボード操作・背景クリック・直接ダウンロードに対応させます。",
+        "permissions": [
+          "downloads"
+        ],
+        "host_permissions": [
+          "https://www.smash-net.tv/*",
+          "https://smash-net.tv/*"
+        ],
+        "background": {
+          "service_worker": "background.js"
+        },
+        "content_scripts": [
+          {
+            "matches": [
+              "https://www.smash-net.tv/photo/*",
+              "https://smash-net.tv/photo/*"
+            ],
+            "js": [
+              "content.js",
+              "viewer.js"
+            ],
+            "css": [
+              "styles.css"
+            ],
+            "run_at": "document_idle"
+          }
+        ]
+      },
+      "productionAssets": [
+        "background.js",
+        "content.js",
+        "styles.css",
+        "viewer.js"
+      ],
+      "chromeApis": {
+        "runtime.onMessage.addListener": [
+          "background.js:3"
+        ],
+        "runtime.sendMessage": [
+          "content.js:235",
+          "viewer.js:202"
+        ]
+      },
+      "eventsAndLifecycleEvidence": [
+        {
+          "at": "background.js:3",
+          "text": "chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {"
+        }
+      ],
+      "messageTypeLiterals": [
+        "button",
+        "download-photo"
+      ],
+      "resourceReferenceEvidence": [],
+      "storageEvidence": [],
+      "testFiles": [],
+      "starts": [
+        "download-photo"
+      ],
+      "verification": "gallery keyboard/background click + real image save; no automatic tests found",
+      "safePortableSettings": {
+        "keys": {},
+        "status": "No portable user settings found in inspected production code; history requires own explicit validator."
+      }
+    },
+    {
+      "directory": "stripchat-live-hover",
+      "manifest": {
+        "manifest_version": 3,
+        "name": "Stripchat ライブ・ホバープレビュー",
+        "version": "1.0.1",
+        "description": "Stripchatの一覧カード内で、ホバー中の公開ライブを無音でプレビューします。",
+        "minimum_chrome_version": "116",
+        "content_scripts": [
+          {
+            "matches": [
+              "https://ja.stripchat.com/*"
+            ],
+            "js": [
+              "core.js",
+              "native-preview.js"
+            ],
+            "world": "MAIN",
+            "run_at": "document_start"
+          },
+          {
+            "matches": [
+              "https://ja.stripchat.com/*"
+            ],
+            "js": [
+              "core.js",
+              "content.js"
+            ],
+            "css": [
+              "content.css"
+            ],
+            "run_at": "document_start"
+          }
+        ]
+      },
+      "productionAssets": [
+        "content.css",
+        "content.js",
+        "core.js",
+        "native-preview.js"
+      ],
+      "chromeApis": {},
+      "eventsAndLifecycleEvidence": [],
+      "messageTypeLiterals": [],
+      "resourceReferenceEvidence": [],
+      "storageEvidence": [],
+      "testFiles": [
+        "tests/core.test.cjs",
+        "tests/demo.mp4",
+        "tests/fixture-controls.js",
+        "tests/fixture-native.js",
+        "tests/fixture-server.cjs",
+        "tests/fixture.html",
+        "tests/fixture.test.cjs",
+        "tests/manifest.test.cjs",
+        "tests/native-preview.test.cjs"
+      ],
+      "verification": "node --test tests/*.test.cjs; tests/fixture-server.cjs controls; MAIN native preview + isolated UI coexist",
+      "safePortableSettings": {
+        "keys": {},
+        "status": "No portable user settings found in inspected production code; history requires own explicit validator."
+      }
+    },
+    {
+      "directory": "sushida-log",
+      "manifest": {
+        "manifest_version": 3,
+        "name": "Sushida Log",
+        "version": "0.1.0",
+        "description": "寿司打のX共有テキストから結果を保存します。",
+        "permissions": [
+          "activeTab",
+          "downloads",
+          "storage",
+          "tabs",
+          "webRequest"
+        ],
+        "host_permissions": [
+          "https://sushida.net/*",
+          "https://*.sushida.net/*",
+          "https://x.com/*",
+          "https://twitter.com/*"
+        ],
+        "background": {
+          "service_worker": "src/background.js"
+        },
+        "content_scripts": [
+          {
+            "matches": [
+              "https://sushida.net/*",
+              "https://*.sushida.net/*",
+              "https://x.com/intent/tweet*",
+              "https://twitter.com/intent/tweet*"
+            ],
+            "js": [
+              "src/parser.js",
+              "src/content.js"
+            ],
+            "run_at": "document_start"
+          }
+        ],
+        "web_accessible_resources": [
+          {
+            "resources": [
+              "src/page-bridge.js"
+            ],
+            "matches": [
+              "https://sushida.net/*",
+              "https://*.sushida.net/*"
+            ]
+          }
+        ],
+        "action": {
+          "default_title": "Sushida Log",
+          "default_popup": "src/popup.html"
+        }
+      },
+      "productionAssets": [
+        "src/background.js",
+        "src/content.js",
+        "src/page-bridge.js",
+        "src/parser.js",
+        "src/popup.css",
+        "src/popup.html",
+        "src/popup.js"
+      ],
+      "chromeApis": {
+        "runtime.onInstalled.addListener": [
+          "src/background.js:11"
+        ],
+        "runtime.onStartup.addListener": [
+          "src/background.js:15"
+        ],
+        "webRequest.onBeforeRequest.addListener": [
+          "src/background.js:19"
+        ],
+        "runtime.onMessage.addListener": [
+          "src/background.js:36"
+        ],
+        "storage.local.get": [
+          "src/background.js:188",
+          "src/background.js:195",
+          "src/background.js:205",
+          "src/background.js:235",
+          "src/background.js:236",
+          "src/background.js:267",
+          "src/background.js:374",
+          "src/background.js:447",
+          "src/background.js:534",
+          "src/popup.js:33",
+          "src/popup.js:88"
+        ],
+        "action.setBadgeText": [
+          "src/background.js:199",
+          "src/background.js:252"
+        ],
+        "action.setBadgeBackgroundColor": [
+          "src/background.js:200",
+          "src/background.js:253"
+        ],
+        "storage.local.set": [
+          "src/background.js:206",
+          "src/background.js:245",
+          "src/background.js:399",
+          "src/background.js:463",
+          "src/background.js:536",
+          "src/popup.js:89"
+        ],
+        "downloads.download": [
+          "src/background.js:542",
+          "src/popup.js:131"
+        ],
+        "runtime.id": [
+          "src/content.js:6",
+          "src/content.js:57"
+        ],
+        "runtime.sendMessage": [
+          "src/content.js:7",
+          "src/popup.js:105"
+        ],
+        "runtime.getURL": [
+          "src/content.js:58"
+        ]
+      },
+      "eventsAndLifecycleEvidence": [
+        {
+          "at": "src/background.js:11",
+          "text": "chrome.runtime.onInstalled.addListener(async () => {"
+        },
+        {
+          "at": "src/background.js:15",
+          "text": "chrome.runtime.onStartup.addListener(async () => {"
+        },
+        {
+          "at": "src/background.js:19",
+          "text": "chrome.webRequest.onBeforeRequest.addListener("
+        },
+        {
+          "at": "src/background.js:36",
+          "text": "chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {"
+        }
+      ],
+      "messageTypeLiterals": [
+        "SUSHIDA_DEBUG_EVENT",
+        "SUSHIDA_RESULT_DETECTED",
+        "SUSHIDA_RESULT_NETWORK_DETECTED",
+        "SUSHIDA_SAVE_MANUAL_RESULT",
+        "checkbox",
+        "debug",
+        "result-request",
+        "result-response",
+        "tweet-url",
+        "unity-instance"
+      ],
+      "resourceReferenceEvidence": [
+        {
+          "at": "src/content.js:58",
+          "text": "bridgeUrl = chrome.runtime.getURL(\"src/page-bridge.js\");"
+        },
+        {
+          "at": "src/popup.html:7",
+          "text": "<link rel=\"stylesheet\" href=\"popup.css\" />"
+        },
+        {
+          "at": "src/popup.html:60",
+          "text": "<script src=\"parser.js\"></script>"
+        },
+        {
+          "at": "src/popup.html:61",
+          "text": "<script src=\"popup.js\"></script>"
+        }
+      ],
+      "storageEvidence": [
+        {
+          "at": "src/background.js:188",
+          "text": "await downloadText(resultsToCsv((await chrome.storage.local.get(\"results\")).results || []), \"sushida-log.csv\", \"text/csv\");"
+        },
+        {
+          "at": "src/background.js:195",
+          "text": "const { results = [] } = await chrome.storage.local.get(\"results\");"
+        },
+        {
+          "at": "src/background.js:205",
+          "text": "const { debugEvents = [] } = await chrome.storage.local.get(\"debugEvents\");"
+        },
+        {
+          "at": "src/background.js:206",
+          "text": "await chrome.storage.local.set({"
+        },
+        {
+          "at": "src/background.js:235",
+          "text": "const { networkResults = [] } = await chrome.storage.local.get(\"networkResults\");"
+        },
+        {
+          "at": "src/background.js:236",
+          "text": "const { results = [] } = await chrome.storage.local.get(\"results\");"
+        },
+        {
+          "at": "src/background.js:245",
+          "text": "await chrome.storage.local.set({"
+        },
+        {
+          "at": "src/background.js:267",
+          "text": "const { networkResults = [], results = [] } = await chrome.storage.local.get([\"networkResults\", \"results\"]);"
+        },
+        {
+          "at": "src/background.js:374",
+          "text": "const current = await chrome.storage.local.get([\"settings\", \"results\", \"networkResults\"]);"
+        },
+        {
+          "at": "src/background.js:399",
+          "text": "await chrome.storage.local.set({"
+        },
+        {
+          "at": "src/background.js:447",
+          "text": "const { settings = {} } = await chrome.storage.local.get(\"settings\");"
+        },
+        {
+          "at": "src/background.js:463",
+          "text": "await chrome.storage.local.set({ settings: nextSettings });"
+        },
+        {
+          "at": "src/background.js:534",
+          "text": "const { results = [] } = await chrome.storage.local.get(\"results\");"
+        },
+        {
+          "at": "src/background.js:536",
+          "text": "await chrome.storage.local.set({ results: nextResults });"
+        },
+        {
+          "at": "src/popup.js:33",
+          "text": "const { results = [], networkResults = [], settings = { autoResultNetworkRecord: true, autoDownloadCsv: true } } = await chrome.storage.local.get(["
+        },
+        {
+          "at": "src/popup.js:88",
+          "text": "const { settings = {} } = await chrome.storage.local.get(\"settings\");"
+        },
+        {
+          "at": "src/popup.js:89",
+          "text": "await chrome.storage.local.set({"
+        }
+      ],
+      "testFiles": [
+        "test-parser.js"
+      ],
+      "storage": {
+        "local": [
+          "results",
+          "networkResults",
+          "debugEvents",
+          "settings"
+        ]
+      },
+      "starts": [
+        "SUSHIDA_RESULT_DETECTED",
+        "SUSHIDA_SAVE_MANUAL_RESULT",
+        "SUSHIDA_RESULT_NETWORK_DETECTED",
+        "SUSHIDA_DEBUG_EVENT"
+      ],
+      "verification": "node test-parser.js; result/X intent capture + popup CSV/JSON manual download",
+      "notes": [
+        "webRequest onBeforeRequest registered globally; adapter must gate listener callbacks when module disabled",
+        "worker uses action.setBadgeText/setBadgeBackgroundColor; shared toolbar badge ownership must be defined",
+        "src/background.js does not import parser; contains own background parser",
+        "src/page-bridge.js injected via WAR runtime.getURL"
+      ],
+      "safePortableSettings": {
+        "area": "local",
+        "keys": {
+          "settings": {
+            "autoDownloadCsv": "boolean",
+            "autoResultNetworkRecord": "boolean",
+            "autoDownloadJson": "boolean",
+            "settingsVersion": "literal 2"
+          }
+        },
+        "evidence": [
+          "src/background.js:1-6",
+          "src/background.js:446-464",
+          "src/popup.js:87-98"
+        ],
+        "status": "settings only. Existing getSettings rewrites old versions to defaults; if autoDownloadJson=true with autoDownloadCsv!=true it resets JSON false/CSV true. Portable parser must respect invariant, not blindly merge arbitrary settings properties."
+      }
+    },
+    {
+      "directory": "tweetfile-video-downloader",
+      "manifest": {
+        "manifest_version": 3,
+        "name": "Tweetfile 動画一括ダウンローダー",
+        "version": "1.1.0",
+        "description": "ページ内の動画をサムネイルから選択して一括保存。フォルダは除外します。",
+        "minimum_chrome_version": "116",
+        "permissions": [
+          "downloads",
+          "offscreen"
+        ],
+        "background": {
+          "service_worker": "background.js"
+        },
+        "content_scripts": [
+          {
+            "matches": [
+              "https://tweetfile.com/*",
+              "https://*.tweetfile.com/*"
+            ],
+            "js": [
+              "page-bridge.js"
+            ],
+            "world": "MAIN",
+            "run_at": "document_idle"
+          },
+          {
+            "matches": [
+              "https://tweetfile.com/*",
+              "https://*.tweetfile.com/*"
+            ],
+            "js": [
+              "content.js"
+            ],
+            "run_at": "document_start"
+          }
+        ],
+        "host_permissions": [
+          "https://*/*",
+          "http://*/*"
+        ]
+      },
+      "productionAssets": [
+        "background.js",
+        "content.js",
+        "hls.js",
+        "mp4.js",
+        "offscreen.html",
+        "offscreen.js",
+        "page-bridge.js",
+        "vendor/mux.js-LICENSE",
+        "vendor/mux.min.js"
+      ],
+      "chromeApis": {
+        "runtime.onMessage.addListener": [
+          "background.js:9",
+          "background.js:51",
+          "content.js:140",
+          "offscreen.js:6"
+        ],
+        "runtime.id": [
+          "background.js:13",
+          "background.js:52",
+          "offscreen.js:7"
+        ],
+        "downloads.search": [
+          "background.js:17",
+          "background.js:60"
+        ],
+        "runtime.sendMessage": [
+          "background.js:30",
+          "content.js:106",
+          "content.js:126",
+          "offscreen.js:4",
+          "offscreen.js:29",
+          "offscreen.js:33"
+        ],
+        "downloads.download": [
+          "background.js:35",
+          "background.js:57"
+        ],
+        "runtime.getContexts": [
+          "background.js:47"
+        ],
+        "runtime.getURL": [
+          "background.js:47",
+          "background.js:52",
+          "background.js:55"
+        ],
+        "offscreen.createDocument": [
+          "background.js:47"
+        ],
+        "tabs.sendMessage": [
+          "background.js:64"
+        ]
+      },
+      "eventsAndLifecycleEvidence": [
+        {
+          "at": "background.js:9",
+          "text": "chrome.runtime.onMessage.addListener((message, sender, respond) => {"
+        },
+        {
+          "at": "background.js:51",
+          "text": "chrome.runtime.onMessage.addListener((message, sender, respond) => {"
+        },
+        {
+          "at": "content.js:140",
+          "text": "chrome.runtime.onMessage.addListener(message => {"
+        },
+        {
+          "at": "offscreen.js:6",
+          "text": "chrome.runtime.onMessage.addListener((message, sender, respond) => {"
+        }
+      ],
+      "messageTypeLiterals": [
+        "VideoPlayer",
+        "VideoRow",
+        "aac",
+        "audio",
+        "checkbox",
+        "combined",
+        "metadata",
+        "pat",
+        "pes",
+        "pmt",
+        "timed-metadata",
+        "ts",
+        "tweetfile-download",
+        "tweetfile-download-state",
+        "tweetfile-file-progress",
+        "tweetfile-hls-queue",
+        "tweetfile-progress",
+        "tweetfile-save-blob",
+        "tweetfile-scan",
+        "tweetfile-videos",
+        "vide",
+        "video",
+        "video/mp4"
+      ],
+      "resourceReferenceEvidence": [
+        {
+          "at": "background.js:47",
+          "text": "if (!(await chrome.runtime.getContexts({contextTypes:['OFFSCREEN_DOCUMENT'],documentUrls:[chrome.runtime.getURL('offscreen.html')]})).length) await chrome.offscreen.createDocument({url:'offscreen.html',reasons:['BLOBS'],justification:'HLS動画の分割データを結合して保存するため'});"
+        },
+        {
+          "at": "background.js:52",
+          "text": "if (sender.id !== chrome.runtime.id || sender.url !== chrome.runtime.getURL('offscreen.html')) return;"
+        },
+        {
+          "at": "background.js:55",
+          "text": "if (!message.url.startsWith(`blob:${chrome.runtime.getURL('')}`) || !['mp4','ts'].includes(message.extension)) throw new Error('不正な保存要求です。');"
+        },
+        {
+          "at": "hls.js:6",
+          "text": "function url(value, base) {"
+        },
+        {
+          "at": "hls.js:35",
+          "text": "if (path) variants.push({ url: url(path, base), bandwidth: Number(attrs.BANDWIDTH) || 0 });"
+        },
+        {
+          "at": "hls.js:72",
+          "text": "else if (attrs.METHOD === 'AES-128' && (!attrs.KEYFORMAT || attrs.KEYFORMAT === 'identity')) key = {...attrs, URI:url(attrs.URI, base)};"
+        },
+        {
+          "at": "hls.js:75",
+          "text": "const attrs = attributes(line), address = url(attrs.URI, base);"
+        },
+        {
+          "at": "hls.js:80",
+          "text": "const address = url(line, base);"
+        },
+        {
+          "at": "offscreen.html:1",
+          "text": "<!doctype html><meta charset=\"utf-8\"><script src=\"vendor/mux.min.js\"></script><script src=\"mp4.js\"></script><script src=\"hls.js\"></script><script src=\"offscreen.js\"></script>"
+        }
+      ],
+      "storageEvidence": [],
+      "testFiles": [
+        "tests/background.test.cjs",
+        "tests/browser.cjs",
+        "tests/fixtures/list.m3u8",
+        "tests/fixtures/segment0.ts",
+        "tests/fixtures/segment1.ts",
+        "tests/hls.test.cjs",
+        "tests/mp4.test.cjs"
+      ],
+      "starts": [
+        "tweetfile-download"
+      ],
+      "verification": "npm test; npm run test:browser; direct and HLS real file download",
+      "notes": [
+        "offscreen shared coordination required",
+        "background rejects offscreen sender except exact scoped offscreen.html",
+        "blob validation uses runtime.getURL(empty) origin issue"
+      ],
+      "safePortableSettings": {
+        "keys": {},
+        "status": "No portable user settings found in inspected production code; history requires own explicit validator."
+      }
+    },
+    {
+      "directory": "x-hashtag-autofill",
+      "manifest": {
+        "manifest_version": 3,
+        "name": "X Hashtag Autofill",
+        "version": "1.0.0",
+        "description": "X の投稿画面に指定したハッシュタグを自動挿入します。",
+        "permissions": [
+          "storage"
+        ],
+        "host_permissions": [
+          "https://x.com/*",
+          "https://twitter.com/*"
+        ],
+        "action": {
+          "default_popup": "popup.html",
+          "default_title": "ハッシュタグ設定"
+        },
+        "content_scripts": [
+          {
+            "matches": [
+              "https://x.com/*",
+              "https://twitter.com/*"
+            ],
+            "js": [
+              "content.js"
+            ],
+            "run_at": "document_idle"
+          }
+        ]
+      },
+      "productionAssets": [
+        "LICENSE",
+        "content.js",
+        "popup.css",
+        "popup.html",
+        "popup.js"
+      ],
+      "chromeApis": {
+        "storage.sync.get": [
+          "content.js:67",
+          "popup.js:6"
+        ],
+        "storage.sync.set": [
+          "popup.js:11"
+        ]
+      },
+      "eventsAndLifecycleEvidence": [],
+      "messageTypeLiterals": [
+        "button"
+      ],
+      "resourceReferenceEvidence": [
+        {
+          "at": "popup.html:7",
+          "text": "<link rel=\"stylesheet\" href=\"popup.css\">"
+        },
+        {
+          "at": "popup.html:17",
+          "text": "<script src=\"popup.js\"></script>"
+        }
+      ],
+      "storageEvidence": [
+        {
+          "at": "content.js:1",
+          "text": "const STORAGE_KEY = \"hashtags\";"
+        },
+        {
+          "at": "content.js:67",
+          "text": "const { [STORAGE_KEY]: stored = \"\" } = await chrome.storage.sync.get(STORAGE_KEY);"
+        },
+        {
+          "at": "popup.js:1",
+          "text": "const STORAGE_KEY = \"hashtags\";"
+        },
+        {
+          "at": "popup.js:6",
+          "text": "chrome.storage.sync.get(STORAGE_KEY).then(({ [STORAGE_KEY]: hashtags = \"\" }) => {"
+        },
+        {
+          "at": "popup.js:11",
+          "text": "await chrome.storage.sync.set({ [STORAGE_KEY]: input.value.trim() });"
+        }
+      ],
+      "testFiles": [],
+      "storage": {
+        "sync": [
+          "hashtags"
+        ]
+      },
+      "verification": "popup save and X/twitter compose auto insert; no automatic tests found",
+      "safePortableSettings": {
+        "area": "sync",
+        "keys": {
+          "hashtags": "string, existing .trim() on save, no current length bound"
+        },
+        "evidence": [
+          "popup.js:1-11"
+        ],
+        "status": "Portable byte/string bound is new policy; reject control characters except intended whitespace if chosen. No URL secret inspection currently exists."
+      }
+    },
+    {
+      "directory": "youtube-five-second-clip",
+      "manifest": {
+        "manifest_version": 3,
+        "name": "YouTube 範囲指定MP4クリップ",
+        "version": "3.0.0",
+        "description": "YouTubeの指定範囲を、再生を止めずバックグラウンドでMP4としてダウンロードします。",
+        "minimum_chrome_version": "116",
+        "permissions": [
+          "offscreen",
+          "downloads",
+          "storage"
+        ],
+        "background": {
+          "service_worker": "background.js"
+        },
+        "action": {
+          "default_popup": "popup.html",
+          "default_title": "YouTube MP4クリップの保存状況"
+        },
+        "content_scripts": [
+          {
+            "matches": [
+              "https://www.youtube.com/*"
+            ],
+            "js": [
+              "stream-cache.js",
+              "collector.js"
+            ],
+            "world": "MAIN",
+            "run_at": "document_start"
+          },
+          {
+            "matches": [
+              "https://www.youtube.com/*"
+            ],
+            "js": [
+              "clip.js",
+              "content.js"
+            ],
+            "run_at": "document_start"
+          }
+        ]
+      },
+      "productionAssets": [
+        "background.js",
+        "clip.js",
+        "collector.js",
+        "content.js",
+        "convert.mjs",
+        "offscreen.html",
+        "offscreen.mjs",
+        "popup.html",
+        "popup.js",
+        "stream-cache.js",
+        "vendor/mediabunny-LICENSE",
+        "vendor/mediabunny.mjs"
+      ],
+      "chromeApis": {
+        "storage.session.set": [
+          "background.js:10"
+        ],
+        "storage.session.get": [
+          "background.js:13"
+        ],
+        "offscreen.hasDocument": [
+          "background.js:14",
+          "background.js:23"
+        ],
+        "offscreen.createDocument": [
+          "background.js:24"
+        ],
+        "runtime.sendMessage": [
+          "background.js:30",
+          "content.js:283",
+          "content.js:290",
+          "content.js:313",
+          "offscreen.mjs:5",
+          "popup.js:6",
+          "popup.js:26"
+        ],
+        "runtime.onMessage.addListener": [
+          "background.js:55",
+          "offscreen.mjs:47"
+        ],
+        "runtime.id": [
+          "background.js:59",
+          "background.js:72",
+          "offscreen.mjs:48"
+        ],
+        "runtime.getURL": [
+          "background.js:61",
+          "background.js:118"
+        ],
+        "downloads.download": [
+          "background.js:76"
+        ],
+        "downloads.search": [
+          "background.js:79"
+        ],
+        "downloads.cancel": [
+          "background.js:121"
+        ],
+        "downloads.onChanged.addListener": [
+          "background.js:137"
+        ]
+      },
+      "eventsAndLifecycleEvidence": [
+        {
+          "at": "background.js:55",
+          "text": "chrome.runtime.onMessage.addListener((message, sender, respond) => {"
+        },
+        {
+          "at": "background.js:137",
+          "text": "chrome.downloads.onChanged.addListener(delta => {"
+        },
+        {
+          "at": "offscreen.mjs:47",
+          "text": "chrome.runtime.onMessage.addListener((message, sender, respond) => {"
+        }
+      ],
+      "messageTypeLiterals": [
+        "abort",
+        "application/javascript",
+        "audio",
+        "basic",
+        "begin",
+        "button",
+        "cancel",
+        "chunk",
+        "clear-interval",
+        "clip",
+        "decompress",
+        "decrypt",
+        "delta",
+        "error",
+        "finish",
+        "fire",
+        "free",
+        "ftyp",
+        "heartbeat",
+        "key",
+        "list",
+        "mdat",
+        "module",
+        "moof",
+        "moov",
+        "range",
+        "release",
+        "save",
+        "set-interval",
+        "stopTrack",
+        "subtitle",
+        "support",
+        "text/javascript",
+        "trackStopped",
+        "update",
+        "video",
+        "video/mp4",
+        "videoFrame",
+        "videoTrack",
+        "write",
+        "youtube-clip-preview-read",
+        "youtube-clip-read"
+      ],
+      "resourceReferenceEvidence": [
+        {
+          "at": "background.js:1",
+          "text": "importScripts('clip.js');"
+        },
+        {
+          "at": "background.js:61",
+          "text": "if (sender.url !== chrome.runtime.getURL('offscreen.html')) throw new ClipError('送信元を確認できません。');"
+        },
+        {
+          "at": "background.js:118",
+          "text": "if (sender.tab || sender.url !== chrome.runtime.getURL('popup.html')) throw new ClipError('保存状況から中止してください。');"
+        },
+        {
+          "at": "convert.mjs:1",
+          "text": "import {"
+        },
+        {
+          "at": "offscreen.html:2",
+          "text": "<html lang=\"ja\"><meta charset=\"utf-8\"><title>MP4処理</title><script type=\"module\" src=\"offscreen.mjs\"></script></html>"
+        },
+        {
+          "at": "offscreen.mjs:1",
+          "text": "import { convertClip } from \"./convert.mjs\";"
+        },
+        {
+          "at": "popup.html:41",
+          "text": "<script src=\"popup.js\"></script>"
+        }
+      ],
+      "storageEvidence": [
+        {
+          "at": "background.js:10",
+          "text": "writes = writes.catch(() => {}).then(() => chrome.storage.session.set({ jobs: data }));"
+        },
+        {
+          "at": "background.js:13",
+          "text": "const ready = chrome.storage.session.get('jobs').then(async saved => {"
+        }
+      ],
+      "testFiles": [
+        "clip.test.cjs",
+        "tests/background.test.cjs"
+      ],
+      "storage": {
+        "session": [
+          "jobs"
+        ]
+      },
+      "starts": [
+        "clip"
+      ],
+      "verification": "node --test clip.test.cjs tests/background.test.cjs; offscreen conversion real MP4 using fixture",
+      "notes": [
+        "offscreen shared coordination required",
+        "bare type names clip/list/cancel/chunk/finish/abort/begin/update/save/release/heartbeat must be enveloped",
+        "offscreen.mjs imports convert.mjs imports vendor/mediabunny.mjs",
+        "sender checks exact popup.html/offscreen.html; runtime getURL must map context",
+        "session jobs conflicts with Instagram unless namespace adapter"
+      ],
+      "safePortableSettings": {
+        "keys": {},
+        "status": "No portable user settings found in inspected production code; history requires own explicit validator."
+      }
+    }
+  ],
+  "portableTransferExclusions": [
+    "All session storage/jobs",
+    "All Gofile and page-media queues, pending journals, legacy draft records and signed URLs",
+    "Momoniji momonijiDownloadState",
+    "Birdscore remote config, cached HTML/network caches",
+    "Sushida results/networkResults/debugEvents (may contain raw observed URLs/payloads)",
+    "Google Photos gpu-albums-v2 album identifiers/history unless separately scoped and validated",
+    "Any unknown storage key or unknown nested settings property",
+    "Any token/cookie/password/auth headers/download source URL"
+  ],
+  "historyNotes": {
+    "instagram": "core.validateHistory already exported; use existing explicit savedMedia API",
+    "momoniji": "library-core.js restoreEntry validates canonical momoniji HTTPS URL/title/booleans/times/count/folder/run. Controller.init validates version1+entries array count<=5000. restoreEntry is private; no direct full-state validator export. library records carry canonical public work URLs, not signed image URLs. If migrated use explicit allowlist and library-owner API, not download state."
+  }
+}

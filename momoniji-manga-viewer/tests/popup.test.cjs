@@ -27,6 +27,7 @@ async function popup(t, options = {}) {
   const state = { fail: null, calls: [], opened: [] };
   const messageListeners = [];
   const storageListeners = [];
+  dom.window.eval(fs.readFileSync(path.join(extension, 'ui-kit.js'), 'utf8'));
   dom.window.chrome = {
     runtime: {
       onMessage: { addListener(listener) { messageListeners.push(listener); } },
@@ -122,7 +123,7 @@ test('continuation-page aliases show both reading-list and download saved states
   });
   assert.equal(ui.document.querySelector('#current-save').disabled, true);
   assert.equal(ui.document.querySelector('#current-save-label').textContent, '後で読むに保存済み');
-  assert.match(ui.document.querySelector('#current-description').textContent, /ダウンロード済み/);
+  assert.match(ui.document.querySelector('.downloaded-label').textContent, /ダウンロード済み/);
   assert.match(ui.document.querySelector('.downloaded-label').textContent, /5枚/);
 });
 

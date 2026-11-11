@@ -1,0 +1,18 @@
+:host,:where(.mt-ui){font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--mt-gray-12)}
+:root.mt-popup{min-width:360px}
+:where(.mt-ui){margin:0;background:var(--mt-gray-1);font-size:14px;color-scheme:light dark}
+:where(.mt-ui *){box-sizing:border-box}
+:where(.mt-ui [hidden]){display:none!important}
+:where(.mt-ui h1){font-size:20px;line-height:1.3;font-weight:650;margin:0}
+:where(.mt-ui h2),:where(.mt-ui h3){font-size:14px;font-weight:600;margin:0}
+:where(.mt-ui p){margin:0}
+:where(.mt-ui button),:where(.mt-ui input),:where(.mt-ui select),:where(.mt-ui textarea){font:inherit;color:inherit}
+:where(.mt-ui button),:where(.mt-ui .mt-button){display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:36px;padding:7px 12px;border:.5px solid var(--mt-gray-7);border-radius:6px;background:var(--mt-gray-2);color:var(--mt-gray-12);cursor:pointer}
+:where(.mt-ui button:hover:enabled){background:var(--mt-gray-3)}
+:where(.mt-ui button:disabled){opacity:.5;cursor:not-allowed}
+:where(.mt-ui input:not([type=checkbox]):not([type=range])),:where(.mt-ui select),:where(.mt-ui textarea){min-height:36px;padding:7px 10px;border:.5px solid var(--mt-gray-7);border-radius:6px;background:var(--mt-gray-2)}
+:where(.mt-ui input[type=checkbox]),:where(.mt-ui input[type=range]){accent-color:var(--mt-indigo-9)}
+:where(.mt-ui :focus-visible){outline:2px solid var(--mt-indigo-8);outline-offset:2px}
+:where(.mt-ui svg){width:20px;height:20px;flex-shrink:0}
+:where(.mt-ui a){color:var(--mt-indigo-11)}
+@media(prefers-reduced-motion:reduce){:where(.mt-ui *){animation:none!important;transition:none!important}}

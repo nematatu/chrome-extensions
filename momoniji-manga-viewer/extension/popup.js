@@ -1,10 +1,12 @@
 (function () {
   'use strict';
 
+  document.querySelector('.search-icon').innerHTML = MyToolsUI.icon('search');
+
   const elements = Object.fromEntries([
     'search', 'library-panel', 'result-count', 'library-list', 'empty', 'empty-title',
-    'empty-description', 'load-more', 'error', 'notice', 'notice-text', 'undo', 'current-title',
-    'current-save', 'current-save-icon', 'current-save-label', 'current-description'
+    'load-more', 'error', 'notice', 'notice-text', 'undo', 'current-title',
+    'current-save', 'current-save-icon', 'current-save-label'
   ].map((id) => [id, document.getElementById(id)]));
   const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
   let entries = [];
@@ -62,14 +64,9 @@
   }
 
   function bookmarkIcon() {
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.classList.add('bookmark');
-    svg.setAttribute('viewBox', '0 0 24 24');
-    svg.setAttribute('aria-hidden', 'true');
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('d', 'M6 3h12v18l-6-4-6 4V3Z');
-    svg.append(path);
-    return svg;
+    const wrapper = document.createElement('span');
+    wrapper.innerHTML = MyToolsUI.icon('bookmark');
+    return wrapper.firstElementChild;
   }
 
   function actionButton(action, label, symbol, entry) {
@@ -79,7 +76,7 @@
     button.dataset.action = action;
     button.setAttribute('aria-label', `${label}: ${entry.title}`);
     button.title = label;
-    button.textContent = symbol;
+    button.innerHTML = MyToolsUI.icon(symbol === '×' ? 'trash' : symbol === '↶' ? 'refresh' : 'check');
     button.disabled = busy;
     return button;
   }
@@ -110,13 +107,13 @@
     const meta = document.createElement('p');
     meta.className = 'item-meta';
     const date = formatDate(entry.readLater ? entry.addedAt : entry.downloadedAt);
-    meta.textContent = `momoniji.com${date ? ` · ${date}` : ''}`;
+    meta.textContent = `${date}`;
     body.append(link, meta);
     if (Number.isFinite(entry.downloadedAt) && entry.downloadedAt > 0) {
       const downloaded = document.createElement('span');
       downloaded.className = 'downloaded-label';
-      downloaded.textContent = '✓ ダウンロード済み';
-      if (Number.isInteger(entry.downloadedCount) && entry.downloadedCount > 0) downloaded.textContent += ` · ${entry.downloadedCount}枚`;
+      downloaded.textContent = 'ダウンロード済み';
+      if (Number.isInteger(entry.downloadedCount) && entry.downloadedCount > 0) downloaded.textContent += ` ${entry.downloadedCount}枚`;
       body.append(downloaded);
     }
     const actions = document.createElement('div');
@@ -145,12 +142,9 @@
     const button = elements['current-save'];
     button.disabled = busy || !currentWork || !loaded || saved?.readLater === true;
     button.classList.toggle('saved', saved?.readLater === true);
-    elements['current-save-icon'].textContent = saved?.readLater ? '✓' : '＋';
+    elements['current-save-icon'].innerHTML = MyToolsUI.icon(saved?.readLater ? 'check' : 'plus');
     elements['current-save-label'].textContent = saved?.readLater ? '後で読むに保存済み' : '現在の作品を保存';
     elements['current-title'].textContent = currentWork?.title || '';
-    elements['current-description'].textContent = currentWork
-      ? (Number.isFinite(saved?.downloadedAt) && saved.downloadedAt > 0 ? '✓ この作品はダウンロード済みです' : '漫画の画像・作品リンクの右クリックからも保存できます。')
-      : 'momoniji.com の作品ページで追加できます。';
   }
 
   function render() {
@@ -173,7 +167,6 @@
     elements['load-more'].textContent = `さらに${Math.min(100, Math.max(0, visible.length - displayLimit))}作品を表示`;
     elements.empty.hidden = !loaded || visible.length > 0;
     elements['empty-title'].textContent = query ? '一致する作品がありません' : filter === 'read' ? '読了した作品はありません' : filter === 'downloaded' ? 'ダウンロード済みの作品はありません' : '後で読む作品はありません';
-    elements['empty-description'].textContent = query ? '別の作品名で検索してください。' : filter === 'read' ? '読み終えた作品を「読了にする」で移動できます。' : filter === 'downloaded' ? '全ページのダウンロードが完了すると表示されます。' : '漫画や作品リンクを右クリックして「後で読むに保存」を選んでください。';
     elements.undo.disabled = busy;
     renderCurrent();
     if (!busy && focusedUrl && focusedAction) {

@@ -9,8 +9,14 @@
         "https://www.zenkoku-koutairen-bad.com/*",
         "https://zenkoku-koutairen-bad.com/*"
       ],
-      "js": ["content.js"],
-      "css": ["viewer.css"],
+      "js": [
+        "ui-kit.js",
+        "content.js"
+      ],
+      "css": [
+        "ui-tokens.css",
+        "viewer.css"
+      ],
       "run_at": "document_start"
     }
   ]

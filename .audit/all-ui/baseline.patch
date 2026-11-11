@@ -1,0 +1,1102 @@
+diff --git a/README.md b/README.md
+index c9ce8a2..a687d2e 100644
+--- a/README.md
++++ b/README.md
+@@ -6,7 +6,8 @@
+ 
+ | Directory | Extension |
+ | --- | --- |
+-| [`unified-tools`](./unified-tools) | My Tools・リポジトリ内19拡張の統合ビルド |
++| [`unified-tools`](./unified-tools) | My Tools・リポジトリ内20拡張の統合ビルド |
++| [`media-saver`](./media-saver) | ページの動画・音声・画像検出、HLS/DASH 保存 |
+ | [`instagram-media-downloader`](./instagram-media-downloader) | Instagram 投稿・ストーリー・リール保存 |
+ | [`kltra-danmaku`](./kltra-danmaku) | KLTRA 弾幕チャット |
+ | [`youtube-five-second-clip`](./youtube-five-second-clip) | YouTube 範囲指定MP4クリップ |
+diff --git a/unified-tools/ALL-MODULES.md b/unified-tools/ALL-MODULES.md
+index 5846102..7c732cf 100644
+--- a/unified-tools/ALL-MODULES.md
++++ b/unified-tools/ALL-MODULES.md
+@@ -1,12 +1,12 @@
+ # All modules implementation contract
+ 
+-User scope is every source manifest, currently 19. Candidate A (.audit/all-design-a.md), preserving standalone source and wrapping generated entrypoints, is base. Candidate B (.audit/all-design-b.md) contributes explicit native origin vs module asset base, nonmessage event gating, old settings upgrade, command ownership. Root experimentally verified separate extension iframe processors in one native offscreen document with runtime messages and native-origin Blob URLs. Design evidence is captured in .audit/all-inventory.json. Independent cross-judge selected A, with source-native boundary constraints from B. The final independent review confirmed all34 unit tests passed and found no remaining concrete defects in reviewed code; browser evidence is recorded separately.
++User scope is every source manifest, currently 20. Candidate A (.audit/all-design-a.md), preserving standalone source and wrapping generated entrypoints, is base. Candidate B (.audit/all-design-b.md) contributes explicit native origin vs module asset base, nonmessage event gating, old settings upgrade, command ownership. Root experimentally verified separate extension iframe processors in one native offscreen document with runtime messages and native-origin Blob URLs. Design evidence is captured in .audit/all-inventory.json. Independent cross-judge selected A, with source-native boundary constraints from B. The final independent review of the 19-module integration confirmed 34 unit tests passed; the current 20-module suite has 36 unit tests and separate real-browser evidence including Media Saver.
+ 
+ ## Stable IDs
+-instagram=instagram-media-downloader, gofile=gofile-bulk-video-downloader, googlephotos=GooglePhoto-utils, badspi=badspi-hq-downloader, birdscore=birdcore-popup, inhighlinks=inhigh-tv-match-links, inhighskip=inhigh-tv-skip-extension, instagramhq=instagram-high-quality-images, kltra=kltra-danmaku, koutairen=koutairen-gallery-fix, momoniji=momoniji-manga-viewer/extension, pagemedia=page-media-bulk-downloader, r2=r2-image-preview, smashnet=smashAndNetTV-better-photo-garally, stripchat=stripchat-live-hover, sushida=sushida-log, tweetfile=tweetfile-video-downloader, xhashtags=x-hashtag-autofill, youtube=youtube-five-second-clip.
++instagram=instagram-media-downloader, gofile=gofile-bulk-video-downloader, googlephotos=GooglePhoto-utils, badspi=badspi-hq-downloader, birdscore=birdcore-popup, inhighlinks=inhigh-tv-match-links, inhighskip=inhigh-tv-skip-extension, instagramhq=instagram-high-quality-images, kltra=kltra-danmaku, koutairen=koutairen-gallery-fix, momoniji=momoniji-manga-viewer/extension, pagemedia=page-media-bulk-downloader, r2=r2-image-preview, smashnet=smashAndNetTV-better-photo-garally, stripchat=stripchat-live-hover, sushida=sushida-log, tweetfile=tweetfile-video-downloader, xhashtags=x-hashtag-autofill, youtube=youtube-five-second-clip, mediasaver=media-saver.
+ 
+ ## Registry/build/runtime boundary
+-modules.mjs exports modules [{id,name,source,files,popup?,options?,worker?,offscreen?,startTypes:[],contentStorage:{local:[],sync:[]},portable?:{area,keys}}]. UI paths are source-root relative. worker/source content data derived from original manifest. sources without worker are supported. Config emitted as config.js assigning globalThis.MyToolsConfig={modules,registrations}; modules include original matches list derived from all content registrations (module.matches) for runtime sender checks. Worker boot receives MyToolsConfig. Common popup loads config.js, portable.js, source IG core.js, transfer.js, popup.js. Every original HTML has common client.js loaded first; classic extension/worker and isolated-only .js files wrapped in IIFE with lexical chrome=(worker MyToolsRuntime.moduleChrome(id) or MyToolsClient.moduleChrome(id) or native), importScripts namespaced to modules/id/path. UMD/global exports remain on real globalThis; all declared exported source globals are module-specific, core lexical names isolated. .mjs files get lexical chrome prelude only, preserving imports. MAIN/WAR page scripts and shared UMD core/vendor files remain original; MAIN/ISOLATED shared scripts have byte-identical separate __isolated__ asset URLs because the real Chromium dynamic-registration probe skipped one world when both used the same file at document_start; MAIN scripts get no client/API adapter. ISOLATED registrations prepend root client.js. Asset relative paths, CSS, WAR preserved. getURL('') must native root; nonempty resolves modules/id/path. No arbitrary regex rewrite of chrome identifiers. Momoniji source hardcoded popup authorization changes to runtime.getURL('popup.html') exact match.
++modules.mjs exports modules [{id,name,source,files,popup?,options?,worker?,offscreen?,startTypes:[],contentStorage:{local:[],sync:[]},portable?:{area,keys}}]. UI paths are source-root relative. worker/source content data derived from original manifest. sources without worker are supported. Config emitted as config.js assigning globalThis.MyToolsConfig={modules,registrations}; modules include original matches list derived from all content registrations (module.matches) for runtime sender checks. Worker boot receives MyToolsConfig. Common popup loads config.js, portable.js, source IG core.js, transfer.js, popup.js. Every original HTML has common client.js loaded first; classic extension/worker and isolated-only .js files wrapped in IIFE with lexical chrome=(worker MyToolsRuntime.moduleChrome(id) or MyToolsClient.moduleChrome(id) or native), importScripts namespaced to modules/id/path. UMD/global exports remain on real globalThis; all declared exported source globals are module-specific, core lexical names isolated. .mjs files get lexical chrome prelude only, preserving imports. MAIN/WAR page scripts and shared UMD core/vendor files remain original; MAIN/ISOLATED shared scripts have byte-identical separate __isolated__ asset URLs because the real Chromium dynamic-registration probe skipped one world when both used the same file at document_start; MAIN scripts get no client/API adapter. ISOLATED registrations prepend root client.js. Asset relative paths, CSS, WAR preserved. getURL('') must native root; nonempty resolves modules/id/path. Worker scripting.executeScript with files maps source-relative paths to modules/id/path and, for ISOLATED worlds, prepends root config.js and client.js so on-demand content scripts receive the module adapter; MAIN worlds are not given the isolated prelude. runtime.openOptionsPage opens modules/id/options.html for modules that declare options, rather than the manager. No arbitrary regex rewrite of chrome identifiers. Momoniji source hardcoded popup authorization changes to runtime.getURL('popup.html') exact match.
+ 
+ Config registration IDs tools-id-index, all original script options retained. minimumChrome >=120. Required/optional permissions, hosts, commands, WAR and CSP merged. Birdscore command _execute_action becomes birdscore-open, routed by common worker. All source manifest roots must equal registry roots; missing entry is build error. Staging/swap rollback kept.
+ 
+@@ -15,13 +15,13 @@ Message envelope {toolModule:id,payload:original}. Only same native runtime.id a
+ 
+ Module storage physical prefix 'my-tools:module:'+id+':', for local/sync/session. Preserve get(string|array|null|defaults), set/remove/clear/getBytesInUse, callback+promise, filtered onChanged. Native local always TRUSTED_CONTEXTS. In content local access use privileged IPC {type:'my-tools:storage',module:id,area,operation,args}, worker allows only config.contentStorage keys (GooglePhotos 2 keys, KLTRA own settings); extension module pages use direct namespaced storage; session not exposed to content. All unknown operations/keys rejected; sender membership required. Content sync may use namespaced native sync. setAccessLevel never relaxes protected local. Existing two-module native unprefixed records/jobs migrate once into own namespace preserving values before workers initialize. Boot must expose a shared ready/migration promise respected by module storage. Single sync/local key migration owner, no keys guessed for other old extension IDs.
+ 
+-All workers remain available for accepted downloads/status/recovery. New starts/retries/translation/recording types gate on serial settings boundary. Sushida webRequest callback gated; contextMenus click and visibility gated. Alarms namespaced; action badges and owned menu metadata persisted in protected root local state per module with deterministic common badge count and per-module badges in manager result. contextMenus.removeAll removes only own ids. Filename suggestions collected by one native listener; no-argument abstains, one native suggestion after async callbacks; conflicts produce neutral outcome plus visible manager error. No filename listener waits on new-start settings boundary.
++All workers remain available for accepted downloads/status/recovery. New starts/retries/translation/recording types gate on serial settings boundary. Media Saver also gates ms:scan, ms:probe and ms:start; its onBeforeRequest and onHeadersReceived listeners are both behind the module OFF boundary. Sushida webRequest callback gated; contextMenus click and visibility gated. Alarms namespaced; action badges and owned menu metadata persisted in protected root local state per module with deterministic common badge count and per-module badges in manager result. contextMenus.removeAll removes only own ids. Filename suggestions collected by one native listener; no-argument abstains, one native suggestion after async callbacks; conflicts produce neutral outcome plus visible manager error. No filename listener waits on new-start settings boundary.
+ 
+ ## Shared offscreen
+-Root offscreen.html contains iframe per three registry offscreen modules, each src modules/id/offscreen.html, separate globals. client.js loads in each iframe before source scripts. Each module client sends readiness notification after page scripts loaded. Root broker ensure is one promise using native runtime.getContexts OFFSCREEN_DOCUMENT for root, create once BLOBS+IFRAME_SCRIPTING; await all module ready listeners. moduleChrome.offscreen.createDocument validates original module source path and ensures root, hasDocument/getContexts virtualize module readiness; close cannot kill other modules. Messages use namespace to prevent generic YouTube handler capturing others. No sender URL spoof. Preserve each iframe URL for source authorization. Shared lifetime may remain until extension unload.
++Root offscreen.html contains iframe per four registry offscreen modules, each src modules/id/offscreen.html, separate globals. client.js loads in each iframe before source scripts. Each module client sends readiness notification after page scripts loaded. Root broker ensure is one promise using native runtime.getContexts OFFSCREEN_DOCUMENT for root, create once BLOBS+IFRAME_SCRIPTING; await all module ready listeners. moduleChrome.offscreen.createDocument validates original module source path and ensures root, hasDocument/getContexts virtualize module readiness; close cannot kill other modules. Messages use namespace to prevent generic YouTube handler capturing others. No sender URL spoof. Preserve each iframe URL for source authorization. Shared lifetime may remain until extension unload.
+ 
+ ## Transfer/UI
+-Keep legacy format/version1 IG-only and two-module backup imports. enabled accepts any nonempty known-key boolean subset, merges with current availability, unknown keys reject. New export contains all19 enabled flags, IG history and explicit portable preferences only. transfer.configure(modules) sets known IDs from config; Node tests configure explicit registry. No all-storage export. Common manager keeps existing IDs #instagram #gofile #save #export #import-file so prior browser harness adapts. Dynamic registry rows, search, original module settings in manager iframe (preserves active page), back button; no-popup no-settings rows omitted action. All19 accessible. Settings tab mode is optional; active-page tools should stay in action popup. Browser tests must verify actual iframe authorization and active-tab semantics.
++Keep legacy format/version1 IG-only and two-module backup imports. enabled accepts any nonempty known-key boolean subset, merges with current availability, unknown keys reject. New export contains all20 enabled flags, IG history and explicit portable preferences only. transfer.configure(modules) sets known IDs from config; Node tests configure explicit registry. No all-storage export. Common manager keeps existing IDs #instagram #gofile #save #export #import-file so prior browser harness adapts. Dynamic registry rows, search, original module popup in manager iframe (preserves active page), module options page in its own tab, back button; no-popup no-settings rows omitted action. All20 accessible. Settings tab mode is optional; active-page tools should stay in action popup. Browser tests must verify actual iframe authorization and active-tab semantics.
+ 
+ 
+ ## Final observed corrections
+@@ -30,4 +30,4 @@ The real browser checks found and resolved root-popup bulk authorization, restar
+ 
+ An initial three-video fixture passed an AV-mixed MP4 to both independent YouTube tracks; that fixture was invalid for the original converter's separate-track contract. The corrected fixture separates tracks without changing the source converter. The Chromium encoders were actually supported and all three original processors then produced real decodable MP4s. Native download preferences and default behavior are used in the all-module harness because Playwright's download interception bypasses filename determination and masks real paths.
+ 
+-Browser evidence: all-module21 checks, baseline17 checks (Instagram/Gofile/settings/history), source unit415 + combinedunit34. Actual user Chrome and live external services remain unverified. See README for exact remaining feature cases. No original extension installation was removed or disabled.
++Browser evidence: all-module21 checks, baseline20 checks (Instagram/Gofile/settings/history), integrated Media Saver10 checks, standalone Media Saver14 checks, other-source unit415 + Media Saver41 + combinedunit36. Actual user Chrome and live external services remain unverified. See README for exact remaining feature cases. No original extension installation was removed or disabled.
+diff --git a/unified-tools/README.md b/unified-tools/README.md
+index 1dcf99f..509896e 100644
+--- a/unified-tools/README.md
++++ b/unified-tools/README.md
+@@ -1,12 +1,13 @@
+ # My Tools
+ 
+-このリポジトリの元拡張19本を、My Tools 1本へまとめるビルドです。元の拡張のソースと単独版は残し、配布用フォルダーだけを生成します。
++このリポジトリの元拡張20本を、My Tools 1本へまとめるビルドです。元の拡張のソースと単独版は残し、配布用フォルダーだけを生成します。
+ 
+ ## 生成・読み込み
+ 
+-Chrome / Chromium を対象とします。ほかのブラウザーは未検証です。Node.js が必要です。Node.js v24.22.1 で検証しています。追加パッケージなしで生成できます。
++Chrome / Chromium を対象とします。ほかのブラウザーは未検証です。Node.js と npm が必要です。Node.js v24.22.1 で検証しています。
+ 
+ ```sh
++npm ci --prefix unified-tools
+ node unified-tools/build.mjs
+ ```
+ 
+@@ -21,11 +22,13 @@ node unified-tools/build.mjs
+ 
+ ## 使い方
+ 
+-My Tools のアイコンを開くと、19機能の有効・無効、名前検索、元の設定・状態画面、Instagram の表示済み投稿の一括保存、設定・履歴の書き出しと読み込みを操作できます。右上の矢印で同じ設定をタブ表示できます。
++My Tools の「機能」タブで、名前検索、20機能の切り替え、各機能の設定を操作します。Instagramの一括保存もここから実行できます。「バックアップ」タブで設定と保存履歴のJSONを書き出し・読み込みします。右上のボタンで同じ画面をタブ表示できます。
+ 
+ 機能の切り替え後は対象ページを再読み込みしてください。無効にしても開始済みの保存の完了・復旧・キャンセル処理は継続します。新しい保存・記録・翻訳の開始を拒否し、ページへの新しいスクリプト注入を停止します。既に開いていたページの見た目を消すには再読み込みが必要です。
+ 
+-各機能の処理と設定画面は元の拡張を利用します。設定画面は My Tools 内のフレームで開き、元のポップアップが参照するアクティブなWebページを維持します。Birdscore の Alt+B は専用ウィンドウを開きます。アイコン上の数字は通知を持つ機能の数で、各機能の通知内容は一覧に表示します。
++各機能の処理と画面は元の拡張を利用します。ポップアップは My Tools 内のフレームで開き、元のポップアップが参照するアクティブなWebページを維持します。Media Saver の設定ページは専用のタブで開きます。Birdscore の Alt+B は専用ウィンドウを開きます。アイコン上の数字は通知を持つ機能の数で、各機能の通知内容は一覧に表示します。
++
++Media Saver は、フレーム内の再スキャンで現在のタブを調べ、通信検出とページ内検出をまとめて表示します。HLS/DASH の画質取得と結合は共通の裏側の画面にある専用フレームで行います。機能をOFFにすると新しいスキャン・画質取得・保存・通信検出を止め、開始済みの保存は継続します。
+ 
+ 投稿・ストーリー・リールの保存操作と Gofile の収集・保存処理も元の拡張を利用します。対応範囲やサイト側の制約は、それぞれの [Instagram README](../instagram-media-downloader/README.md) と [Gofile README](../gofile-bulk-video-downloader/README.md) も参照してください。
+ 
+@@ -42,11 +45,11 @@ My Tools のアイコンを開くと、19機能の有効・無効、名前検索
+ 
+ 移行ファイルは最大20MiBです。設定の反映に失敗した場合、履歴だけが追加済みになることがあります。その場合は画面に部分完了を表示します。同じファイルで再実行できます。
+ 
+-書き出すのは全19機能の有効・無効、下表の個別設定、Instagram の保存済み識別子・日時です。ログイン情報、Cookie、進行中ジョブのメディアURL、ダウンロードID、ファイル本体は含みません。Gofile の現在の実装には移行対象となる永続的な保存済み履歴がないため、復旧用のジョブ情報は書き出しません。ファイル本体は必要に応じて別に移してください。
++書き出すのは全20機能の有効・無効、下表の個別設定、Instagram の保存済み識別子・日時です。ログイン情報、Cookie、進行中ジョブのメディアURL、ダウンロードID、ファイル本体は含みません。Gofile の現在の実装には移行対象となる永続的な保存済み履歴がないため、復旧用のジョブ情報は書き出しません。ファイル本体は必要に応じて別に移してください。
+ 
+ ## 個別設定の移行対象
+ 
+-My Tools 内で保存した次の設定は、共通JSONに含めます。旧版19本からこれらすべてを自動取得する機能はありません。旧版からの専用履歴書き出しは Instagram のみです。ほかの元拡張の設定・履歴は、元拡張の保存領域に残ります。移行が必要なデータを確認してから、元拡張を削除してください。
++My Tools 内で保存した次の設定は、共通JSONに含めます。各元拡張からこれらすべてを自動取得する機能はありません。旧版からの専用履歴書き出しは Instagram のみです。ほかの元拡張の設定・履歴は、元拡張の保存領域に残ります。移行が必要なデータを確認してから、元拡張を削除してください。
+ 
+ | 機能 | 共通JSONに含める個別設定 |
+ | --- | --- |
+@@ -60,7 +63,7 @@ My Tools 内で保存した次の設定は、共通JSONに含めます。旧版1
+ 
+ R2の移行用URLテンプレートはHTTPS・認証情報なし・クエリーなし・フラグメントなしに制限します。これに合わない既存設定は移行できません。ハッシュタグは最大16,384文字です。これは移行ファイルの新しい入力制約です。
+ 
+-Google Photos のアルバム一覧、Momoniji の後で読む一覧・保存履歴、寿司打の結果履歴、Birdscore のキャッシュ、全機能の進行中ジョブは共通JSONの対象外です。
++Google Photos のアルバム一覧、Momoniji の後で読む一覧・保存履歴、寿司打の結果履歴、Birdscore のキャッシュ、Media Saver の設定・ダウンロード履歴、全機能の進行中ジョブは共通JSONの対象外です。
+ 
+ ## 権限・通信先
+ 
+@@ -68,18 +71,29 @@ Google Photos のアルバム一覧、Momoniji の後で読む一覧・保存履
+ 
+ - `downloads`・`storage`・`unlimitedStorage`・`alarms`: 保存、保存状態、各機能の設定と復旧。
+ - `scripting`: 機能ごとのスクリプト登録・解除と既存コレクター。
+-- `offscreen`: YouTube・Tweetfile・ページ動画保存の処理。共通の裏側の画面に独立した3フレームを置き、各処理のライブラリと状態を分けます。
++- `offscreen`: YouTube・Tweetfile・ページ動画保存・Media Saver の処理。共通の裏側の画面に独立した4フレームを置き、各処理のライブラリと状態を分けます。Media Saver の HLS/DASH 結合もこの専用フレームで行います。
+ - `contextMenus`: Momoniji の後で読むメニュー。
+-- `activeTab`・`tabs`・`webRequest`: 元拡張の対象タブ操作と寿司打の結果取得。
++- `activeTab`・`tabs`・`webRequest`: 元拡張の対象タブ操作、寿司打の結果取得、Media Saver のメディア検出。
+ - Birdscore のウィンドウ表示には `chrome.windows` API を使います。独立した `windows` 権限は宣言しません。元manifestのこの無効な権限名は生成時に除外します。[Chrome Windows API](https://developer.chrome.com/docs/extensions/reference/api/windows) と [権限一覧](https://developer.chrome.com/docs/extensions/reference/permissions-list) に従います。
+-- 対象サイト・取得先のホスト権限: 元拡張の許可対象を合算します。Tweetfile が元から持つHTTP/HTTPSの広いホスト権限も含みます。機能のOFFはChromeの許可そのものの取り消しではありません。
++- 対象サイト・取得先のホスト権限: 元拡張の許可対象を合算します。Tweetfile が元から持つHTTP/HTTPSの広いホスト権限と、Media Saver が任意のサイトを検出するための `<all_urls>` も含みます。機能のOFFはChromeの許可そのものの取り消しではありません。
+ - 元拡張の任意ホスト権限が必須のHTTP/HTTPS権限に含まれる場合は、重複する宣言を生成しません。Birdscoreの既存の権限確認操作は維持しますが、統合版では既に許可された範囲になります。
+ 
+ 全ローカル保存領域は `TRUSTED_CONTEXTS` に制限します。各機能のlocal・sync・sessionのキーと変更通知を分離します。Google Photos と KLTRA のページには許可した自機能のlocalキーだけを専用通信で返し、Instagram ページには検証済みの保存済み識別子を返します。設定の変更と履歴のインポート・エクスポートは、共通設定画面からのみ受け付けます。
+ 
+ ## 構成・検証
+ 
+-`modules.mjs` が同梱ファイルと開始メッセージの一覧、`build.mjs` がビルド、`runtime.js` が切り替え・メッセージ配送・保存名とoffscreenの共同管理、`client.js` が各機能のAPIの分離、`portable.js` と `transfer.js` が移行形式の検証です。各機能の実装は元のディレクトリに残します。ソースのmanifest一覧とレジストリが一致しなければビルドを失敗させるため、新しい拡張の入れ忘れを検出できます。新しい拡張を追加する際は、配布ファイル・開始メッセージ・設定保存範囲をレジストリへ登録して検証します。
++Media Saver 統合後は、統合単体39件、管理画面・保存・移行の隔離ブラウザー20項目、全機能の隔離ブラウザー21項目、Media Saver 統合ブラウザー10項目が成功しました。キーボードのタブ切り替え、狭幅での横はみ出し、実表示の文字サイズ、ライト・ダーク表示、不正JSONでの状態保持、スイッチ更新失敗時の復元も確認しています。依存ライブラリのライセンス本文を生成物の `THIRD_PARTY_LICENSES.txt` に同梱します。
++
++ポップアップの幅崩れが報告された後、HTMLへ最小幅380pxを指定し、利用中Chromeで拡張を再読み込みしてアイコンからの正常表示を確認しました。commit、push、外部へのデプロイは行っていません。下記の実サイト保存検証はUI変更前の統合版での結果です。
++
++実際のポップアップの自動サイズも検査するには、以下を実行します。固定幅のタブ表示だけではこの経路を検証できません。隔離Chromiumの `chrome.action.openPopup()` で開いた実ポップアップについて、幅380〜800pxとInstagram操作の表示を確認し、`test-results/native-popup.png` を保存します。
++
++```sh
++cd unified-tools
++NODE_PATH=../instagram-high-quality-images/node_modules node tests/native-popup.cjs
++```
++
++`modules.mjs` が同梱ファイルと開始メッセージの一覧、`build.mjs` がビルド、`runtime.js` が切り替え・メッセージ配送・保存名とoffscreenの共同管理、`client.js` が各機能のAPIの分離、`portable.js` と `transfer.js` が移行形式の検証です。管理画面のソースは `popup.jsx` と `popup.css` です。React、RadixのTabsとSwitch、Radix Colors、Lucideをesbuildでローカルファイルへまとめます。CDNからコードやフォントを読み込みません。依存のバージョンは `package-lock.json` で固定します。各機能の実装は元のディレクトリに残します。ソースのmanifest一覧とレジストリが一致しなければビルドを失敗させるため、新しい拡張の入れ忘れを検出できます。新しい拡張を追加する際は、配布ファイル・開始メッセージ・設定保存範囲をレジストリへ登録して検証します。
+ 
+ ```sh
+ node --test unified-tools/tests/*.test.cjs
+@@ -93,24 +107,39 @@ node --test gofile-bulk-video-downloader/*.test.cjs
+ cd unified-tools
+ NODE_PATH=../instagram-high-quality-images/node_modules node tests/browser.cjs
+ NODE_PATH=../instagram-high-quality-images/node_modules node tests/all-browser-run.cjs
++NODE_PATH=../instagram-high-quality-images/node_modules node tests/media-browser.cjs
+ ```
+ 
+ 検証結果（2026-10-24）:
+ 
+-- 統合版の単体検証34件が成功しました。独立レビューでもclient/runtime24件とビルド4件が成功し、報告された具体的な問題は修正を確認しています。
+-- 既存の単体検証は合計415件が成功しました。対象はBadspi6、Gofile71、Instagram HQ7、Instagram保存33、KLTRA9、Momoniji120、ページメディア134、Stripchat14、Tweetfile9、YouTube11、寿司打1です。単体テストがない機能は件数に含めません。
+-- 生成した拡張を隔離 Chromium に読み込み、全19機能の切り替え、元の10設定画面、検索、保存領域の分離、16機能の模擬ページ動作を含む21項目が成功しました。
++- 統合版の単体検証39件が成功しました。独立レビューでもclient/runtime24件とビルド4件が成功し、報告された具体的な問題は修正を確認しています。
++- 保存名 listener は起動時0件、My Tools のダウンロード開始時だけ1件、保存名確定後0件になることを単体検証と隔離 Chromium で確認しました。My Tools と別の blob ダウンローダーを同時に読み込み、外部側の `external/name.bin` が干渉されず保存されることも確認しました。
++- Media Saver以外の既存の単体検証は合計415件が成功しました。対象はBadspi6、Gofile71、Instagram HQ7、Instagram保存33、KLTRA9、Momoniji120、ページメディア134、Stripchat14、Tweetfile9、YouTube11、寿司打1です。単体テストがない機能は件数に含めません。
++- 生成した拡張を隔離 Chromium に読み込み、全20機能の切り替え、元の11設定画面、検索、保存領域の分離、16機能の模擬ページ動作を含む21項目が成功しました。
+ - Tweetfile HLS・ページメディア HLS・YouTube MP4変換を同時実行し、3本すべてを指定した保存名で保存しました。3本とも映像・音声のstreamとデコードを確認し、YouTubeは指定した0.4秒の区間の長さも確認しました。
++- Media Saver 単体は、単体検証41件と隔離ブラウザ14項目が成功しました。HLSの音声分離結合、DASHの映像・音声分離、直接MP4/MP3/PNGのバイト一致、設定、履歴、テーマ、OFF制御を確認しています。
++- Media Saver を My Tools に統合した隔離ブラウザ検証10項目が成功しました。20番目の機能として表示され、フレーム内ポップアップが現在のタブを維持すること、動的コンテンツスクリプトと通信検出、共有offscreenでのHLS画質取得、映像・音声入りMP4の保存、PNGのバイト一致、専用設定タブ、設定反映、狭幅表示、OFF時のスキャン・画質取得・開始・通信検出の停止を確認しています。
+ - Instagram・Gofileの実ファイル保存、共通一括保存、保存済み表示、JSONの実書き出し・読み込み、再起動後の保持も、別の隔離ブラウザ検証で確認しています。
+-- 利用中のChromeへMy Toolsを導入し、19/19有効を確認しました。元Instagram拡張の保存済み識別情報481件を取り込み、統合バックアップJSONの保存完了を確認してから元拡張を無効化しました。元拡張とそのデータは残しています。
++- 利用中のChromeへMy Toolsを導入し、Media Saver統合前の19/19有効を確認しました。元Instagram拡張の保存済み識別情報481件を取り込み、統合バックアップJSONの保存完了を確認してから元拡張を無効化しました。元拡張とそのデータは残しています。
+ - 実際のInstagramでプロフィール右上から投稿3画像を保存し、各1440×1080の画像として確認しました。保存済み投稿の緑チェック表示も確認しました。長い投稿URLに対して通常のコードで応答が返るケースを修正し、指定URLからの個別保存完了と画像サイズ1179×1013を確認しました。
+ - 実際のリール画面で保存ボタンを確認し、MP4を保存しました。ホームから開いたストーリーで個別保存と一括保存2/2件が完了しました。リール・ストーリーのMP4はいずれも720×1280のH.264映像とAAC音声を持ち、ffmpegの全体デコードが成功しました。
+-- 最終修正後は統合単体34件、Instagram単体33件、Instagram隔離ブラウザ39項目が成功しています。保存履歴や配信URLは検証成果物に記録しません。
+-- Instagram以外の実サイト、Birdscoreのスコア取得とキーボード起動、外部翻訳、Google Photosのアルバム操作、Badspi・Smashnetの写真ファイル保存は今回未検証です。模擬ページの成功を実サイト動作の保証として扱っていません。
++- 最終修正後は統合単体39件、Instagram単体33件、Instagram隔離ブラウザ39項目が成功しています。保存履歴や配信URLは検証成果物に記録しません。
++- Instagram以外の実サイト、Birdscoreのスコア取得とキーボード起動、外部翻訳、Google Photosのアルバム操作、Badspi・Smashnetの写真ファイル保存、Media Saverの実サイトのHLS/DASH配信は今回未検証です。模擬ページの成功を実サイト動作の保証として扱っていません。
++
++生成物の保存名イベントは各機能の提案を1つのChrome listenerで集約します。listenerはMy Tools自身のダウンロード中だけ登録し、保存名の確定・失敗・タイムアウト後に解除します。提案がない場合も元のdownload要求のfilenameを保ち、同じURLの開始だけをID確定まで直列化します。MAINとISOLATEDで共用するスクリプトは別URLに生成し、同時document_start登録で片側が実行されない現象を回避しています。
++
++UIの参照元と採用箇所は [UI-DESIGN.md](UI-DESIGN.md) に記録しています。元の各機能の設定画面は既存の画面を引き続き利用します。
++
++## ダウンロード名の競合
++
++Chrome では、複数の拡張機能が同じダウンロードの保存名を同時に指定すると、後からインストールされた拡張機能の名前が採用され、ほかの拡張機能に「ダウンロード ファイルに名前を付けることができませんでした」と警告が出ます。
+ 
+-生成物の保存名イベントは各機能の提案を1つのChrome listenerで集約します。提案がない場合も元のdownload要求のfilenameを保ち、同じURLの開始だけをID確定まで直列化します。MAINとISOLATEDで共用するスクリプトは別URLに生成し、同時document_start登録で片側が実行されない現象を回避しています。
++My Tools は、自分が開始したダウンロードの保存名を決めるときだけ `onDeterminingFilename` listener を登録します。起動中ずっと登録しないため、一括画像ダウンローダーなど別の拡張機能が開始したダウンロードに My Tools が保存名を提案することはありません。これにより、My Tools が原因で他の拡張機能の保存名が競合する問題を解消しました。
+ 
+-UI は Chrome の公開された拡張管理・設定操作を参考にし、ラベル付きの機能切り替えと個別の設定ページを採用しています。参照: [Chrome 拡張の管理](https://support.google.com/chrome/answer/2664769?hl=ja)、[Chrome Storage API](https://developer.chrome.com/docs/extensions/reference/api/storage)。利用者数や評価の比較は行っていません。
++- My Tools の保存名を別の拡張機能が同時に指定した場合、Chrome がその拡張機能の名前を採用することがあります。Chrome の API では、他の拡張機能の提案内容を列挙・制御できません。
++- My Tools 自身の保存名を確実に固定したい場合は、該当する拡張機能を一時的に無効にするか、Chrome のプロファイルを分けてください。
++- 警告が出てもファイル自体は保存されている場合があります。`chrome://downloads` で保存名を確認し、必要なら手動で名前を変更してください。
++- My Tools に含まれる機能の単独版（ページ動画・画像 一括保存、Momoniji など）も同時に有効にすると、同じ機能が二重に動きます。保存名の競合とは別に、動作の重複を避けるため片方だけを有効にしてください。
+ 
+ ## 元に戻す
+ 
+diff --git a/unified-tools/build.mjs b/unified-tools/build.mjs
+index e60cbc7..f54279d 100644
+--- a/unified-tools/build.mjs
++++ b/unified-tools/build.mjs
+@@ -3,6 +3,7 @@ import { dirname, resolve, relative, posix } from 'node:path';
+ import { fileURLToPath } from 'node:url';
+ import { Script } from 'node:vm';
+ import { spawnSync } from 'node:child_process';
++import { build } from 'esbuild';
+ import { modules } from './modules.mjs';
+ 
+ const here = dirname(fileURLToPath(import.meta.url));
+@@ -78,7 +79,15 @@ const backup = staging + '-previous';
+ let previous = false;
+ try {
+   await writeFile(resolve(staging, '.my-tools-generated'), 'My Tools build output\n');
+-  for (const file of ['runtime.js', 'client.js', 'portable.js', 'transfer.js', 'offscreen-host.js', 'popup.html', 'popup.js', 'popup.css']) await copyFile(resolve(here, file), resolve(staging, file));
++  for (const file of ['runtime.js', 'client.js', 'portable.js', 'transfer.js', 'offscreen-host.js', 'popup.html']) await copyFile(resolve(here, file), resolve(staging, file));
++  const bundled = await build({ entryPoints: [resolve(here, 'popup.jsx')], bundle: true, outfile: resolve(staging, 'popup.js'),
++    format: 'iife', platform: 'browser', target: 'chrome120', jsx: 'automatic', minify: true,
++    define: { 'process.env.NODE_ENV': '"production"' }, legalComments: 'linked', metafile: true });
++  const packages = new Set(Object.keys(bundled.metafile.inputs).flatMap(file =>
++    [...file.matchAll(/node_modules\/((?:@[^/]+\/)?[^/]+)/g)].map(match => match[1])));
++  const licenses = await Promise.all([...packages].sort().map(async name =>
++    `${name}\n${await readFile(resolve(here, 'node_modules', name, 'LICENSE'), 'utf8')}`));
++  await writeFile(resolve(staging, 'THIRD_PARTY_LICENSES.txt'), licenses.join('\n\n'));
+   for (const { module, mainFiles, isolatedShared } of sources) {
+     const adapter = `const chrome = globalThis.MyToolsRuntime?.moduleChrome ? globalThis.MyToolsRuntime.moduleChrome(${JSON.stringify(module.id)}) : globalThis.MyToolsClient.moduleChrome(${JSON.stringify(module.id)});\n`;
+     for (const file of module.files) {
+@@ -113,7 +122,7 @@ try {
+   await writeFile(resolve(staging, 'config.js'), `globalThis.MyToolsConfig = ${JSON.stringify(config)};\n`);
+   await writeFile(resolve(staging, 'worker.js'), `importScripts("config.js", "client.js", "runtime.js", "portable.js", "transfer.js");\nglobalThis.MyToolsRuntime.boot(globalThis.MyToolsConfig);\nimportScripts(${modules.filter(module => module.worker).map(module => JSON.stringify(asset(module.id, module.worker))).join(', ')});\n`);
+   await writeFile(resolve(staging, 'offscreen.html'), `<!doctype html><html><head><meta charset="utf-8"><script src="config.js"></script><script src="offscreen-host.js"></script></head><body>${modules.filter(module => module.offscreen).map(module => `<iframe src="${asset(module.id, module.offscreen)}"></iframe>`).join('')}</body></html>\n`);
+-  await writeFile(resolve(staging, 'manifest.json'), JSON.stringify({ manifest_version: 3, name: 'My Tools', version: '2.0.0', description: 'このリポジトリの19機能をまとめて管理します。', key: identity.key, minimum_chrome_version: '120', permissions: [...permissions].sort(), host_permissions: [...hosts].sort(),
++  await writeFile(resolve(staging, 'manifest.json'), JSON.stringify({ manifest_version: 3, name: 'My Tools', version: '2.1.0', description: 'このリポジトリの20機能をまとめて管理します。', key: identity.key, minimum_chrome_version: '120', permissions: [...permissions].sort(), host_permissions: [...hosts].sort(),
+     ...(optionalPermissions.size && { optional_permissions: [...optionalPermissions].filter(value => !permissions.has(value)).sort() }),
+     ...(optionalHosts.size && { optional_host_permissions: [...optionalHosts].sort() }),
+     ...(resources.length && { web_accessible_resources: resources }), ...(Object.keys(commands).length && { commands }),
+diff --git a/unified-tools/client.js b/unified-tools/client.js
+index 79e2abb..a621fda 100644
+--- a/unified-tools/client.js
++++ b/unified-tools/client.js
+@@ -44,6 +44,8 @@
+     const runtime = Object.create(native.runtime);
+     Object.defineProperty(runtime, 'lastError', { get: () => callbackError || native.runtime.lastError });
+     runtime.getURL = path => path === '' ? native.runtime.getURL('') : native.runtime.getURL(`modules/${id}/${path}`);
++    if (module.options && native.tabs) runtime.openOptionsPage = callback => deliver(Promise.resolve().then(() =>
++      native.tabs.create({ url: native.runtime.getURL(`modules/${id}/${module.options}`) })).then(() => undefined), callback);
+     runtime.sendMessage = (...args) => {
+       const callback = typeof args.at(-1) === 'function' ? args.pop() : undefined;
+       if (typeof args[0] === 'string') throw new Error('外部拡張への通信には対応していません。');
+diff --git a/unified-tools/modules.mjs b/unified-tools/modules.mjs
+index 478a599..50aeb6e 100644
+--- a/unified-tools/modules.mjs
++++ b/unified-tools/modules.mjs
+@@ -488,5 +488,44 @@ export const modules = [
+       "local": [],
+       "sync": []
+     }
++  },
++  {
++    "id": "mediasaver",
++    "name": "Media Saver",
++    "source": "media-saver",
++    "files": [
++      "background.js",
++      "content.js",
++      "icons/icon16.png",
++      "icons/icon32.png",
++      "icons/icon48.png",
++      "icons/icon128.png",
++      "lib/common.js",
++      "lib/dash.js",
++      "lib/hls.js",
++      "lib/mp4.js",
++      "offscreen.html",
++      "offscreen.js",
++      "options.html",
++      "options.js",
++      "popup.html",
++      "popup.js",
++      "ui.css",
++      "vendor/mux.js-LICENSE",
++      "vendor/mux.min.js"
++    ],
++    "worker": "background.js",
++    "popup": "popup.html",
++    "options": "options.html",
++    "offscreen": "offscreen.html",
++    "startTypes": [
++      "ms:scan",
++      "ms:probe",
++      "ms:start"
++    ],
++    "contentStorage": {
++      "local": [],
++      "sync": []
++    }
+   }
+ ];
+diff --git a/unified-tools/package.json b/unified-tools/package.json
+index f39972b..4e08cb0 100644
+--- a/unified-tools/package.json
++++ b/unified-tools/package.json
+@@ -1,4 +1,18 @@
+ {
+   "private": true,
+-  "scripts": { "build": "node build.mjs", "test": "node --test tests/*.test.cjs" }
++  "scripts": {
++    "build": "node build.mjs",
++    "test": "node --test tests/*.test.cjs"
++  },
++  "dependencies": {
++    "@radix-ui/colors": "3.0.0",
++    "@radix-ui/react-switch": "1.4.1",
++    "@radix-ui/react-tabs": "1.2.1",
++    "lucide-react": "1.61.0",
++    "react": "19.3.1",
++    "react-dom": "19.3.1"
++  },
++  "devDependencies": {
++    "esbuild": "0.28.2"
++  }
+ }
+diff --git a/unified-tools/popup.css b/unified-tools/popup.css
+index 01d7fc4..bac8a6c 100644
+--- a/unified-tools/popup.css
++++ b/unified-tools/popup.css
+@@ -1,9 +1,83 @@
+-:root{font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#172026;background:#f5f7f9;color-scheme:light dark}*{box-sizing:border-box}body{margin:0;min-width:380px}main{max-width:640px;margin:auto;padding:22px}header{display:flex;align-items:center;gap:12px;margin-bottom:15px}h1{font-size:23px;letter-spacing:-.5px;margin:0}h2{font-size:14px;margin:0 0 12px}p{margin:5px 0;color:#5a6872;font-size:12px}header p{margin:0}.mark{display:grid;place-items:center;width:43px;height:43px;border-radius:12px;background:#176c56;color:white;font-weight:750;letter-spacing:-1px}.subtle{margin-left:auto;font-size:19px;padding:5px 10px}section{background:#fff;border:1px solid #dce3e7;border-radius:13px;padding:17px;margin:12px 0}.module{display:flex;align-items:center;justify-content:space-between;gap:22px;padding:10px 0}.module+.module{border-top:1px solid #edf0f2}.module label{cursor:pointer;flex:1}.module strong,.module span{display:block}.module span{font-size:12px;color:#5a6872}input[type=checkbox]{width:21px;height:21px;accent-color:#16775d;cursor:pointer}.note{font-size:11px;line-height:1.7;margin-top:12px}button,.file-button{font:inherit;font-size:12px;font-weight:600;border:1px solid #bccbc5;border-radius:8px;background:#edf6f2;color:#164b39;cursor:pointer;padding:9px 12px}button:disabled{opacity:.5;cursor:wait}button:hover:enabled,.file-button:hover{background:#ddeee5}button:focus-visible,input:focus-visible,.file-button:focus-within{outline:3px solid #6db99d;outline-offset:3px}.actions{display:flex;gap:8px;flex-wrap:wrap}.file-button{position:relative;overflow:hidden;display:inline-flex;align-items:center}.file-button input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}.file-button:has(input:disabled){opacity:.5;cursor:wait}#save{width:100%}#status{min-height:28px;padding:6px 0;color:#176c56;overflow-wrap:anywhere}#status.error{color:#af283a}footer{font-size:11px;color:#6a757c;padding:7px 1px 15px}@media(min-width:700px){main{padding-top:36px}h1{font-size:27px}}@media(prefers-color-scheme:dark){:root{background:#121719;color:#e9eeee}section{background:#1c2427;border-color:#344146}p,.module span,footer{color:#adbac0}.module+.module{border-color:#344146}button,.file-button{background:#203e32;color:#d8f5e9;border-color:#4d7564}button:hover:enabled,.file-button:hover{background:#2c5141}#status{color:#88d1b1}#status.error{color:#ffb0bb}}
++@import '@radix-ui/colors/gray.css';
++@import '@radix-ui/colors/gray-dark.css';
++@import '@radix-ui/colors/indigo.css';
++@import '@radix-ui/colors/indigo-dark.css';
++@import '@radix-ui/colors/red.css';
++@import '@radix-ui/colors/red-dark.css';
++@import '@radix-ui/colors/green.css';
++@import '@radix-ui/colors/green-dark.css';
+ 
+-[hidden]{display:none!important}.section-header,.panel-header{display:flex;align-items:center;justify-content:space-between;gap:12px}.section-header .note{margin:0}.section-header h2{margin:0}.panel-header h2{margin:0;font-size:13px}.search-label{display:block;font-size:11px;color:#5a6872;margin-top:15px}input[type=search]{width:100%;font:inherit;padding:9px 11px;border:1px solid #bccbc5;border-radius:8px;background:transparent;color:inherit;margin:5px 0 10px}.module{gap:12px}.module strong{font-size:13px}.module span{font-size:11px;line-height:1.5}.module-open{flex-shrink:0;padding:5px 9px}#module-frame{display:block;width:100%;height:560px;border:0;background:white;margin-top:12px;border-radius:8px}#module-panel{padding:12px}.module input{flex-shrink:0}#module-count{white-space:nowrap}@media(prefers-color-scheme:dark){.search-label{color:#adbac0}}
+-
+-#diagnostics{font-size:12px;color:#af283a;border:1px solid currentColor;padding:10px;border-radius:8px;overflow-wrap:anywhere}
+-
+-.module .module-badge{font-size:11px;background:#176c56;color:#fff;min-width:20px;padding:1px 5px;border-radius:6px;text-align:center}
+-
+-.module-open:disabled{cursor:not-allowed}
++:root { min-width: 380px; font: 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans JP', sans-serif; color: var(--gray-12); background: var(--gray-1); color-scheme: light; }
++:root.dark { color-scheme: dark; }
++* { box-sizing: border-box; }
++body { margin: 0; width: 420px; max-width: 100vw; font-size: 14px; }
++button, input { font: inherit; }
++button, .file-button { -webkit-tap-highlight-color: transparent; }
++button { cursor: pointer; }
++button:disabled, input:disabled, .file-button.disabled { cursor: not-allowed; opacity: .45; }
++button:focus-visible, input:focus-visible, .file-button:focus-within, .tab-content:focus-visible { outline: 2px solid var(--indigo-8); outline-offset: 3px; }
++svg { width: 18px; height: 18px; stroke-width: 1.75; flex-shrink: 0; }
++h1, h2, p { margin: 0; }
++h1 { font-size: 20px; line-height: 1.3; font-weight: 650; letter-spacing: -.5px; }
++h2 { font-size: 14px; font-weight: 600; }
++main { max-width: 880px; max-height: 600px; overflow-y: auto; margin: 0 auto; }
++.app-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 16px; }
++.icon-button { display: inline-flex; justify-content: center; align-items: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--gray-11); flex-shrink: 0; }
++.icon-button:hover:enabled { background: var(--gray-3); color: var(--gray-12); }
++.tabs { display: flex; gap: 24px; border-bottom: .5px solid var(--gray-6); padding: 0 24px; }
++.tab { position: relative; padding: 8px 0 12px; background: transparent; color: var(--gray-11); border: 0; font-weight: 500; }
++.tab[data-state='active'] { color: var(--gray-12); }
++.tab[data-state='active']::after { position: absolute; content: ''; height: 2px; inset: auto 0 0; background: var(--indigo-9); }
++.search-bar { display: flex; align-items: center; gap: 8px; margin: 20px 24px 12px; padding: 0 10px; min-height: 38px; border: .5px solid var(--gray-7); background: var(--gray-2); border-radius: 8px; color: var(--gray-11); }
++.search-bar:focus-within { outline: 2px solid var(--indigo-8); outline-offset: 2px; }
++.search-bar input { min-width: 0; width: 100%; padding: 8px 0; color: var(--gray-12); background: transparent; border: 0; outline: none; }
++.search-bar input::placeholder { color: var(--gray-10); }
++.search-bar input::-webkit-search-cancel-button { display: none; }
++.clear-search { width: 24px; height: 24px; border-radius: 4px; }
++.clear-search svg { width: 16px; height: 16px; }
++.list-summary { display: flex; justify-content: space-between; padding: 0 24px 10px; color: var(--gray-11); font-size: 12px; }
++.module-list { max-height: 300px; overflow-y: auto; scrollbar-gutter: stable; padding: 0 16px 8px 24px; overscroll-behavior: contain; }
++.module-group + .module-group { padding-top: 16px; }
++.module-group h2 { font-size: 12px; color: var(--gray-11); font-weight: 500; padding: 6px 0; }
++.module { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 46px; border-bottom: .5px solid var(--gray-4); }
++.module:last-child { border-bottom: 0; }
++.module-name { min-width: 0; cursor: pointer; }
++.module-controls { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-shrink: 0; }
++.module-badge { min-width: 20px; padding: 1px 5px; text-align: center; font-size: 12px; color: var(--indigo-11); background: var(--indigo-3); border-radius: 4px; }
++.switch { display: flex; align-items: center; width: 32px; height: 20px; padding: 2px; border: .5px solid var(--gray-7); border-radius: 10px; background: var(--gray-6); }
++.switch[data-state='checked'] { background: var(--indigo-9); border-color: var(--indigo-9); }
++.switch-thumb { display: block; width: 14px; height: 14px; border-radius: 8px; background: var(--gray-1); }
++.switch-thumb[data-state='checked'] { transform: translateX(12px); }
++.dark .switch-thumb { background: var(--gray-12); }
++.tools-footer { padding: 16px 24px 20px; border-top: .5px solid var(--gray-6); }
++.button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 38px; padding: 8px 12px; border: .5px solid var(--gray-7); border-radius: 8px; background: var(--gray-2); color: var(--gray-12); font-weight: 500; text-decoration: none; }
++.button:hover:enabled, .file-button:not(.disabled):hover { background: var(--gray-3); }
++.primary { border-color: var(--indigo-7); background: var(--indigo-3); color: var(--indigo-11); }
++.primary:hover:enabled { background: var(--indigo-4); }
++#save { width: 100%; }
++.empty-state { padding: 32px 0; color: var(--gray-11); text-align: center; }
++.backup { padding: 24px; min-height: 350px; }
++#history-count { margin-top: 8px; color: var(--gray-11); }
++#history-count strong { font-weight: 500; color: var(--gray-12); }
++.backup-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 24px; }
++.file-button { position: relative; overflow: hidden; cursor: pointer; }
++.file-button input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
++.backup-notes { display: grid; gap: 12px; margin-top: 24px; color: var(--gray-11); font-size: 12px; }
++.status { display: flex; align-items: flex-start; gap: 8px; padding: 12px 24px; border-top: .5px solid var(--gray-6); color: var(--green-11); font-size: 12px; overflow-wrap: anywhere; }
++.status svg { width: 16px; height: 16px; margin-top: 1px; }
++.status.error, #diagnostics { color: var(--red-11); }
++#diagnostics { padding: 12px 24px; background: var(--red-2); border-top: .5px solid var(--red-6); font-size: 12px; overflow-wrap: anywhere; }
++.panel-header { display: flex; align-items: center; gap: 8px; padding: 0 16px 12px; border-bottom: .5px solid var(--gray-6); }
++#module-frame { display: block; width: 100%; height: 440px; border: 0; background: var(--gray-1); }
++@media (min-width: 700px) {
++  body { width: auto; min-width: 700px; }
++  main { max-height: none; overflow: visible; padding-top: 24px; }
++  .app-header { padding-top: 24px; }
++  .module-list { columns: 2; column-gap: 40px; max-height: none; padding-right: 24px; }
++  .module-group { break-inside: avoid; padding-bottom: 20px; }
++  .module-group + .module-group { padding-top: 0; }
++  .empty-state { column-span: all; }
++  .module { min-height: 52px; }
++  .backup { min-height: 480px; }
++  #module-frame { height: 640px; }
++}
+diff --git a/unified-tools/popup.html b/unified-tools/popup.html
+index 8c0b05b..50c1074 100644
+--- a/unified-tools/popup.html
++++ b/unified-tools/popup.html
+@@ -7,21 +7,7 @@
+   <link rel="stylesheet" href="popup.css">
+ </head>
+ <body>
+-<main>
+-  <header><div class="mark" aria-hidden="true">MT</div><div><h1>My Tools</h1><p>このリポジトリの拡張機能を、ひとつに。</p></div><button id="options" class="subtle" type="button" aria-label="設定を大きな画面で開く">↗</button></header>
+-  <p id="status" role="status" aria-live="polite">設定を読み込み中…</p>
+-  <p id="diagnostics" role="alert" hidden></p>
+-  <section id="module-panel" hidden aria-labelledby="module-title"><div class="panel-header"><button id="module-back" type="button">← 一覧へ</button><h2 id="module-title"></h2></div><iframe id="module-frame" title="機能の設定" hidden></iframe></section>
+-  <section id="features" aria-labelledby="features-title">
+-    <div class="section-header"><h2 id="features-title">使う機能</h2><span id="module-count" class="note"></span></div>
+-    <label class="search-label" for="search">機能を探す</label><input id="search" type="search" placeholder="名前で検索" autocomplete="off">
+-    <div id="modules"></div><p id="no-results" hidden>一致する機能はありません。</p>
+-    <p class="note">切り替え後は、対象ページを再読み込みしてください。開始済みの保存は続きます。</p>
+-  </section>
+-  <section aria-labelledby="save-title"><h2 id="save-title">Instagramのページ一括保存</h2><p>Instagramを開いているタブで使えます。</p><button id="save" type="button" disabled>表示済みの投稿を一括保存</button></section>
+-  <section aria-labelledby="transfer-title"><h2 id="transfer-title">ブラウザを引っ越す</h2><p>全機能のON/OFF、対応する個別設定、Instagramの保存済み履歴をJSONで移せます。</p><p id="history-count" class="note"></p><div class="actions"><button id="export" type="button" disabled>設定・履歴を書き出す</button><label class="file-button" for="import-file">読み込む<input type="file" id="import-file" accept="application/json,.json" disabled></label></div><p class="note">読み込みでは既存の履歴を残して追加します。元のInstagram拡張から書き出した履歴も使えます。</p></section>
+-  <footer>進行中の保存・ログイン情報・保存済みファイル本体は移行されません。</footer>
+-</main>
++<div id="root"></div>
+ <script src="config.js"></script>
+ <script src="portable.js"></script>
+ <script src="modules/instagram/core.js"></script>
+diff --git a/unified-tools/popup.js b/unified-tools/popup.js
+deleted file mode 100644
+index f8d037a..0000000
+--- a/unified-tools/popup.js
++++ /dev/null
+@@ -1,107 +0,0 @@
+-"use strict";
+-const modules = globalThis.MyToolsConfig.modules;
+-const moduleList = document.querySelector('#modules');
+-for (const module of modules) {
+-  const row = document.createElement('div'); row.className = 'module'; row.dataset.name = `${module.name} ${module.id}`.toLowerCase();
+-  const label = document.createElement('label'); label.htmlFor = module.id;
+-  const name = document.createElement('strong'); name.textContent = module.name;
+-  const detail = document.createElement('span'); detail.textContent = module.description || '';
+-  label.append(name, detail); row.append(label);
+-  const badge = document.createElement('span'); badge.className = 'module-badge'; badge.id = `badge-${module.id}`; badge.hidden = true; badge.setAttribute('aria-label', `${module.name}の通知`); row.append(badge);
+-  const entry = module.popup || module.options;
+-  if (entry) {
+-    const open = document.createElement('button'); open.type = 'button'; open.textContent = '開く'; open.className = 'module-open'; open.dataset.module = module.id;
+-    open.setAttribute('aria-label', `${module.name}の画面を開く`);
+-    open.addEventListener('click', () => openModule(module, entry)); row.append(open);
+-  }
+-  const toggle = document.createElement('input'); toggle.type = 'checkbox'; toggle.id = module.id; toggle.disabled = true;
+-  toggle.setAttribute('aria-label', `${module.name}を有効にする`); row.append(toggle); moduleList.append(row);
+-}
+-const controls = [...document.querySelectorAll('button,input')];
+-function openModule(module, entry) {
+-  const frame = document.querySelector('#module-frame');
+-  document.querySelector('#module-title').textContent = module.name;
+-  frame.title = module.name; frame.src = chrome.runtime.getURL(`modules/${module.id}/${entry}`); frame.hidden = false;
+-  document.querySelector('#module-panel').hidden = false;
+-  document.querySelector('#features').hidden = true;
+-  document.querySelector('#module-back').focus();
+-}
+-document.querySelector('#module-back').addEventListener('click', () => {
+-  document.querySelector('#module-panel').hidden = true;
+-  document.querySelector('#features').hidden = false;
+-  const frame = document.querySelector('#module-frame'); frame.src = 'about:blank'; frame.hidden = true;
+-  document.querySelector('#search').focus();
+-});
+-document.querySelector('#search').addEventListener('input', event => {
+-  const query = event.target.value.trim().toLowerCase(); let count = 0;
+-  for (const row of moduleList.children) { row.hidden = !row.dataset.name.includes(query); if (!row.hidden) count++; }
+-  document.querySelector('#no-results').hidden = count !== 0;
+-});
+-const status = document.querySelector("#status");
+-let settings = null;
+-function show(message, error = false) { status.textContent = message; status.classList.toggle("error", error); }
+-function render(result) {
+-  if (result.settings) settings = result.settings;
+-  for (const { id } of modules) {
+-    document.getElementById(id).checked = settings?.enabled[id] === true;
+-    const badge = document.getElementById(`badge-${id}`); const text = result.badges?.[id]?.text || '';
+-    badge.textContent = text; badge.hidden = !text || !settings?.enabled[id];
+-  }
+-  document.querySelector('#module-count').textContent = `${modules.filter(module => settings?.enabled[module.id]).length} / ${modules.length} 有効`;
+-  const diagnostics = document.querySelector('#diagnostics');
+-  diagnostics.hidden = !result.errors?.length; diagnostics.textContent = (result.errors || []).join(' / ');
+-  document.querySelector("#history-count").textContent = `保存済み識別情報 ${result.historyCount ?? 0} 件`;
+-}
+-async function request(type, data = {}) {
+-  const result = await chrome.runtime.sendMessage({ type, ...data });
+-  if (!result?.ok) throw new Error(result?.error || "処理を完了できませんでした。拡張機能を読み込み直してください。");
+-  return result;
+-}
+-async function action(work) {
+-  show("処理中…");
+-  controls.forEach(el => { el.disabled = true; });
+-  try { await work(); }
+-  catch (error) {
+-    if (settings) for (const { id } of modules) document.getElementById(id).checked = settings.enabled[id];
+-    show(error.message, true);
+-  } finally {
+-    controls.forEach(el => { el.disabled = !settings && el.id !== "options"; });
+-    document.querySelector("#save").disabled = !settings?.enabled.instagram;
+-    for (const module of modules.filter(module => !module.worker && !module.matches?.length)) {
+-      const open = document.querySelector(`.module-open[data-module="${module.id}"]`);
+-      if (open) open.disabled = !settings?.enabled[module.id];
+-    }
+-  }
+-}
+-for (const { id } of modules) document.getElementById(id).addEventListener("change", event => {
+-  const enabled = event.target.checked;
+-  void action(async () => { render(await request("my-tools:set", { module: id, enabled })); show("設定を保存しました。対象ページを再読み込みしてください。"); });
+-});
+-document.querySelector("#options").addEventListener("click", () => chrome.runtime.openOptionsPage());
+-document.querySelector("#save").addEventListener("click", () => void action(async () => {
+-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+-  if (!tab?.id || new URL(tab.url || "about:blank").origin !== "https://www.instagram.com") throw new Error("Instagramのタブで実行してください。");
+-  await chrome.tabs.sendMessage(tab.id, { toolModule: "instagram", payload: { type: "ig-download-page" } });
+-  show("Instagram画面の右下で進捗をご確認ください。");
+-}));
+-document.querySelector("#export").addEventListener("click", () => void action(async () => {
+-  const { backup } = await request("my-tools:export");
+-  const value = MyToolsTransfer.parseBackup(backup);
+-  const url = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2)], { type: "application/json" }));
+-  const link = document.createElement("a"); link.href = url; link.download = "my-tools-backup.json";
+-  link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+-  show("設定・履歴を書き出しました。移行先のMy Toolsで読み込んでください。");
+-}));
+-document.querySelector("#import-file").addEventListener("change", event => {
+-  const file = event.target.files[0];
+-  if (!file) return;
+-  void action(async () => {
+-    if (file.size > MyToolsTransfer.MAX_BYTES) throw new Error("移行ファイルは20MiB以下にしてください。");
+-    let parsed;
+-    try { parsed = JSON.parse(await file.text()); } catch { throw new Error("JSONファイルを読み込めませんでした。"); }
+-    const backup = MyToolsTransfer.parseBackup(parsed);
+-    render(await request("my-tools:import", { backup }));
+-    show("履歴を追加しました。設定も復元した場合は対象ページを再読み込みしてください。");
+-  }).finally(() => { event.target.value = ""; });
+-});
+-void action(async () => { render(await request("my-tools:get")); show("このブラウザの設定です。"); });
+diff --git a/unified-tools/runtime.js b/unified-tools/runtime.js
+index c9a6eac..be2d5a8 100644
+--- a/unified-tools/runtime.js
++++ b/unified-tools/runtime.js
+@@ -10,22 +10,55 @@
+   let config, settings, ready, startupError, boundary = Promise.resolve(), offscreenOpening;
+   let presentationWrites = Promise.resolve();
+   const pendingDownloads = new Map(), namedDownloads = new Map(), downloadStarts = new Map();
++  const filenameWatches = new Set();
++  let filenameBrokerAttached = false;
+   const downloadURL = value => { try { const url = new URL(value); url.hash = ''; return url.href; } catch { return String(value); } };
++  function attachFilenameBroker() {
++    if (filenameBrokerAttached || !native.downloads?.onDeterminingFilename) return;
++    native.downloads.onDeterminingFilename.addListener(filenameBroker);
++    filenameBrokerAttached = true;
++  }
++  function detachFilenameBroker() {
++    if (!filenameBrokerAttached || filenameWatches.size) return;
++    native.downloads.onDeterminingFilename.removeListener(filenameBroker);
++    filenameBrokerAttached = false;
++  }
++  function watchFilename(request) {
++    if (!native.downloads?.onDeterminingFilename) return;
++    filenameWatches.add(request);
++    attachFilenameBroker();
++    request.watchTimer = setTimeout(() => {
++      request.watchTimer = null;
++      filenameWatches.delete(request);
++      detachFilenameBroker();
++    }, 30000);
++    request.watchTimer?.unref?.();
++  }
++  function releaseFilenameWatch(request) {
++    if (request) {
++      if (request.watchTimer) clearTimeout(request.watchTimer);
++      request.watchTimer = null;
++      filenameWatches.delete(request);
++    }
++    detachFilenameBroker();
++  }
+   function startDownload(module, options) {
+     const url = downloadURL(options?.url);
+     const previous = downloadStarts.get(url) || Promise.resolve();
+     const started = previous.catch(() => {}).then(() => new Promise((resolve, reject) => {
+-      const request = { module: module.id, options, finished: false };
++      const request = { module: module.id, options, finished: false, watchTimer: null };
+       pendingDownloads.set(url, request);
++      watchFilename(request);
+       const finish = downloadId => {
+         const error = native.runtime.lastError;
+         if (pendingDownloads.get(url) === request) pendingDownloads.delete(url);
+-        if (error) { reject(new Error(error.message)); return; }
+-        if (!request.finished && Number.isInteger(downloadId)) namedDownloads.set(downloadId, request);
++        if (error) { releaseFilenameWatch(request); reject(new Error(error.message)); return; }
++        if (!Number.isInteger(downloadId)) { releaseFilenameWatch(request); resolve(downloadId); return; }
++        if (!request.finished) namedDownloads.set(downloadId, request);
+         resolve(downloadId);
+       };
+       try { native.downloads.download(options, finish); }
+-      catch (error) { pendingDownloads.delete(url); reject(error); }
++      catch (error) { pendingDownloads.delete(url); releaseFilenameWatch(request); reject(error); }
+     }));
+     downloadStarts.set(url, started);
+     started.finally(() => { if (downloadStarts.get(url) === started) downloadStarts.delete(url); }).catch(() => {});
+@@ -154,7 +187,11 @@
+     return { ok: true, value: await adapter.storage.local[message.operation](input) };
+   }
+   function filenameBroker(item, suggest) {
+-    const request = item.byExtensionId === native.runtime.id ? namedDownloads.get(item.id) || pendingDownloads.get(downloadURL(item.url)) : undefined;
++    // Never participate in a download that My Tools did not start. Chrome warns
++    // when two extensions suggest different filenames, and My Tools cannot know
++    // which name another extension or the page will choose.
++    if (item.byExtensionId !== native.runtime.id) { suggest(); return true; }
++    const request = namedDownloads.get(item.id) || pendingDownloads.get(downloadURL(item.url));
+     const claims = [];
+     const tasks = [...filenameListeners].flatMap(([id, listeners]) => [...listeners].map(listener => new Promise(resolve => {
+       let settled = false;
+@@ -174,6 +211,7 @@
+       else if (request?.options?.filename) suggest({ filename: request.options.filename, ...(request.options.conflictAction ? { conflictAction: request.options.conflictAction } : {}) });
+       else suggest();
+       if (request) { request.finished = true; namedDownloads.delete(item.id); }
++      releaseFilenameWatch(request);
+     });
+     return true;
+   }
+@@ -232,12 +270,24 @@
+     }
+     if (native.action) {
+       scoped.action = Object.create(native.action);
+-      for (const method of ['setBadgeText', 'setBadgeBackgroundColor']) scoped.action[method] = (value, callback) => {
++      for (const method of ['setBadgeText', 'setBadgeBackgroundColor', 'setBadgeTextColor']) scoped.action[method] = (value, callback) => {
+         badges.set(id, { ...badges.get(id), ...value });
+         const promise = persistPresentation().then(updateBadge);
+         return deliver(promise, callback);
+       };
+     }
++    if (native.scripting) {
++      scoped.scripting = Object.create(native.scripting);
++      scoped.scripting.executeScript = (injection, callback) => {
++        let value = injection;
++        if (value && typeof value === 'object' && Array.isArray(value.files)) {
++          const prefix = `modules/${id}/`;
++          const files = value.files.map(file => typeof file === 'string' && !file.startsWith('modules/') && file !== 'config.js' && file !== 'client.js' ? prefix + file : file);
++          value = { ...value, files: value.world === 'MAIN' ? files : [...new Set(['config.js', 'client.js', ...files])] };
++        }
++        return deliver(Promise.resolve().then(() => native.scripting.executeScript(value)), callback);
++      };
++    }
+     if (native.contextMenus) {
+       scoped.contextMenus = Object.create(native.contextMenus);
+       const menuPrefix = `my-tools:${id}:`;
+@@ -271,7 +321,11 @@
+     }
+     if (native.webRequest) {
+       scoped.webRequest = Object.create(native.webRequest);
+-      scoped.webRequest.onBeforeRequest = { addListener(listener, ...args) { native.webRequest.onBeforeRequest.addListener((...event) => { if (enabled(id)) return listener(...event); }, ...args); } };
++      for (const name of ['onBeforeRequest', 'onHeadersReceived']) {
++        const event = native.webRequest[name];
++        if (!event) continue;
++        scoped.webRequest[name] = { addListener(listener, ...args) { event.addListener((...eventArgs) => { if (enabled(id)) return listener(...eventArgs); }, ...args); } };
++      }
+     }
+     for (const name of ['onInstalled', 'onStartup']) if (native.runtime[name]) scoped.runtime[name] = {
+       addListener(listener) { native.runtime[name].addListener((...args) => { ready.then(() => { if (id !== 'sushida' || enabled(id)) return listener(...args); }).catch(() => report('機能の初期化に失敗しました。拡張機能を読み込み直してください。')); }); }
+@@ -316,9 +370,13 @@
+       await apply(settingsFrom((await native.storage.local.get(settingsKey))[settingsKey]));
+     });
+     ready.catch(error => { startupError = error; });
+-    native.downloads?.onDeterminingFilename?.addListener(filenameBroker);
+     native.downloads?.onChanged?.addListener(delta => {
+-      if (['complete', 'interrupted'].includes(delta.state?.current) || delta.error) namedDownloads.delete(delta.id);
++      if (!['complete', 'interrupted'].includes(delta.state?.current) && !delta.error) return;
++      const request = namedDownloads.get(delta.id);
++      if (request) {
++        namedDownloads.delete(delta.id);
++        releaseFilenameWatch(request);
++      }
+     });
+     native.runtime.onMessage.addListener((message, sender, respond) => {
+       if (message?.type === 'my-tools:download') {
+diff --git a/unified-tools/tests/all-browser.cjs b/unified-tools/tests/all-browser.cjs
+index 4386f69..8962074 100644
+--- a/unified-tools/tests/all-browser.cjs
++++ b/unified-tools/tests/all-browser.cjs
+@@ -8,6 +8,7 @@ const { workHtml } = require('../../momoniji-manga-viewer/tests/fixtures.cjs');
+ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+ module.exports = async function verifyAll({ context, worker, manager, config, check, root, extensionId, image, clip, tracks, output }) {
+   const rpc = message => manager.evaluate(message => chrome.runtime.sendMessage(message), message);
++  assert.equal(await worker.evaluate(() => chrome.downloads.onDeterminingFilename.hasListeners()), false, 'My Tools must not register a filename listener while idle');
+   const tabRPC = async (page, id, payload) => {
+     const tabId = await worker.evaluate(async url => (await chrome.tabs.query({})).find(tab => tab.url === url)?.id, page.url());
+     return worker.evaluate(async ({ tabId, id, payload }) => (await chrome.scripting.executeScript({ target: { tabId }, world: 'ISOLATED', func: (id, payload) => chrome.runtime.sendMessage({ toolModule: id, payload }), args: [id, payload] }))[0].result, { tabId, id, payload });
+@@ -35,7 +36,7 @@ module.exports = async function verifyAll({ context, worker, manager, config, ch
+     await manager.locator(`#${module.id}`).check(); await manager.waitForFunction(id => !document.getElementById(id).disabled, module.id);
+     assert.equal((await rpc({ type: 'my-tools:get' })).settings.enabled[module.id], true);
+   }
+-  check('All 19 actual manager toggles unregister and re-register only their own content scripts');
++  check('All 20 actual manager toggles unregister and re-register only their own content scripts');
+   const frames = config.modules.filter(module => module.popup || module.options);
+   const frameErrors = [];
+   manager.on('pageerror', error => frameErrors.push(error.message));
+@@ -51,7 +52,7 @@ module.exports = async function verifyAll({ context, worker, manager, config, ch
+   assert.deepEqual(frameErrors, []); check(`All ${frames.length} original popup/options screens load inside manager without script errors`);
+   await manager.locator('#search').fill('gofile'); assert.equal(await manager.locator('#modules .module:visible').count(), 1);
+   await manager.locator('#search').fill('存在しない検索語'); assert.ok(await manager.locator('#no-results').isVisible()); await manager.locator('#search').fill('');
+-  check('Manager search filters 19 modules and displays empty state');
++  check('Manager search filters 20 modules and displays empty state');
+   const isolation = await worker.evaluate(async () => {
+     const high = MyToolsRuntime.moduleChrome('instagramhq'), kltra = MyToolsRuntime.moduleChrome('kltra');
+     await high.storage.local.set({ enabled: false }); await kltra.storage.local.set({ enabled: true });
+@@ -167,4 +168,5 @@ module.exports = async function verifyAll({ context, worker, manager, config, ch
+   await manager.screenshot({ path: path.join(output, 'all-modules.png'), fullPage: true });
+   fs.writeFileSync(path.join(output, 'module-coverage.json'), JSON.stringify({ evidence, unverified: ['live external sites', 'user Chrome installation', 'Birdscore score fetch and keyboard dispatch', 'original photo download bytes for badspi/smashnet', 'full remote translation and Google Photos album RPC'] }, null, 2));
+   for (const page of pages) await page.close();
++  assert.equal(await worker.evaluate(() => chrome.downloads.onDeterminingFilename.hasListeners()), false, 'My Tools must detach the filename listener after its downloads finish');
+ };
+diff --git a/unified-tools/tests/browser.cjs b/unified-tools/tests/browser.cjs
+index a6600a7..df58175 100644
+--- a/unified-tools/tests/browser.cjs
++++ b/unified-tools/tests/browser.cjs
+@@ -55,12 +55,12 @@ async function main() {
+     await manager.goto(`chrome-extension://${extensionId}/popup.html`);
+     await manager.locator('#instagram:not([disabled])').waitFor();
+     const rpc = message => manager.evaluate(message => chrome.runtime.sendMessage(message), message);
+-    const initial = await rpc({ type: 'my-tools:get' }); assert.equal(initial.ok, true); assert.deepEqual(initial.settings.enabled, defaults); assert.equal(fixtureConfig.modules.length, 19); assert.equal(await manager.locator('#modules input[type=checkbox]').count(), 19);
++    const initial = await rpc({ type: 'my-tools:get' }); assert.equal(initial.ok, true); assert.deepEqual(initial.settings.enabled, defaults); assert.equal(fixtureConfig.modules.length, 20); assert.equal(await manager.getByRole('switch').count(), 20);
+     let registrations = await worker.evaluate(() => chrome.scripting.getRegisteredContentScripts()); assert.equal(registrations.length, fixtureConfig.registrations.length);
+     for (const expected of fixtureConfig.registrations) { const actual = registrations.find(r => r.id === expected.id); assert.ok(actual, expected.id); assert.deepEqual(actual.js, [...expected.js]); assert.equal(actual.world, expected.world || 'ISOLATED'); }
+     assert.deepEqual(registrations.find(r => r.id === 'tools-instagram-1').js, ['config.js', 'client.js', 'modules/instagram/__isolated__/core.js', 'modules/instagram/instagram-api.js', 'modules/instagram/content.js']);
+     assert.equal(registrations.find(r => r.id === 'tools-instagram-0').runAt, 'document_start');
+-    assert.equal(registrations.find(r => r.id === 'tools-gofile-1').runAt, 'document_idle'); check('All 19 module controls and every ordered MAIN/ISOLATED registration exist');
++    assert.equal(registrations.find(r => r.id === 'tools-gofile-1').runAt, 'document_idle'); check('All 20 module controls and every ordered MAIN/ISOLATED registration exist');
+     await worker.evaluate(value => chrome.storage.local.set({ gofilePrivateCanary: { url: `https://file1.gofile.io/${value}`, token: value } }), canary);
+     const ig = await context.newPage(); await ig.goto('https://www.instagram.com/p/BA/');
+     const single = () => ig.getByRole('button', { name: 'この画像・動画を保存', exact: true }); await single().waitFor();
+@@ -112,18 +112,57 @@ async function main() {
+     await manager.locator('#gofile').check(); await manager.getByRole('status').filter({ hasText: '設定を保存しました' }).waitFor();
+     await manager.reload(); await manager.locator('#instagram:not([disabled])').waitFor();
+     await manager.screenshot({ path: path.join(output, 'popup.png'), fullPage: true });
+-    await manager.setViewportSize({ width: 380, height: 850 });
++    await manager.setViewportSize({ width: 380, height: 600 });
+     await manager.screenshot({ path: path.join(output, 'popup-narrow.png'), fullPage: true }); check('Generated common management screen rendered and captured');
++    assert.equal(await manager.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
++    const typography = await manager.locator('main *').evaluateAll(elements => [...new Set(elements.filter(el => el.getClientRects().length && !el.closest('svg') && [...el.childNodes].some(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim())).map(el => getComputedStyle(el).fontSize))]);
++    assert.ok(typography.length <= 3, typography.join(', ')); assert.ok(typography.every(size => parseFloat(size) >= 12));
++    await manager.getByRole('tab', { name: '機能', exact: true }).focus(); await manager.keyboard.press('ArrowRight');
++    await manager.getByRole('tab', { name: 'バックアップ', exact: true }).waitFor();
++    await manager.waitForFunction(() => document.querySelector('[role="tab"][data-state="active"]').textContent.includes('バックアップ'));
++    assert.equal(await manager.locator('#modules').isVisible(), false);
++    await manager.screenshot({ path: path.join(output, 'backup-narrow.png'), fullPage: true });
++    await manager.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
++    await manager.screenshot({ path: path.join(output, 'backup-dark.png'), fullPage: true });
++    await manager.getByRole('tab', { name: '機能', exact: true }).click();
++    await manager.screenshot({ path: path.join(output, 'popup-dark.png'), fullPage: true });
++    await manager.emulateMedia({ colorScheme: 'light' });
++    await manager.getByRole('tab', { name: 'バックアップ', exact: true }).click();
++    check('Compact UI fits narrow viewport with three readable font sizes, keyboard tabs and dark mode');
+     const downloadEvent = manager.waitForEvent('download'); await manager.locator('#export').click(); const backupDownload = await downloadEvent; const file = path.join(output, 'backup.json'); await backupDownload.saveAs(file); const exported = JSON.parse(fs.readFileSync(file, 'utf8')); assert.equal(exported.format, 'nematatu-tools'); assert.doesNotMatch(JSON.stringify(exported), /synthetic-gofile|https:|token|jobs/); check('Actual export button downloads allowlisted JSON');
+     await manager.locator('#import-file').setInputFiles({ name: 'legacy.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(legacy)) }); await manager.getByRole('status').filter({ hasText: '履歴を追加しました' }).waitFor(); check('Actual file input imports tagged legacy JSON');
+-    const savedBeforeBulk = (await worker.evaluate(() => chrome.downloads.search({ state: 'complete' }))).length;
++    const beforeInvalid = (await rpc({ type: 'my-tools:export' })).backup;
++    await manager.locator('#import-file').setInputFiles({ name: 'invalid.json', mimeType: 'application/json', buffer: Buffer.from('{') });
++    await manager.getByRole('alert').filter({ hasText: 'JSON' }).waitFor();
++    assert.deepEqual((await rpc({ type: 'my-tools:export' })).backup, beforeInvalid);
++    check('Malformed UI import reports error and preserves settings and saved history');
++    await manager.getByRole('tab', { name: '機能', exact: true }).click();
++    await manager.evaluate(() => {
++      const original = chrome.runtime.sendMessage.bind(chrome.runtime);
++      chrome.runtime.sendMessage = message => {
++        if (message.type !== 'my-tools:set') return original(message);
++        chrome.runtime.sendMessage = original;
++        return Promise.resolve({ ok: false, error: '設定を保存できませんでした。' });
++      };
++    });
++    await manager.locator('#instagram').click();
++    await manager.getByRole('alert').filter({ hasText: '設定を保存できませんでした' }).waitFor();
++    assert.equal(await manager.locator('#instagram').getAttribute('aria-checked'), 'true');
++    assert.equal((await rpc({ type: 'my-tools:get' })).settings.enabled.instagram, true);
++    check('Failed switch update restores checked state without modifying persisted settings');
++    const beforeBulkIds = new Set((await worker.evaluate(() => chrome.downloads.search({ state: 'complete' }))).map(item => item.id));
+     await worker.evaluate(tabId => chrome.tabs.update(tabId, { active: true }), tabId);
+     await manager.locator('#save').click();
+     await manager.getByRole('status').filter({ hasText: 'Instagram画面の右下で進捗をご確認ください' }).waitFor();
+-    let afterBulk;
+-    for (let i = 0; i < 100; i++) { afterBulk = await worker.evaluate(() => chrome.downloads.search({ state: 'complete' })); if (afterBulk.length > savedBeforeBulk) break; await delay(100); }
+-    assert.equal(afterBulk.length, savedBeforeBulk + 1);
+-    assert.deepEqual(fs.readFileSync(afterBulk.find(item => !completed.some(previous => previous.id === item.id) && !item.filename.endsWith('.json')).filename), clip);
++    let bulkDownload;
++    for (let i = 0; i < 150; i++) {
++      const current = await worker.evaluate(() => chrome.downloads.search({ state: 'complete' }));
++      bulkDownload = current.find(item => !beforeBulkIds.has(item.id) && item.fileSize === clip.length);
++      if (bulkDownload) break;
++      await delay(100);
++    }
++    assert.ok(bulkDownload, 'Instagram bulk save did not produce a new MP4 download');
++    assert.deepEqual(fs.readFileSync(bulkDownload.filename), clip);
+     check('Actual common Instagram bulk-save button routes to active content and completes real MP4 download');
+     const finalHistory = (await rpc({ type: 'my-tools:export' })).backup.instagram.savedMedia;
+     await context.close(); context = await launch(); worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
+diff --git a/unified-tools/tests/build.test.cjs b/unified-tools/tests/build.test.cjs
+index e50cdea..f04d6c0 100644
+--- a/unified-tools/tests/build.test.cjs
++++ b/unified-tools/tests/build.test.cjs
+@@ -8,7 +8,7 @@ const crypto = require('node:crypto');
+ const {execFileSync} = require('node:child_process');
+ const {pathToFileURL} = require('node:url');
+ const root = path.resolve(__dirname,'../..');
+-const rootFiles = ['build.mjs','modules.mjs','identity.json','runtime.js','client.js','portable.js','transfer.js','offscreen-host.js','popup.html','popup.js','popup.css'];
++const rootFiles = ['build.mjs','modules.mjs','identity.json','runtime.js','client.js','portable.js','transfer.js','offscreen-host.js','popup.html','popup.jsx','popup.css'];
+ const registry = () => import(pathToFileURL(path.join(root,'unified-tools/modules.mjs')).href).then(value=>value.modules);
+ async function files(folder, prefix='') {
+  const result=[];
+@@ -29,6 +29,7 @@ function run(target, workspace=root) {
+ async function fixture(temp) {
+  const workspace=path.join(temp,'workspace'),tool=path.join(workspace,'unified-tools');
+  await fs.mkdir(tool,{recursive:true});
++ await fs.symlink(path.join(root,'unified-tools/node_modules'),path.join(tool,'node_modules'),'dir');
+  for(const file of rootFiles)await fs.copyFile(path.join(root,'unified-tools',file),path.join(tool,file));
+  for(const module of await registry()){
+   for(const file of ['manifest.json',...module.files]) {
+@@ -38,7 +39,7 @@ async function fixture(temp) {
+  }
+  return workspace;
+ }
+-test('all 19 modules build deterministically with valid manifest and complete resource graph',async()=>{
++test('all 20 modules build deterministically with valid manifest and complete resource graph',async()=>{
+  const temp=await fs.mkdtemp(path.join(os.tmpdir(),'my-tools-build-'));
+  try {
+  const a=path.join(temp,'a'),b=path.join(temp,'b');run(a);run(b);
+@@ -55,7 +56,10 @@ test('all 19 modules build deterministically with valid manifest and complete re
+   if(file.endsWith('.mjs'))for(const match of source.toString().matchAll(/(?:from\s*|import\s*)["'](\.[^"']+)["']/g))assert.ok(list.includes(path.normalize(path.join(path.dirname(file),match[1]))),`${file} import ${match[1]}`);
+  }
+  const manifest=JSON.parse(await fs.readFile(path.join(a,'manifest.json'))),config=configuration(a);
+- assert.equal(config.modules.length,19);assert.equal(manifest.manifest_version,3);assert.equal(manifest.content_scripts,undefined);assert.equal(manifest.incognito,'not_allowed');assert.equal(manifest.minimum_chrome_version,'120');
++ const licenses=await fs.readFile(path.join(a,'THIRD_PARTY_LICENSES.txt'),'utf8');
++ for(const name of ['@radix-ui/react-tabs','@radix-ui/react-switch','@radix-ui/colors','lucide-react','react-dom'])assert.ok(licenses.includes(name),name);
++ assert.match(licenses,/Permission is hereby granted/);assert.match(licenses,/WorkOS/);assert.match(licenses,/Lucide/);
++ assert.equal(config.modules.length,20);assert.equal(manifest.manifest_version,3);assert.equal(manifest.content_scripts,undefined);assert.equal(manifest.incognito,'not_allowed');assert.equal(manifest.minimum_chrome_version,'120');
+  for(const permission of ['scripting','alarms','offscreen','contextMenus','webRequest'])assert.ok(manifest.permissions.includes(permission));
+  assert.ok(manifest.host_permissions.includes('https://*/*'));
+  assert.equal(manifest.optional_host_permissions,undefined);
+@@ -83,7 +87,7 @@ test('all 19 modules build deterministically with valid manifest and complete re
+  }
+  const worker=await fs.readFile(path.join(a,'worker.js'),'utf8');
+  for(const module of sourceModules.filter(module=>module.worker))assert.ok(worker.includes(`modules/${module.id}/${module.worker}`));
+- const offscreen=await fs.readFile(path.join(a,'offscreen.html'),'utf8');assert.equal([...offscreen.matchAll(/<iframe /g)].length,3);assert.ok(offscreen.indexOf('offscreen-host.js')<offscreen.indexOf('<iframe'));
++ const offscreen=await fs.readFile(path.join(a,'offscreen.html'),'utf8');assert.equal([...offscreen.matchAll(/<iframe /g)].length,4);assert.ok(offscreen.indexOf('offscreen-host.js')<offscreen.indexOf('<iframe'));
+  run(a);assert.deepEqual(list,await files(a));
+  }finally{await fs.rm(temp,{recursive:true,force:true});}
+ });
+@@ -119,7 +123,7 @@ test('failed generation preserves previous output and source-manifest additions
+  run(output,workspace);await fs.writeFile(path.join(output,'sentinel.txt'),'previous working extension');const before=await snapshot();
+  const module=(await registry()).find(module=>module.id==='gofile'),missing=path.join(workspace,module.source,'content.js'),original=await fs.readFile(missing);await fs.rm(missing);
+  assert.throws(()=>run(output,workspace),/ENOENT/);assert.deepEqual(await snapshot(),before);assert.deepEqual((await fs.readdir(temp)).sort(),['output','workspace']);await fs.writeFile(missing,original);
+- const invalid=path.join(tool,'popup.js');await fs.writeFile(invalid,'function broken( {');assert.throws(()=>run(output,workspace),/SyntaxError/);assert.deepEqual(await snapshot(),before);await fs.copyFile(path.join(root,'unified-tools/popup.js'),invalid);
++ const invalid=path.join(tool,'popup.jsx');await fs.writeFile(invalid,'function broken( {');assert.throws(()=>run(output,workspace),/ERROR|Expected|Unexpected/);assert.deepEqual(await snapshot(),before);await fs.copyFile(path.join(root,'unified-tools/popup.jsx'),invalid);
+  const added=path.join(workspace,'new-extension');await fs.mkdir(added);await fs.writeFile(path.join(added,'manifest.json'),'{}');assert.throws(()=>run(output,workspace),/Source manifests and module registry differ/);assert.deepEqual(await snapshot(),before);await fs.rm(added,{recursive:true});
+  run(output,workspace);assert.ok(!(await files(output)).includes('sentinel.txt'));assert.deepEqual((await fs.readdir(temp)).sort(),['output','workspace']);
+  }finally{await fs.rm(temp,{recursive:true,force:true});}
+diff --git a/unified-tools/tests/client.test.cjs b/unified-tools/tests/client.test.cjs
+index 1812c21..6b71739 100644
+--- a/unified-tools/tests/client.test.cjs
++++ b/unified-tools/tests/client.test.cjs
+@@ -6,7 +6,7 @@ function event() { const listeners = new Set(); return { listeners, addListener:
+ function fixture(page = true) {
+   const onMessage = event(), onChanged = event(), calls = [];
+   const data = { local: {}, sync: {}, session: {} };
+-  const chrome = { runtime: { id: 'native', getURL: path => 'chrome-extension://native/' + path, onMessage, sendMessage: (...args) => { calls.push(args); const cb = args.at(-1); if (typeof cb === 'function') cb({ok:true,value:{safe:3}}); else return Promise.resolve({ok:true,value:{safe:3}}); } }, storage: { onChanged }, tabs: { sendMessage: (...args) => { calls.push(args); return Promise.resolve(); } } };
++  const chrome = { runtime: { id: 'native', getURL: path => 'chrome-extension://native/' + path, onMessage, sendMessage: (...args) => { calls.push(args); const cb = args.at(-1); if (typeof cb === 'function') cb({ok:true,value:{safe:3}}); else return Promise.resolve({ok:true,value:{safe:3}}); } }, storage: { onChanged }, tabs: { sendMessage: (...args) => { calls.push(args); return Promise.resolve(); }, create: async value => { calls.push(['create', value]); return {id:1}; } } };
+   for (const area of Object.keys(data)) chrome.storage[area] = {
+     get(query, callback) { const keys = typeof query === 'string' ? [query] : Array.isArray(query) ? query : query && Object.keys(query); const result = query && !Array.isArray(query) && typeof query === 'object' ? {...query} : {}; for (const [key,value] of Object.entries(data[area])) if (!keys || keys.includes(key)) result[key]=value; if(callback)callback(result);else return Promise.resolve(result); },
+     set(value, callback) { Object.assign(data[area], value); if(callback)callback();else return Promise.resolve(); },
+@@ -89,6 +89,11 @@ test('manager Instagram bulk request is accepted without opening other module me
+  }
+  assert.deepEqual(seen,['ig-download-page']);
+ });
++test('module settings open their own options page instead of the manager',async()=>{
++ const f=fixture();f.modules[0].options='options.html';const adapter=f.client.moduleChrome('a');
++ await adapter.runtime.openOptionsPage();
++ assert.deepEqual(JSON.parse(JSON.stringify(f.calls.at(-1))),['create',{url:'chrome-extension://native/modules/a/options.html'}]);
++});
+ test('extension pages route download names through the privileged bridge and preserve callback errors',async()=>{
+  const f=fixture();f.chrome.downloads={download(){throw Error('unscoped download');}};
+  const adapter=f.client.moduleChrome('a');
+diff --git a/unified-tools/tests/portable.test.cjs b/unified-tools/tests/portable.test.cjs
+index 945edc1..bd4b492 100644
+--- a/unified-tools/tests/portable.test.cjs
++++ b/unified-tools/tests/portable.test.cjs
+@@ -17,6 +17,6 @@ test('legacy two-module backup accepts registry expansion and unknown modules st
+   const legacy = { format: 'nematatu-tools', version: 1, settings: { enabled: { instagram: false, gofile: true } }, instagram: { savedMedia: {} } };
+   assert.deepEqual(transfer.parseBackup(legacy).settings.enabled, legacy.settings.enabled);
+   const current = transfer.makeBackup({ enabled: Object.fromEntries(modules.map(module => [module.id, true])) }, {});
+-  assert.equal(Object.keys(current.settings.enabled).length, 19);
++  assert.equal(Object.keys(current.settings.enabled).length, 20);
+   assert.throws(() => transfer.parseBackup({ ...legacy, settings: { enabled: { unknown: true } } }));
+ });
+diff --git a/unified-tools/tests/runtime.test.cjs b/unified-tools/tests/runtime.test.cjs
+index f85a816..d576ffd 100644
+--- a/unified-tools/tests/runtime.test.cjs
++++ b/unified-tools/tests/runtime.test.cjs
+@@ -7,14 +7,14 @@ const modules=[{id:'instagram',matches:['https://www.instagram.com/*'],startType
+ const config={modules,registrations:modules.map(module=>({id:'tools-'+module.id+'-0',module:module.id,matches:module.matches,js:['client.js'],world:'ISOLATED',runAt:'document_idle'}))};
+ function fixture(initial={},options={}){
+  const store={local:{...initial.local},sync:{...initial.sync},session:{...initial.session}};
+- const writes=[],imports=[],menuCalls=[],tabMessages=[];let scripts=[{id:'unrelated'}],fail=false,history={'m:1:2:image':1},alive=[],created=0,activeContext=false;
+- const chrome={runtime:{id:'native',getURL:path=>'chrome-extension://native/'+path,onMessage:event(),onInstalled:event(),onStartup:event(),getContexts:async()=>activeContext?[{contextType:'OFFSCREEN_DOCUMENT'}]:[],sendMessage:async message=>message.type==='my-tools:offscreen-probe'?{ready:alive}:undefined},storage:{onChanged:event()},scripting:{getRegisteredContentScripts:async()=>scripts,unregisterContentScripts:async({ids})=>{scripts=scripts.filter(script=>!ids.includes(script.id));},registerContentScripts:async next=>{if(fail)throw Error('failed');scripts.push(...next);}},tabs:{query:async()=>options.tabs || [{id:1,url:'https://photos.google.com/x'}],sendMessage:async(...args)=>tabMessages.push(args)},action:{setBadgeText:async value=>menuCalls.push(['badge',value]),setBadgeBackgroundColor:async()=>{}},downloads:{onDeterminingFilename:event()},contextMenus:{create:(value,callback)=>{menuCalls.push(['create',value]);callback?.();return value.id;},remove:(id,callback)=>{menuCalls.push(['remove',id]);callback?.();},update:(id,value,callback)=>{menuCalls.push(['update',id,value]);callback?.();},onClicked:event()},alarms:{create:async(name,value)=>menuCalls.push(['alarm',name,value]),get:async name=>({name}),clear:async()=>true,onAlarm:event()},webRequest:{onBeforeRequest:event()},offscreen:{createDocument:async()=>{created++;activeContext=true;alive=modules.filter(module=>module.offscreen).map(module=>module.id);}}};
++ const writes=[],imports=[],menuCalls=[],tabMessages=[],executeCalls=[];let scripts=[{id:'unrelated'}],fail=false,history={'m:1:2:image':1},alive=[],created=0,activeContext=false;
++ const chrome={runtime:{id:'native',getURL:path=>'chrome-extension://native/'+path,onMessage:event(),onInstalled:event(),onStartup:event(),getContexts:async()=>activeContext?[{contextType:'OFFSCREEN_DOCUMENT'}]:[],sendMessage:async message=>message.type==='my-tools:offscreen-probe'?{ready:alive}:undefined},storage:{onChanged:event()},scripting:{getRegisteredContentScripts:async()=>scripts,unregisterContentScripts:async({ids})=>{scripts=scripts.filter(script=>!ids.includes(script.id));},registerContentScripts:async next=>{if(fail)throw Error('failed');scripts.push(...next);},executeScript:async value=>{executeCalls.push(value);return [{result:1}];}},tabs:{query:async()=>options.tabs || [{id:1,url:'https://photos.google.com/x'}],sendMessage:async(...args)=>tabMessages.push(args)},action:{setBadgeText:async value=>menuCalls.push(['badge',value]),setBadgeBackgroundColor:async()=>{}},downloads:{onDeterminingFilename:event(),onChanged:event()},contextMenus:{create:(value,callback)=>{menuCalls.push(['create',value]);callback?.();return value.id;},remove:(id,callback)=>{menuCalls.push(['remove',id]);callback?.();},update:(id,value,callback)=>{menuCalls.push(['update',id,value]);callback?.();},onClicked:event()},alarms:{create:async(name,value)=>menuCalls.push(['alarm',name,value]),get:async name=>({name}),clear:async()=>true,onAlarm:event()},webRequest:{onBeforeRequest:event(),onHeadersReceived:event()},offscreen:{createDocument:async()=>{created++;activeContext=true;alive=modules.filter(module=>module.offscreen).map(module=>module.id);}}};
+  for(const area of ['local','sync','session'])chrome.storage[area]={get:(query,callback)=>{const keys=typeof query==='string'?[query]:Array.isArray(query)?query:query&&Object.keys(query);const value=query&&!Array.isArray(query)&&typeof query==='object'?{...query}:{};for(const [key,item]of Object.entries(store[area]))if(!keys||keys.includes(key))value[key]=item;if(callback)callback(value);else return Promise.resolve(value);},set:(value,callback)=>{writes.push({area,value});Object.assign(store[area],value);if(callback)callback();else return Promise.resolve();},remove:(keys,callback)=>{for(const name of Array.isArray(keys)?keys:[keys])delete store[area][name];callback?.();return Promise.resolve();},setAccessLevel:async()=>{}};
+  const context=vm.createContext({chrome,URL,setTimeout:options.setTimeout || setTimeout,clearTimeout,Promise,IGMediaHistory:{read:async()=>({...history}),merge:async map=>{imports.push(map);history={...history,...map};}},MyToolsTransfer:{configure(){},parseBackup:backup=>{if(backup.bad)throw Error('invalid backup');return backup;},makeBackup:(settings,history)=>({settings,instagram:{savedMedia:history}})}});
+  for(const file of ['client.js','runtime.js'])vm.runInContext(fs.readFileSync(require.resolve('../'+file),'utf8'),context);
+  const sender={id:'native',url:chrome.runtime.getURL('popup.html')};
+  function send(message,from=sender){return new Promise((resolve,reject)=>{let claimed=false;for(const listener of chrome.runtime.onMessage.listeners){const returned=listener(message,from,resolve);if(returned===true)claimed=true;}if(!claimed)reject(Error('message unclaimed'));});}
+- return {chrome,context,store,writes,imports,menuCalls,tabMessages,send,boot:()=>context.MyToolsRuntime.boot(config),adapter:id=>context.MyToolsRuntime.moduleChrome(id),scripts:()=>scripts,fail:()=>{fail=true;},created:()=>created};
++ return {chrome,context,store,writes,imports,menuCalls,tabMessages,executeCalls,send,boot:()=>context.MyToolsRuntime.boot(config),adapter:id=>context.MyToolsRuntime.moduleChrome(id),scripts:()=>scripts,fail:()=>{fail=true;},created:()=>created};
+ }
+ test('boot upgrades two-module settings, migrates legacy keys once without overwriting namespaced records',async()=>{
+  const f=fixture({local:{unifiedSettingsV1:{version:1,enabled:{instagram:false,gofile:true}},savedMedia:{old:1},'my-tools:module:instagram:savedMedia':{new:2},gofileBulkDownloadIndexV2:[1]},session:{jobs:[{old:true}]}});
+@@ -44,13 +44,21 @@ test('import validates before history mutation and merges enabled subset',async(
+  const f=fixture();await f.boot();assert.equal((await f.send({type:'my-tools:import',backup:{bad:true}})).ok,false);assert.equal(f.imports.length,0);
+  await f.send({type:'my-tools:import',backup:{instagram:{savedMedia:{'m:2:3:image':2}},settings:{enabled:{instagram:false}}}});const result=await f.send({type:'my-tools:get'});assert.equal(result.settings.enabled.instagram,false);assert.equal(result.settings.enabled.youtube,true);
+ });
+-test('filename broker owns one native listener, awaits async abstention, and reports conflicting claims',async()=>{
+- const f=fixture();await f.boot();const a=f.adapter('instagram'),b=f.adapter('gofile');let first,second;
++test('filename broker is attached only for My Tools downloads, awaits async abstention, and reports conflicting claims',async()=>{
++ const f=fixture();await f.boot();const pending=[];f.chrome.downloads.download=(options,callback)=>pending.push({options,callback});
++ const a=f.adapter('instagram'),b=f.adapter('gofile');let first,second;
+  a.downloads.onDeterminingFilename.addListener((item,suggest)=>{first=suggest;return true;});b.downloads.onDeterminingFilename.addListener((item,suggest)=>{second=suggest;return true;});
++ assert.equal(f.chrome.downloads.onDeterminingFilename.listeners.length,0);
++ const one=a.downloads.download({url:'https://example.com/one'});await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(f.chrome.downloads.onDeterminingFilename.listeners.length,1);let calls=0,value;
+- const completion=new Promise(resolve=>{f.chrome.downloads.onDeterminingFilename.listeners[0]({id:1},result=>{calls++;value=result;resolve();});});
++ const completion=new Promise(resolve=>{f.chrome.downloads.onDeterminingFilename.listeners[0]({id:1,url:pending[0].options.url,byExtensionId:'native'},result=>{calls++;value=result;resolve();});});
+  first({filename:'a.mp4'});await Promise.resolve();assert.equal(calls,0);second();await completion;assert.equal(calls,1);assert.equal(value.filename,'a.mp4');
+- const conflict=new Promise(resolve=>f.chrome.downloads.onDeterminingFilename.listeners[0]({id:2},result=>{assert.equal(result,undefined);resolve();}));first({filename:'a.mp4'});second({filename:'b.mp4'});await conflict;assert.equal((await f.send({type:'my-tools:get'})).errors.length,1);
++ assert.equal(f.chrome.downloads.onDeterminingFilename.listeners.length,0);
++ const two=a.downloads.download({url:'https://example.com/two'});await new Promise(resolve=>setImmediate(resolve));
++ assert.equal(f.chrome.downloads.onDeterminingFilename.listeners.length,1);
++ const conflict=new Promise(resolve=>f.chrome.downloads.onDeterminingFilename.listeners[0]({id:2,url:pending[1].options.url,byExtensionId:'native'},result=>{assert.equal(result,undefined);resolve();}));first({filename:'a.mp4'});second({filename:'b.mp4'});await conflict;assert.equal((await f.send({type:'my-tools:get'})).errors.length,1);
++ assert.equal(f.chrome.downloads.onDeterminingFilename.listeners.length,0);
++ pending[0].callback(1);pending[1].callback(2);await Promise.all([one,two]);
+ });
+ test('menus, alarms, badges, and autonomous capture remain module scoped and honor OFF',async()=>{
+  const f=fixture();await f.boot();const a=f.adapter('instagram'),b=f.adapter('sushida');a.contextMenus.create({id:'save',title:'A'});b.contextMenus.create({id:'save',title:'B'});
+@@ -59,6 +67,17 @@ test('menus, alarms, badges, and autonomous capture remain module scoped and hon
+  await a.alarms.create('queue',{periodInMinutes:1});assert.equal(f.menuCalls.find(value=>value[0]==='alarm')[1],'my-tools:instagram:queue');
+  await a.action.setBadgeText({text:'2'});await b.action.setBadgeText({text:'7'});assert.equal(f.menuCalls.filter(value=>value[0]==='badge').at(-1)[1].text,'1');
+ });
++test('dynamic content scripts receive the client prelude and header events honor OFF',async()=>{
++ const f=fixture();await f.boot();const adapter=f.adapter('pagemedia');
++ await adapter.scripting.executeScript({target:{tabId:1},files:['content.js']});
++ assert.deepEqual(JSON.parse(JSON.stringify(f.executeCalls[0])),{target:{tabId:1},files:['config.js','client.js','modules/pagemedia/content.js']});
++ await adapter.scripting.executeScript({target:{tabId:1},world:'MAIN',files:['content.js']});
++ assert.deepEqual(JSON.parse(JSON.stringify(f.executeCalls[1])),{target:{tabId:1},world:'MAIN',files:['modules/pagemedia/content.js']});
++ let headers=0;adapter.webRequest.onHeadersReceived.addListener(()=>headers++,{urls:['<all_urls>']},['responseHeaders']);
++ f.chrome.webRequest.onHeadersReceived.listeners[0]({});assert.equal(headers,1);
++ await f.send({type:'my-tools:set',module:'pagemedia',enabled:false});f.chrome.webRequest.onHeadersReceived.listeners[0]({});assert.equal(headers,1);
++ await f.send({type:'my-tools:set',module:'pagemedia',enabled:true});f.chrome.webRequest.onHeadersReceived.listeners[0]({});assert.equal(headers,2);
++});
+ test('concurrent offscreen requests create root once and expose only ready module contexts',async()=>{
+  const f=fixture();await f.boot();const a=f.adapter('youtube'),b=f.adapter('tweetfile');assert.equal(await a.offscreen.hasDocument(),false);
+  await Promise.all([a.offscreen.createDocument({url:'offscreen.html'}),b.offscreen.createDocument({url:'offscreen.html'})]);assert.equal(f.created(),1);assert.equal(await a.offscreen.hasDocument(),true);
+@@ -73,15 +92,30 @@ test('protected local broadcasts reach only matching host tabs and contain only
+  assert.equal(f.tabMessages.length,1);assert.equal(f.tabMessages[0][0],1);
+  assert.deepEqual(Object.keys(f.tabMessages[0][1].changes),['safe']);assert.equal(f.tabMessages[0][1].module,'photos');
+ });
+-test('filename timeouts settle once and never hold the settings boundary',async()=>{
++test('filename timeouts settle once, detach, and never hold the settings boundary',async()=>{
+  let timeout,late;
+  const f=fixture({}, {setTimeout:(callback,delay)=>{if(delay===5000){timeout=callback;return 1;}return setTimeout(callback,delay);}});await f.boot();
++ const pending=[];f.chrome.downloads.download=(options,callback)=>pending.push({options,callback});
++ const started=f.adapter('instagram').downloads.download({url:'https://example.com/timeout'});await new Promise(resolve=>setImmediate(resolve));
++ assert.equal(f.chrome.downloads.onDeterminingFilename.listeners.length,1);
+  f.adapter('instagram').downloads.onDeterminingFilename.addListener((item,suggest)=>{late=suggest;return true;});
+- let calls=0,value='pending';const finished=new Promise(resolve=>f.chrome.downloads.onDeterminingFilename.listeners[0]({id:4},result=>{calls++;value=result;resolve();}));
++ let calls=0,value='pending';const finished=new Promise(resolve=>f.chrome.downloads.onDeterminingFilename.listeners[0]({id:4,url:pending[0].options.url,byExtensionId:'native'},result=>{calls++;value=result;resolve();}));
+  assert.equal((await f.send({type:'my-tools:set',module:'instagram',enabled:false})).ok,true);assert.equal(calls,0);
+  timeout();await finished;assert.equal(calls,1);assert.equal(value,undefined);
++ assert.equal(f.chrome.downloads.onDeterminingFilename.listeners.length,0);
+  late({filename:'too-late.mp4'});await Promise.resolve();assert.equal(calls,1);
+  assert.equal((await f.send({type:'my-tools:get'})).errors.length,1);
++ pending[0].callback(4);await started;
++});
++test('completed downloads release the filename listener without a filename event',async()=>{
++ const f=fixture();await f.boot();const pending=[];f.chrome.downloads.download=(options,callback)=>pending.push({options,callback});
++ const started=f.adapter('youtube').downloads.download({url:'https://example.com/completed',filename:'completed.mp4'});
++ await new Promise(resolve=>setImmediate(resolve));
++ assert.equal(f.chrome.downloads.onDeterminingFilename.listeners.length,1);
++ pending[0].callback(50);assert.equal(await started,50);
++ assert.equal(f.chrome.downloads.onDeterminingFilename.listeners.length,1);
++ f.chrome.downloads.onChanged.listeners[0]({id:50,state:{current:'complete'}});
++ assert.equal(f.chrome.downloads.onDeterminingFilename.listeners.length,0);
+ });
+ test('worker restart restores owned menus for OFF and removeAll and preserves badges',async()=>{
+  const f=fixture();await f.boot();const a=f.adapter('instagram'),b=f.adapter('sushida');
+@@ -122,20 +156,56 @@ test('startup module initialization waits for menu restoration while disabled re
+  assert.deepEqual(f.menuCalls.filter(call=>call[0]==='remove').map(call=>call[1]),[owned]);
+  assert.deepEqual(Object.keys(f.store.local['my-tools:presentation:v1'].menus),[]);
+ });
+-test('download filenames survive filename events before the native callback and same URL starts serialize',async()=>{
++test('creator filenames are re-suggested for My Tools downloads and same URL starts serialize',async()=>{
+  const f=fixture();await f.boot();const pending=[];
+  f.chrome.downloads.download=(options,callback)=>pending.push({options,callback});
+  const adapter=f.adapter('youtube');
+  const first=adapter.downloads.download({url:'blob:https://www.youtube.com/same',filename:'first.mp4',conflictAction:'uniquify'});
+  const second=adapter.downloads.download({url:'blob:https://www.youtube.com/same',filename:'second.mp4'});
+  await new Promise(resolve=>setImmediate(resolve));assert.equal(pending.length,1);
++ assert.equal(f.chrome.downloads.onDeterminingFilename.listeners.length,1);
+  const determine=(id,url,owner='native')=>new Promise(resolve=>f.chrome.downloads.onDeterminingFilename.listeners[0]({id,url,byExtensionId:owner},resolve));
+  assert.equal((await determine(10,pending[0].options.url)).filename,'first.mp4');
+  pending[0].callback(10);assert.equal(await first,10);
+  await new Promise(resolve=>setImmediate(resolve));assert.equal(pending.length,2);
++ assert.equal(f.chrome.downloads.onDeterminingFilename.listeners.length,1);
+  pending[1].callback(11);assert.equal(await second,11);
+  assert.equal((await determine(11,pending[1].options.url)).filename,'second.mp4');
+- assert.equal(await determine(12,pending[0].options.url,'another-extension'),undefined);
++ assert.equal(f.chrome.downloads.onDeterminingFilename.listeners.length,0);
++});
++test('module claims override the requested filename and can repeat it',async()=>{
++ const f=fixture();await f.boot();const pending=[];
++ f.chrome.downloads.download=(options,callback)=>pending.push({options,callback});
++ const adapter=f.adapter('youtube');
++ let claim='folder/same.mp4';
++ adapter.downloads.onDeterminingFilename.addListener((item,suggest)=>suggest({filename:claim,conflictAction:'uniquify'}));
++ const same=adapter.downloads.download({url:'https://example.com/same',filename:'folder/same.mp4',conflictAction:'uniquify'});
++ await new Promise(resolve=>setImmediate(resolve));
++ assert.equal(f.chrome.downloads.onDeterminingFilename.listeners.length,1);
++ const determine=(id,url,owner='native')=>new Promise(resolve=>f.chrome.downloads.onDeterminingFilename.listeners[0]({id,url,byExtensionId:owner},resolve));
++ assert.equal((await determine(30,pending[0].options.url)).filename,'folder/same.mp4');
++ pending[0].callback(30);await same;
++ claim='folder/renamed.mp4';
++ const different=adapter.downloads.download({url:'https://example.com/different',filename:'folder/requested.mp4'});
++ await new Promise(resolve=>setImmediate(resolve));
++ assert.equal(f.chrome.downloads.onDeterminingFilename.listeners.length,1);
++ const value=await determine(31,pending[1].options.url);assert.equal(value.filename,'folder/renamed.mp4');
++ pending[1].callback(31);await different;
++});
++test('filename listeners are absent for downloads not started by My Tools',async()=>{
++ const f=fixture();await f.boot();const pending=[];f.chrome.downloads.download=(options,callback)=>pending.push({options,callback});
++ let calls=0;
++ f.adapter('pagemedia').downloads.onDeterminingFilename.addListener((item,suggest)=>{calls++;suggest({filename:'must-not-apply.mp4'});});
++ assert.equal(f.chrome.downloads.onDeterminingFilename.listeners.length,0);
++ const started=f.adapter('pagemedia').downloads.download({url:'https://example.com/own'});await new Promise(resolve=>setImmediate(resolve));
++ assert.equal(f.chrome.downloads.onDeterminingFilename.listeners.length,1);
++ const foreign=await new Promise(resolve=>f.chrome.downloads.onDeterminingFilename.listeners[0]({id:40,url:'https://example.com/other',byExtensionId:'another-extension'},resolve));
++ assert.equal(foreign,undefined);assert.equal(calls,0);
++ const page=await new Promise(resolve=>f.chrome.downloads.onDeterminingFilename.listeners[0]({id:42,url:'https://example.com/page'},resolve));
++ assert.equal(page,undefined);assert.equal(calls,0);
++ await new Promise(resolve=>f.chrome.downloads.onDeterminingFilename.listeners[0]({id:41,url:pending[0].options.url,byExtensionId:'native'},resolve));
++ assert.equal(calls,1);assert.equal(f.chrome.downloads.onDeterminingFilename.listeners.length,0);
++ pending[0].callback(41);await started;
+ });
+ test('native filename claims override the requested filename, and callback failures release pending starts',async()=>{
+  const f=fixture();await f.boot();const pending=[];
+@@ -144,6 +214,7 @@ test('native filename claims override the requested filename, and callback failu
+  adapter.downloads.onDeterminingFilename.addListener((item,suggest)=>suggest({filename:'source-claim.mp4'}));
+  const started=adapter.downloads.download({url:'https://example.com/video',filename:'requested.mp4'});
+  await new Promise(resolve=>setImmediate(resolve));pending[0].callback(20);await started;
++ assert.equal(f.chrome.downloads.onDeterminingFilename.listeners.length,1);
+  const name=await new Promise(resolve=>f.chrome.downloads.onDeterminingFilename.listeners[0]({id:20,url:pending[0].options.url,byExtensionId:'native'},resolve));
+  assert.equal(name.filename,'source-claim.mp4');
+  await new Promise(resolve=>{
+@@ -151,8 +222,13 @@ test('native filename claims override the requested filename, and callback failu
+    setImmediate(()=>{f.chrome.runtime.lastError={message:'download failed'};pending[1].callback();delete f.chrome.runtime.lastError;});
+  });
+  assert.equal(adapter.runtime.lastError,undefined);
++ assert.equal(f.chrome.downloads.onDeterminingFilename.listeners.length,0);
+  const retry=adapter.downloads.download({url:'https://example.com/failure',filename:'retry.mp4'});
+  await new Promise(resolve=>setImmediate(resolve));assert.equal(pending.length,3);pending[2].callback(21);assert.equal(await retry,21);
++ assert.equal(f.chrome.downloads.onDeterminingFilename.listeners.length,1);
++ const retryName=await new Promise(resolve=>f.chrome.downloads.onDeterminingFilename.listeners[0]({id:21,url:pending[2].options.url,byExtensionId:'native'},resolve));
++ assert.equal(retryName.filename,'source-claim.mp4');
++ assert.equal(f.chrome.downloads.onDeterminingFilename.listeners.length,0);
+ });
+ test('module page download bridge rejects content and foreign modules while allowing accepted work after OFF',async()=>{
+  const f=fixture();await f.boot();f.chrome.downloads.download=(options,callback)=>callback(30);
+@@ -160,6 +236,7 @@ test('module page download bridge rejects content and foreign modules while allo
+  for(const sender of [{id:'native',url:'https://sushida.net/',tab:{id:1}},{id:'other',url:'chrome-extension://native/modules/sushida/popup.html'},{id:'native',url:'chrome-extension://native/modules/youtube/offscreen.html'},{id:'native',url:'chrome-extension://native/modules/sushida/../youtube/offscreen.html'}])assert.equal((await f.send(message,sender)).ok,false);
+  await f.send({type:'my-tools:set',module:'sushida',enabled:false});
+  const result=await f.send(message,{id:'native',url:'chrome-extension://native/modules/sushida/popup.html'});assert.equal(result.ok,true);assert.equal(result.downloadId,30);
++ await new Promise(resolve=>f.chrome.downloads.onDeterminingFilename.listeners[0]({id:30,url:'https://example.com/video',byExtensionId:'native'},resolve));
+  f.chrome.downloads.download=()=>{throw Error('Invalid URL');};
+  const invalid=await f.send({...message,options:{}},{id:'native',url:'chrome-extension://native/modules/sushida/popup.html'});assert.equal(invalid.ok,false);assert.equal(invalid.error,'Invalid URL');
+ });

@@ -10,9 +10,9 @@
   box-sizing: border-box;
   padding: 4px 7px;
   border-radius: 4px;
-  color: #fff;
-  background: rgb(15 15 15 / 82%);
-  font: 500 11px/1.4 system-ui, sans-serif;
+  color: var(--mt-gray-12);
+  background: var(--mt-gray-2);
+  font: 500 12px/1.4 system-ui, sans-serif;
   pointer-events: none;
 }
 
@@ -26,7 +26,7 @@
   height: 6px;
   flex: none;
   border-radius: 50%;
-  background: #ff4545;
+  background: var(--mt-red-9);
 }
 
 .sc-live-hover-target .sc-live-hover-badge[data-state="error"] {

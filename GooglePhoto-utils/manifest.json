@@ -19,9 +19,11 @@
         "https://photos.google.com/*"
       ],
       "js": [
+        "ui-kit.js",
         "src/content.js"
       ],
       "css": [
+        "ui-tokens.css",
         "src/content.css"
       ],
       "run_at": "document_idle"

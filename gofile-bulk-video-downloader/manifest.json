@@ -4,23 +4,43 @@
   "version": "1.1.1",
   "description": "Gofileの共有ページにある動画と画像を、プレビュー付き進捗表示からまとめて安全に保存します。",
   "minimum_chrome_version": "111",
-  "permissions": ["downloads", "scripting", "storage", "unlimitedStorage"],
-  "host_permissions": ["https://gofile.io/*"],
+  "permissions": [
+    "downloads",
+    "scripting",
+    "storage",
+    "unlimitedStorage"
+  ],
+  "host_permissions": [
+    "https://gofile.io/*"
+  ],
   "incognito": "not_allowed",
   "background": {
     "service_worker": "background.js"
   },
   "content_scripts": [
     {
-      "matches": ["https://gofile.io/d/*"],
-      "js": ["page-bridge.js"],
+      "matches": [
+        "https://gofile.io/d/*"
+      ],
+      "js": [
+        "page-bridge.js"
+      ],
       "run_at": "document_start",
       "world": "MAIN"
     },
     {
-      "matches": ["https://gofile.io/d/*"],
-      "js": ["core.js", "content.js"],
-      "run_at": "document_idle"
+      "matches": [
+        "https://gofile.io/d/*"
+      ],
+      "js": [
+        "ui-kit.js",
+        "core.js",
+        "content.js"
+      ],
+      "run_at": "document_idle",
+      "css": [
+        "ui-tokens.css"
+      ]
     }
   ]
 }

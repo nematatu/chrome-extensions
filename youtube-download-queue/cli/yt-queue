@@ -1,0 +1,292 @@
+#!/usr/bin/env python3
+"""yt-queue: adds YouTube videos to Auto-YTDLP's links.txt, skipping ones already queued or downloaded.
+
+  yt-queue setup --queue-dir DIR [--playlist URL]
+      DIR holds links.txt and download_archive.txt (start Auto-YTDLP there). With --playlist, every
+      10 minutes (launchd) the playlist's videos that are neither queued nor downloaded are appended,
+      so videos saved from the phone or another PC arrive without opening this Mac.
+  yt-queue add URL|ID...              a playlist URL adds each of its videos
+  yt-queue state
+  yt-queue uninstall
+
+Chrome starts this file as a native messaging host (its first argument is the calling extension
+origin) and sends {"type": "state"} or {"type": "add", "id": VIDEO_ID}.
+"""
+import argparse
+import datetime
+import fcntl
+import json
+import os
+import plistlib
+import re
+import shlex
+import shutil
+import struct
+import subprocess
+import sys
+from pathlib import Path
+
+HOST_NAME = 'com.nematatu.yt_queue'
+JOB_LABEL = 'com.nematatu.yt-queue'
+EXTENSION_IDS = ('adcpjoppcbkeibgnegfinicchhcfkfic', 'pnggeglmncjlcgfeenoccflfdkblnidj')  # standalone, My Tools
+CONFIG_DIR = Path.home() / '.config' / 'yt-queue'
+CONFIG_FILE = CONFIG_DIR / 'config.json'
+LAUNCHER = CONFIG_DIR / 'yt-queue'  # pins the Python and script used by Chrome and launchd
+BROWSER_DIRS = [Path.home() / 'Library' / 'Application Support' / name / 'NativeMessagingHosts' for name in ('Google/Chrome', 'Chromium')]
+JOB_FILE = Path.home() / 'Library' / 'LaunchAgents' / f'{JOB_LABEL}.plist'
+JOB_LOG = Path.home() / 'Library' / 'Logs' / 'yt-queue.log'
+JOB_INTERVAL = 600
+LINKS, ARCHIVE, LOCK = 'links.txt', 'download_archive.txt', '.yt-queue.lock'
+VIDEO_ID = re.compile(r'^[A-Za-z0-9_-]{11}$')
+LINK_ID = re.compile(r'(?:[?&]v=|youtu\.be/|/shorts/|/live/)([A-Za-z0-9_-]{11})(?![A-Za-z0-9_-])')
+YOUTUBE_URL = re.compile(r'^https://(?:www\.|m\.|music\.)?(?:youtube\.com|youtu\.be)/')
+PLAYLIST_ID = re.compile(r'[?&]list=([A-Za-z0-9_-]{12,64})(?:&|$)')
+MAX_MESSAGE = 1024 * 1024
+
+
+class Failure(Exception):
+    pass
+
+
+def load_config():
+    try:
+        config = json.loads(CONFIG_FILE.read_text())
+    except (OSError, ValueError):
+        raise Failure('設定がありません。先に yt-queue setup を実行してください。')
+    if isinstance(config, dict) and isinstance(config.get('queue_dir'), str):
+        return config
+    raise Failure('設定ファイルの形式が正しくありません。yt-queue setup をやり直してください。')
+
+
+# --- links.txt and download_archive.txt ------------------------------------------------------
+
+def queue_dir_of(config):
+    queue_dir = Path(config['queue_dir'])
+    if not queue_dir.is_dir():
+        raise Failure(f'キューのフォルダーがありません: {queue_dir}')
+    return queue_dir
+
+
+def archived_ids(queue_dir):
+    try:
+        lines = (queue_dir / ARCHIVE).read_text().splitlines()
+    except FileNotFoundError:
+        return []
+    return [parts[1] for parts in map(str.split, lines) if len(parts) == 2 and parts[0] == 'youtube' and VIDEO_ID.match(parts[1])]
+
+
+def read_links(queue_dir):
+    try:
+        return (queue_dir / LINKS).read_text()
+    except FileNotFoundError:
+        return ''
+
+
+def state_of(queue_dir):
+    return {'target': str(queue_dir / LINKS), 'queued': list(dict.fromkeys(LINK_ID.findall(read_links(queue_dir)))), 'downloaded': archived_ids(queue_dir)}
+
+
+def add_videos(queue_dir, videos):
+    """Appends videos that are neither queued nor downloaded. Appending, rather than rewriting,
+    leaves lines Auto-YTDLP removes in the meantime alone."""
+    with open(queue_dir / LOCK, 'w') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        text = read_links(queue_dir)
+        downloaded, queued = set(archived_ids(queue_dir)), set(LINK_ID.findall(text))
+        results, new = {}, []
+        for video in videos:
+            results[video] = 'downloaded' if video in downloaded else 'queued' if video in queued else 'added'
+            if results[video] == 'added':
+                queued.add(video)
+                new.append(video)
+        if new:
+            with open(queue_dir / LINKS, 'a') as links:
+                links.write(('' if not text or text.endswith('\n') else '\n') + ''.join(f'https://www.youtube.com/watch?v={video}\n' for video in new))
+    return results
+
+
+def video_ids(argument):
+    if VIDEO_ID.match(argument):
+        return [argument]
+    if not YOUTUBE_URL.match(argument):
+        raise Failure(f'YouTube の URL または動画 ID ではありません: {argument}')
+    match = LINK_ID.search(argument)
+    if match:
+        return [match.group(1)]
+    if PLAYLIST_ID.search(argument):
+        return playlist_videos(argument)
+    raise Failure(f'動画を判別できない URL です: {argument}')
+
+
+def playlist_videos(url):
+    if not shutil.which('yt-dlp'):
+        raise Failure('再生リストの取得には yt-dlp が必要です。brew install yt-dlp でインストールしてください。')
+    result = subprocess.run(['yt-dlp', '--flat-playlist', '--no-warnings', '--print', 'id', '--', url], stdout=subprocess.PIPE, text=True)
+    if result.returncode != 0:
+        raise Failure(f'再生リストを取得できませんでした: {url}')
+    return [line for line in result.stdout.split() if VIDEO_ID.match(line)]
+
+
+def report(results):
+    labels = {'added': '追加', 'queued': '登録済み', 'downloaded': 'ダウンロード済み'}
+    for video, status in results.items():
+        if status == 'added':
+            print(f'[{labels[status]}] {video}')
+    print(f'追加 {sum(status == "added" for status in results.values())}件 / 全 {len(results)}件')
+
+
+# --- requests from the extension ------------------------------------------------------------
+
+def handle(request, config):
+    queue_dir = queue_dir_of(config)
+    kind = request.get('type') if isinstance(request, dict) else None
+    if kind == 'state':
+        return {'ok': True, **state_of(queue_dir)}
+    if kind == 'add' and VIDEO_ID.match(str(request.get('id'))):
+        status = add_videos(queue_dir, [request['id']])[request['id']]
+        return {'ok': True, 'status': status, **state_of(queue_dir)}
+    raise Failure('未対応の要求です。')
+
+
+def answer(request):
+    try:
+        return handle(request, load_config())
+    except Failure as error:
+        return {'ok': False, 'error': str(error)}
+    except OSError:
+        return {'ok': False, 'error': 'links.txt またはダウンロード履歴を読み書きできませんでした。'}
+
+
+def host():
+    def send(message):
+        data = json.dumps(message).encode()
+        if len(data) > MAX_MESSAGE:
+            data = json.dumps({'ok': False, 'error': 'ダウンロード履歴が大きすぎるため送信できません。'}).encode()
+        sys.stdout.buffer.write(struct.pack('=I', len(data)) + data)
+        sys.stdout.buffer.flush()
+
+    while True:
+        header = sys.stdin.buffer.read(4)
+        if len(header) < 4:
+            return
+        size = struct.unpack('=I', header)[0]
+        if size > MAX_MESSAGE:
+            return send({'ok': False, 'error': '要求が大きすぎます。'})
+        try:
+            request = json.loads(sys.stdin.buffer.read(size))
+        except ValueError:
+            request = None
+        send(answer(request))
+
+
+# --- the 10-minute playlist job ---------------------------------------------------------------
+
+def sync(_args):
+    """The launchd job. Its log only records what happened, so an idle run writes nothing."""
+    config = load_config()
+    if not config.get('playlist'):
+        return
+    try:
+        results = add_videos(queue_dir_of(config), list(dict.fromkeys(playlist_videos(config['playlist']))))
+        added = [video for video, status in results.items() if status == 'added']
+        message = f'再生リストから {len(added)}件追加: {" ".join(added)}' if added else ''
+    except Failure as error:
+        message = str(error)
+    except OSError:
+        message = 'links.txt に書き込めませんでした。'
+    if message:
+        print(f'{datetime.datetime.now():%Y-%m-%d %H:%M} {message}', flush=True)
+
+
+def job(action):
+    domain = f'gui/{os.getuid()}'
+    subprocess.run(['launchctl', 'bootout', f'{domain}/{JOB_LABEL}'], capture_output=True)
+    if action == 'start':
+        result = subprocess.run(['launchctl', 'bootstrap', domain, str(JOB_FILE)], capture_output=True, text=True)
+        if result.returncode != 0:
+            raise Failure(f'定期実行を登録できませんでした: {result.stderr.strip()}')
+
+
+# --- command line ----------------------------------------------------------------------------
+
+def setup(args):
+    queue_dir = Path(args.queue_dir).expanduser().resolve()
+    if not queue_dir.is_dir():
+        raise Failure(f'キューのフォルダーがありません: {queue_dir}')
+    config = {'queue_dir': str(queue_dir)}
+    if args.playlist:
+        match = PLAYLIST_ID.search(args.playlist) if YOUTUBE_URL.match(args.playlist) else None
+        if not match:
+            raise Failure('--playlist には再生リストの URL を指定してください。')
+        config['playlist'] = f'https://www.youtube.com/playlist?list={match.group(1)}'
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    CONFIG_FILE.write_text(json.dumps(config, ensure_ascii=False, indent=2) + '\n')
+    LAUNCHER.write_text(f'#!/bin/sh\nexec {shlex.quote(sys.executable)} {shlex.quote(str(Path(__file__).resolve()))} "$@"\n')
+    LAUNCHER.chmod(0o755)
+    manifest = json.dumps({'name': HOST_NAME, 'description': 'yt-queue links.txt bridge', 'path': str(LAUNCHER),
+                           'type': 'stdio', 'allowed_origins': [f'chrome-extension://{value}/' for value in EXTENSION_IDS]}, indent=2) + '\n'
+    for folder in BROWSER_DIRS:
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / f'{HOST_NAME}.json').write_text(manifest)
+    print(f'設定を保存しました: {CONFIG_FILE}')
+    if config.get('playlist'):
+        JOB_FILE.parent.mkdir(parents=True, exist_ok=True)
+        JOB_LOG.parent.mkdir(parents=True, exist_ok=True)
+        JOB_FILE.write_bytes(plistlib.dumps({'Label': JOB_LABEL, 'ProgramArguments': [str(LAUNCHER), 'sync'], 'StartInterval': JOB_INTERVAL,
+                                             'RunAtLoad': True, 'StandardOutPath': str(JOB_LOG), 'StandardErrorPath': str(JOB_LOG),
+                                             'EnvironmentVariables': {'PATH': os.environ.get('PATH', '/usr/bin:/bin'), 'HOME': str(Path.home())}}))
+        job('start')
+        print(f'再生リストを10分ごとに取り込みます。記録: {JOB_LOG}')
+    else:
+        job('stop')
+        JOB_FILE.unlink(missing_ok=True)
+    state(args)
+
+
+def add(args):
+    report(add_videos(queue_dir_of(load_config()), list(dict.fromkeys(video for item in args.items for video in video_ids(item)))))
+
+
+def state(_args):
+    response = answer({'type': 'state'})
+    if not response.get('ok'):
+        raise Failure(response.get('error') or '状態を取得できませんでした。')
+    print(f'追加先: {response["target"]}')
+    print(f'キューに登録済み: {len(response["queued"])}件 / ダウンロード済み: {len(response["downloaded"])}件')
+
+
+def uninstall(_args):
+    job('stop')
+    for path in [folder / f'{HOST_NAME}.json' for folder in BROWSER_DIRS] + [JOB_FILE, LAUNCHER, CONFIG_FILE]:
+        path.unlink(missing_ok=True)
+    if CONFIG_DIR.exists() and not any(CONFIG_DIR.iterdir()):
+        CONFIG_DIR.rmdir()
+    print('yt-queue の設定、ネイティブホスト、定期取り込みを削除しました。')
+
+
+def main():
+    if len(sys.argv) > 1 and sys.argv[1].startswith('chrome-extension://'):
+        return host()
+    parser = argparse.ArgumentParser(prog='yt-queue', description='YouTube の動画を Auto-YTDLP の links.txt に集めます。')
+    commands = parser.add_subparsers(dest='command', required=True, metavar='{setup,add,state,uninstall}')
+    command = commands.add_parser('setup', help='追加先を設定し、Chrome 用ネイティブホストと再生リストの定期取り込みを登録します。')
+    command.add_argument('--queue-dir', required=True, help='links.txt と download_archive.txt を置くフォルダー（Auto-YTDLP を起動するフォルダー）')
+    command.add_argument('--playlist', help='スマホやほかの PC から保存する再生リストの URL（公開または限定公開）')
+    command.set_defaults(run=setup)
+    command = commands.add_parser('add', help='動画・再生リストを links.txt に追加します。')
+    command.add_argument('items', nargs='+', metavar='URL|ID')
+    command.set_defaults(run=add)
+    commands.add_parser('state', help='登録済み・ダウンロード済みの件数を表示します。').set_defaults(run=state)
+    commands.add_parser('uninstall', help='設定、ネイティブホスト、定期取り込みを削除します。').set_defaults(run=uninstall)
+    commands.add_parser('sync').set_defaults(run=sync)  # the launchd job; no help, so it stays unlisted
+    args = parser.parse_args()
+    if sys.platform != 'darwin':
+        parser.exit(1, 'yt-queue は macOS のみ対応しています。\n')
+    try:
+        args.run(args)
+    except Failure as error:
+        parser.exit(1, f'エラー: {error}\n')
+
+
+if __name__ == '__main__':
+    main()

@@ -3,7 +3,13 @@
   "name": "Sushida Log",
   "version": "0.1.0",
   "description": "寿司打のX共有テキストから結果を保存します。",
-  "permissions": ["activeTab", "downloads", "storage", "tabs", "webRequest"],
+  "permissions": [
+    "activeTab",
+    "downloads",
+    "storage",
+    "tabs",
+    "webRequest"
+  ],
   "host_permissions": [
     "https://sushida.net/*",
     "https://*.sushida.net/*",
@@ -21,14 +27,26 @@
         "https://x.com/intent/tweet*",
         "https://twitter.com/intent/tweet*"
       ],
-      "js": ["src/parser.js", "src/content.js"],
-      "run_at": "document_start"
+      "js": [
+        "ui-kit.js",
+        "src/parser.js",
+        "src/content.js"
+      ],
+      "run_at": "document_start",
+      "css": [
+        "ui-tokens.css"
+      ]
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["src/page-bridge.js"],
-      "matches": ["https://sushida.net/*", "https://*.sushida.net/*"]
+      "resources": [
+        "src/page-bridge.js"
+      ],
+      "matches": [
+        "https://sushida.net/*",
+        "https://*.sushida.net/*"
+      ]
     }
   ],
   "action": {

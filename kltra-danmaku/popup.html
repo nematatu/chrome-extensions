@@ -1,13 +1,15 @@
 <!doctype html>
-<html lang="ja">
+<html lang="ja" class="mt-popup">
 <head>
+<link rel="stylesheet" href="ui-tokens.css">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>KLTRA 弾幕設定</title>
   <link rel="stylesheet" href="popup.css">
-  <script src="popup.js" defer></script>
+  <script src="ui-kit.js"></script>
+<script src="popup.js" defer></script>
 </head>
-<body>
+<body class="mt-ui">
   <main>
     <h1>KLTRA 弾幕</h1>
     <p id="status" class="status" role="status">対象ページを確認中…</p>
@@ -27,7 +29,7 @@
         <option value="online">オンライン翻訳（無料）</option>
         <option value="local">端末内（Chrome 内蔵）</option>
       </select>
-      <p class="hint">オンラインでは投稿本文を Google 翻訳に送信します。ステッカー・ユーザー名は送信しません。非公式の接続先のため、利用できなくなる場合があります。</p>
+      <p class="hint">投稿本文を Google 翻訳へ送信します。</p>
     </div>
     <div class="setting">
       <label for="translationSource">チャットの言語</label>
@@ -65,8 +67,6 @@
       <span>ユーザー名を表示</span>
       <input id="showName" type="checkbox">
     </label>
-
-    <p class="hint">速度と位置は次の投稿から反映されます。</p>
   </main>
 </body>
 </html>

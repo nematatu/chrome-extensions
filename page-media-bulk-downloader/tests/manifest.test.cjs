@@ -13,7 +13,7 @@ test("Gofile版と同じページ内UI構成で、対象サイトのISOLATED wor
     "https://rwzugqnp.fun800.click/*", "https://vid.fun800.click/*"]);
   assert.deepEqual(manifest.content_scripts, [{matches: ["https://video.twimg.news/d/*", "https://twfiles.com/*",
     "https://video.twimg1.com/*", "https://gofile.run/*", "https://gofile.ing/*",
-    "https://video.twimg-film.com/*", "https://gofile.es/*", "https://cdn4.file-photo.com/*", "https://gofile.guru/*", "https://cdn.twimg-image.com/*", "https://gofile.pl/*", "https://video.twimg-com.com/*"], js: ["core.js", "content.js"],
+    "https://video.twimg-film.com/*", "https://gofile.es/*", "https://cdn4.file-photo.com/*", "https://gofile.guru/*", "https://cdn.twimg-image.com/*", "https://gofile.pl/*", "https://video.twimg-com.com/*"], js: ["ui-kit.js", "core.js", "content.js"], css: ["ui-tokens.css"],
     run_at: "document_idle", all_frames: false, world: "ISOLATED"}]);
   assert.equal(manifest.action, undefined); assert.equal(manifest.web_accessible_resources, undefined);
   assert.equal(manifest.externally_connectable, undefined);

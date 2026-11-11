@@ -29,9 +29,13 @@
         "https://*.tweetfile.com/*"
       ],
       "js": [
+        "ui-kit.js",
         "content.js"
       ],
-      "run_at": "document_start"
+      "run_at": "document_start",
+      "css": [
+        "ui-tokens.css"
+      ]
     }
   ],
   "host_permissions": [

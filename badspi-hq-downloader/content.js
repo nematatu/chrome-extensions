@@ -43,11 +43,7 @@
     button.type = "button";
     button.setAttribute("aria-label", "画像をダウンロード");
     button.title = "画像をダウンロード";
-    button.innerHTML = `
-      <svg aria-hidden="true" viewBox="0 0 24 24">
-        <path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14" />
-      </svg>
-    `;
+    button.innerHTML = MyToolsUI.icon("download");
     for (const eventName of ["pointerdown", "mousedown", "mouseup", "dblclick"]) {
       button.addEventListener(eventName, (event) => {
         event.preventDefault();

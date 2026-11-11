@@ -233,8 +233,8 @@ function renderChart(results) {
     })
     .filter((value) => Number.isFinite(value));
 
-  context.strokeStyle = "#cbd5e1";
-  context.lineWidth = 1;
+  context.strokeStyle = getComputedStyle(document.body).getPropertyValue("--mt-gray-7").trim();
+  context.lineWidth = 0.5;
   context.beginPath();
   context.moveTo(32, 12);
   context.lineTo(32, height - 24);
@@ -242,7 +242,7 @@ function renderChart(results) {
   context.stroke();
 
   if (!points.length) {
-    context.fillStyle = "#64748b";
+    context.fillStyle = getComputedStyle(document.body).getPropertyValue("--mt-gray-11").trim();
     context.font = "12px system-ui, sans-serif";
     context.fillText("記録がありません", 104, 84);
     return;
@@ -254,7 +254,7 @@ function renderChart(results) {
   const plotWidth = width - 48;
   const plotHeight = height - 40;
 
-  context.strokeStyle = "#0f766e";
+  context.strokeStyle = getComputedStyle(document.body).getPropertyValue("--mt-indigo-9").trim();
   context.lineWidth = 2;
   context.beginPath();
   points.forEach((value, index) => {
@@ -265,7 +265,7 @@ function renderChart(results) {
   });
   context.stroke();
 
-  context.fillStyle = "#0f766e";
+  context.fillStyle = getComputedStyle(document.body).getPropertyValue("--mt-indigo-9").trim();
   points.forEach((value, index) => {
     const x = 32 + (points.length === 1 ? plotWidth : (plotWidth * index) / (points.length - 1));
     const y = 12 + plotHeight - ((value - min) / range) * plotHeight;
@@ -274,8 +274,8 @@ function renderChart(results) {
     context.fill();
   });
 
-  context.fillStyle = "#475569";
-  context.font = "11px system-ui, sans-serif";
+  context.fillStyle = getComputedStyle(document.body).getPropertyValue("--mt-gray-11").trim();
+  context.font = "12px system-ui, sans-serif";
   context.fillText(String(max), 4, 18);
   context.fillText(String(min), 4, height - 24);
 }

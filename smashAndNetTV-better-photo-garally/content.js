@@ -213,11 +213,7 @@ function createDownloadButton(modal) {
   button.className = DOWNLOAD_CLASS;
   button.setAttribute("aria-label", "写真をダウンロード");
   button.title = "写真をダウンロード";
-  button.innerHTML = `
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path d="M12 3v12m0 0 5-5m-5 5-5-5M5 19h14" />
-    </svg>
-  `;
+  button.innerHTML = MyToolsUI.icon("download");
 
   button.addEventListener("click", async (event) => {
     event.preventDefault();

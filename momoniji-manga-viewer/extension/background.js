@@ -119,7 +119,7 @@ function allowedLibrarySender(sender) {
   if (sender?.id !== chrome.runtime.id) return false;
   try {
     const url = new URL(sender.url);
-    if (url.protocol === 'chrome-extension:' && url.hostname === chrome.runtime.id && url.pathname === '/popup.html') return true;
+    if (url.href === chrome.runtime.getURL('popup.html')) return true;
     return url.protocol === 'https:' && Library.HOSTS.has(url.hostname) && !url.port && !url.username && !url.password && sender.frameId === 0 && Number.isInteger(sender.tab?.id) && sender.tab.id >= 0;
   } catch { return false; }
 }

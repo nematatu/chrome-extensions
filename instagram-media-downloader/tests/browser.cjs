@@ -49,19 +49,20 @@ const posts = {
   BD: { pk: '67', code: 'BD', user: { username: 'alice' }, carousel_media: [photo(4, 'slow'), photo(5, 'landscape'), photo(6, 'portrait')] },
 };
 posts[longCode] = { ...posts.BA, pk: '68', code: longCode };
-const reelOverlay = `<div id="reel-overlay" style="position:fixed;inset:0;z-index:10;background:#111;display:grid;place-items:center"><div style="position:relative;width:822px;height:464px"><div><video id="media" src="blob:https://www.instagram.com/fixture" poster="${cdn}portrait.png" style="display:block;width:822px;height:464px;object-fit:contain"></video></div><div style="position:absolute;inset:0"></div></div></div>`;
+const reelButton = 'style="background:none;border:0;color:inherit;font:24px/1 sans-serif;width:38px;height:38px;padding:0;cursor:pointer"';
+const reelOverlay = `<div id="reel-overlay" style="position:fixed;inset:0;z-index:10;background:#111;display:grid;place-items:center"><div style="position:relative;width:822px;height:464px"><div><video id="media" src="blob:https://www.instagram.com/fixture" poster="${cdn}portrait.png" style="display:block;width:822px;height:464px;object-fit:contain"></video></div><div style="position:absolute;inset:0"></div><div id="reel-actions" style="position:absolute;right:-78px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:18px;align-items:center;color:#eee"><button id="reel-like" type="button" aria-label="いいね！" title="いいね！" ${reelButton}>♡</button><button type="button" aria-label="コメント" title="コメント" ${reelButton}>◯</button><button type="button" aria-label="シェアする" title="シェアする" ${reelButton}>↗</button><button type="button" aria-label="保存" title="保存" ${reelButton}>♧</button></div></div></div>`;
 function html(route) {
   const story = route.startsWith('/stories/');
   const requestedCode = route.match(/\/(?:p|reel|reels)\/([^/]+)/)?.[1];
   const code = posts[requestedCode] ? requestedCode : 'BA';
-  if (route === '/reels/BB/') return `<!doctype html><html><body style="margin:0;background:#111"><main hidden><article><video src="${cdn}clip.mp4" width="420" height="570"></video></article></main>${reelOverlay}</body></html>`;
-  if (route === '/alice/') return `<!doctype html><html><body style="margin:0;background:#111"><main style="width:700px;margin:100px auto;display:grid;grid-template-columns:320px 320px;gap:4px"><a href="/alice/p/BA/" aria-label="投稿を開く" style="display:block;position:relative;width:320px;height:400px"><img id="media" src="${cdn}portrait.png" style="display:block;width:320px;height:400px;object-fit:cover"><div style="position:absolute;inset:0;background:#0001"></div></a></main></body></html>`;
+  if (route === '/reels/BB/') return `<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;background:#111"><main hidden><article><video src="${cdn}clip.mp4" width="420" height="570"></video></article></main>${reelOverlay}</body></html>`;
+  if (route === '/alice/') return `<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;background:#111"><main style="width:700px;margin:100px auto;display:grid;grid-template-columns:320px 320px;gap:4px"><a href="/alice/p/BA/" aria-label="投稿を開く" style="display:block;position:relative;width:320px;height:400px"><img id="media" src="${cdn}portrait.png" style="display:block;width:320px;height:400px;object-fit:cover"><div style="position:absolute;inset:0;background:#0001"></div></a></main></body></html>`;
   const media = story ? `<img id="media" src="${cdn}portrait.png" style="width:380px;height:570px;object-fit:contain">` :
     code === 'BB' ? `<div style="position:relative;width:420px;height:570px"><div><div><div><div><video id="media" src="blob:https://www.instagram.com/fixture" poster="${cdn}portrait.png" style="width:420px;height:570px;object-fit:contain"></video></div></div></div></div><div style="position:absolute;inset:0"></div></div>` :
     `<div id="crop" style="overflow:hidden;position:relative"><div><img id="media" src="${cdn}portrait.png" srcset="${cdn}portrait.png 400w" style="width:600px;height:400px;object-fit:contain;object-position:50% 50%;display:block"></div><div id="interaction-layer" style="position:absolute;inset:0"></div></div>`;
   return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><style>
     body{margin:0;background:#0c0e10;color:#eee;font:14px -apple-system,sans-serif}nav{height:68px;border-bottom:1px solid #ffffff18;display:flex;align-items:center;padding:0 40px;font-size:22px;letter-spacing:-.7px}main{width:600px;margin:28px auto}header{display:flex;align-items:center;height:62px;gap:12px}.avatar{height:30px;width:30px;border-radius:50%;background:linear-gradient(135deg,#d72b72,#fdb868)}small{color:#999;margin-left:auto}article{border-bottom:1px solid #ffffff18;padding-bottom:20px}a{color:inherit;text-decoration:none}.actions{padding:18px 0;font-size:21px;letter-spacing:8px}p{color:#ccc;font-size:13px}footer{padding:18px 0;color:#777;font-size:11px}.story{width:380px;margin:auto;position:relative}.story header{position:absolute;top:5px;left:16px;right:16px;z-index:2}.story img{border-radius:12px}.story small{font-size:11px}.story .segments{position:absolute;left:14px;right:14px;top:12px;height:2px;background:repeating-linear-gradient(90deg,#fff 0 55px,#ffffff40 55px 60px)}
-    </style></head><body><nav>Instagram <small>UI 検証用の再現ページ</small></nav><main>${story ? `<div class="story"><div class="segments"></div><header><span class="avatar"></span><strong>alice</strong><small>13時間前</small></header>${media}</div>` : `<article><header><span class="avatar"></span><strong>alice</strong><small>2時間前 · •••</small></header><a href="/alice/p/${code}/" id="permalink" aria-label="投稿を開く"></a>${media}<div class="actions">♡ ♧ ↗ <span style="float:right">♧</span></div><strong>337 いいね！</strong><p><strong>alice</strong> 今日の練習の記録。</p><footer>fixture · 外部アカウントのデータは使用していません。</footer></article>`}</main><div style="height:900px"></div></body></html>`.replace(story ? /<main>/g : /$^/, '<div style="width:600px;margin:28px auto">').replace(story ? /<\/main>/g : /$^/, '</div>');
+    </style></head><body><nav>Instagram <small>UI 検証用の再現ページ</small></nav><main>${story ? `<div class="story"><div class="segments"></div><header><span class="avatar"></span><strong>alice</strong><small>13時間前</small></header>${media}</div>` : `<article><header><span class="avatar"></span><strong>alice</strong><small>2時間前 · •••</small></header><a href="/alice/p/${code}/" id="permalink" aria-label="投稿を開く"></a>${media}<div class="actions" style="display:flex;align-items:center;gap:20px;padding:18px 0;font-size:21px;letter-spacing:0">♡ <span>♧</span> <span>↗</span><button id="save-post" type="button" aria-label="保存" title="保存" style="margin-left:auto;background:none;border:0;color:inherit;font:inherit;line-height:1;padding:4px;cursor:pointer">♧</button></div><strong>337 いいね！</strong><p><strong>alice</strong> 今日の練習の記録。</p><footer>fixture · 外部アカウントのデータは使用していません。</footer></article>`}</main><div style="height:900px"></div></body></html>`.replace(story ? /<main>/g : /$^/, '<div style="width:600px;margin:28px auto">').replace(story ? /<\/main>/g : /$^/, '</div>');
 }
 async function main() {
   const extensionPath = path.resolve(process.env.IGMD_EXTENSION_PATH || path.join(__dirname, '..'));
@@ -88,6 +89,11 @@ async function main() {
     await context.grantPermissions(['local-network-access'], { origin: 'https://www.instagram.com' });
     const worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
     const extensionId = new URL(worker.url()).host;
+    await worker.evaluate(async () => {
+      await chrome.storage.local.setAccessLevel({ accessLevel: 'TRUSTED_CONTEXTS' });
+      await chrome.storage.local.set({ unrelatedSecret: 'fixture-signed-url-canary' });
+    });
+    checks.push('履歴表示をローカルストレージの信頼済みコンテキスト制限下で検証');
     const page = await context.newPage(); page.setDefaultTimeout(15000);
     const errors = []; page.on('pageerror', error => errors.push(error.message));
     page.on('requestfailed', request => { if (request.url().startsWith(cdn)) console.error('Fixture network failure:', request.failure()?.errorText); });
@@ -119,7 +125,8 @@ async function main() {
     const savePage = () => worker.evaluate(async () => { const [tab] = await chrome.tabs.query({ active: true, currentWindow: true }); await chrome.tabs.sendMessage(tab.id, { type: 'ig-download-page' }); });
     const assertSaved = (button, expected) => button.evaluate((el, saved) => {
       if (el.dataset.saved !== String(saved)) throw new Error(`Expected saved=${saved}, got ${el.dataset.saved}`);
-      if (saved && (!el.title.includes('保存済み') || !el.querySelector('svg path')?.getAttribute('d').includes('L19 6'))) throw new Error('Saved button lacks check icon or saved description');
+      const checkPath = el.querySelector('svg path')?.getAttribute('d') || '';
+      if (saved && (!el.title.includes('保存済み') || !(checkPath.includes('M20 6') || checkPath.includes('L19 6')))) throw new Error('Saved button lacks check icon or saved description');
     }, expected);
     const waitSaved = async (button, expected) => {
       const label = await button.getAttribute('aria-label');
@@ -147,14 +154,34 @@ async function main() {
       assert.ok(Math.abs(actual.x + actual.width - expected.right + 10) < 2, 'right edge follows rendered pixels');
       assert.ok(Math.abs(actual.y - expected.top - 10) < 2, 'top edge follows rendered pixels');
     }
+    async function assertBookmarkPosition() {
+      const bulk = page.locator('#igmd-root .bulk').filter({ visible: true }).first();
+      await bulk.waitFor({ state: 'visible' });
+      const [bulkBox, saveBox] = await Promise.all([bulk.boundingBox(), page.locator('#save-post').boundingBox()]);
+      assert.ok(bulkBox && saveBox, 'bulk and bookmark buttons must be visible');
+      assert.ok(bulkBox.x + bulkBox.width <= saveBox.x - 6, 'bulk button must sit left of the bookmark button');
+      assert.ok(Math.abs((bulkBox.y + bulkBox.height / 2) - (saveBox.y + saveBox.height / 2)) < 2.5, 'bulk button must be vertically centered with the bookmark button');
+      assert.equal((await bulk.innerText()).trim(), '', 'bulk button must be icon-only');
+    }
+    async function assertReelBulkPosition() {
+      const bulk = page.locator('#igmd-root .bulk').filter({ visible: true }).first();
+      await bulk.waitFor({ state: 'visible' });
+      const [bulkBox, likeBox] = await Promise.all([bulk.boundingBox(), page.locator('#reel-like').boundingBox()]);
+      const boxes = JSON.stringify({ bulkBox, likeBox });
+      assert.ok(bulkBox && likeBox, `bulk and reel like buttons must be visible ${boxes}`);
+      assert.ok(Math.abs((bulkBox.x + bulkBox.width / 2) - (likeBox.x + likeBox.width / 2)) < 2.5, `bulk button must be centered over the reel like button ${boxes}`);
+      assert.ok(bulkBox.y + bulkBox.height <= likeBox.y - 4, `bulk button must sit above the reel like button ${boxes}`);
+      assert.equal((await bulk.innerText()).trim(), '', 'reel bulk button must be icon-only');
+    }
     await page.goto('https://www.instagram.com/p/BA/'); await single().waitFor();
     assert.equal(await page.getByRole('button', { name: '表示済みの投稿を一括保存', exact: true }).count(), 0);
     await page.locator('#media').evaluate(el => el.decode());
     await assertPosition(); checks.push('contain余白のある画像の描画領域右上');
+    await assertBookmarkPosition(); checks.push('アイコンだけの投稿一括ボタンを保存ボタンの左に配置');
     await page.locator('#media').evaluate(el => el.style.objectPosition = '100% 0%');
     await assertPosition(); checks.push('object-position変更への追随');
     await page.evaluate(() => scrollTo(0, 60));
-    await assertPosition(); checks.push('スクロール後の右上位置');
+    await assertPosition(); await assertBookmarkPosition(); checks.push('スクロール後の右上位置');
     await page.evaluate(() => scrollTo(0, 0));
     const watchingTab = await context.newPage();
     await watchingTab.goto('https://www.instagram.com/p/BA/');
@@ -166,8 +193,8 @@ async function main() {
     assert.equal(saved.state, 'complete'); assert.equal(fs.existsSync(saved.filename), true);
     assert.deepEqual(fs.readFileSync(saved.filename), portrait); checks.push('個別画像の実ファイル保存');
     await waitSaved(single(), true); await waitSaved(all(), false);
-    const savedColor = await single().evaluate(el => getComputedStyle(el).backgroundImage);
-    assert.ok(savedColor.includes('20, 136, 99'), 'saved button uses green background');
+    const savedColor = await single().evaluate(el => getComputedStyle(el).backgroundColor);
+    assert.ok(savedColor.includes('48, 164, 108'), 'saved button uses green background');
     checks.push('保存完了した個別ボタンだけ緑のチェック表示');
     await watchingTab.waitForFunction(() => document.querySelector('#igmd-root')?.shadowRoot.querySelector('.tools button')?.dataset.saved === 'true');
     await watchingTab.close(); await page.bringToFront();
@@ -195,8 +222,8 @@ async function main() {
     await otherTab.close(); await page.bringToFront();
     checks.push('投稿全件のチェック表示・再読込・別タブへの履歴反映');
 
-    assert.equal(await single().evaluate(el => getComputedStyle(el).color), 'rgb(255, 255, 255)');
-    assert.equal(await page.getByRole('status').evaluate(el => getComputedStyle(el).color), 'rgb(255, 255, 255)');
+    assert.equal(await single().evaluate(el => getComputedStyle(el).color), 'rgba(255, 255, 255, 0.95)');
+    assert.equal(await page.getByRole('status').evaluate(el => getComputedStyle(el).color), 'rgb(0, 0, 0)');
     await page.locator('#media').evaluate(el => el.style.objectPosition = '50% 50%');
     await assertPosition();
     await page.screenshot({ path: path.join(output, 'post.png') });
@@ -219,13 +246,14 @@ async function main() {
       history.pushState({}, '', '/reels/BB/');
     }, reelOverlay);
     await page.waitForFunction(button => !button.isConnected, feedButton);
-    await single().waitFor(); await all().waitFor(); await assertPosition();
+    await single().waitFor(); await all().waitFor(); await assertPosition(); await assertReelBulkPosition();
+    await page.screenshot({ path: path.join(output, 'reel.png') });
     assert.equal(await tools().count(), 1);
     await single().click(); await done(1); jobs = await state();
     assert.equal((await worker.evaluate(id => chrome.downloads.search({ id }), jobs.at(-1).items[0].downloadId))[0].url, `${cdn}clip.mp4`);
-    await page.reload(); await single().waitFor(); await all().waitFor(); await assertPosition();
+    await page.reload(); await single().waitFor(); await all().waitFor(); await assertPosition(); await assertReelBulkPosition();
     assert.equal(await tools().count(), 1);
-    checks.push('ホームから開く意味的コンテナー外のリール・再読込・MP4保存');
+    checks.push('ホームから開く意味的コンテナー外のリール・一括アイコンの上配置・再読込・MP4保存');
     await page.goto(`https://www.instagram.com/p/${longCode}/?img_index=1`);
     await single().waitFor(); await single().click(); await done(1);
     jobs = await state();
@@ -238,6 +266,12 @@ async function main() {
     assert.equal((await worker.evaluate(id => chrome.downloads.search({ id }), jobs.at(-1).items[2].downloadId))[0].url, `${cdn}clip.mp4`);
     assert.equal(await page.getByText('投稿IDが不正です。', { exact: true }).count(), 0);
     checks.push('長い投稿コードの個別保存とカルーセル全件保存');
+    posts[longCode] = { ...posts.BA };
+    await page.reload(); await single().waitFor(); await single().click(); await done(1);
+    jobs = await state(); assert.ok(jobs.at(-1).items[0].filename.includes('BA_01'));
+    await all().click(); await done(3);
+    jobs = await state(); assert.equal(jobs.at(-1).items.length, 3);
+    checks.push('長いURLに対して通常コードで返る投稿の個別・全件保存');
     await page.goto('https://www.instagram.com/alice/');
     await all().waitFor(); await page.locator('#media').evaluate(el => el.decode());
     assert.equal(await all().count(), 1);
@@ -407,7 +441,7 @@ async function main() {
 
     await page.goto('https://www.instagram.com/p/BA/');
     await savePage(); await done(3); checks.push('ページ一括保存');
-    await page.setViewportSize({ width: 700, height: 800 }); await assertPosition(); checks.push('ウインドウ幅変更への追随');
+    await page.setViewportSize({ width: 700, height: 800 }); await assertPosition(); await assertBookmarkPosition(); checks.push('ウインドウ幅変更への追随');
     await page.evaluate(() => {
       const current = document.querySelector('#media'), next = current.cloneNode();
       next.id = 'replacement'; current.after(next);
@@ -419,7 +453,140 @@ async function main() {
     checks.push('非表示メディアがあっても現在画像のボタンを表示');
     await page.evaluate(() => { document.querySelector('main').innerHTML = ''; });
     await page.waitForFunction(() => document.querySelector('#igmd-root').shadowRoot.querySelectorAll('.tools').length === 0); checks.push('DOM削除時のボタン除去');
+    await page.setViewportSize({ width: 1120, height: 850 });
+    const keyEvent = options => page.evaluate(options => {
+      const event = new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true, ...options });
+      (document.activeElement || document.body).dispatchEvent(event);
+      return event.defaultPrevented;
+    }, options);
+    const keyboardDownload = async expectedURL => {
+      const previous = (await state()).at(-1)?.id;
+      await page.keyboard.press('ArrowDown');
+      let latest;
+      for (let attempt = 0; attempt < 100; attempt++) {
+        latest = (await state()).at(-1);
+        if (latest?.id !== previous) break;
+        await page.waitForTimeout(50);
+      }
+      assert.notEqual(latest?.id, previous, 'shortcut starts a new download job');
+      for (let attempt = 0; attempt < 100; attempt++) {
+        latest = (await state()).find(job => job.id === latest.id);
+        if (latest?.items.every(item => item.state === 'complete')) break;
+        await page.waitForTimeout(50);
+      }
+      assert.ok(latest.items.every(item => item.state === 'complete'), 'new shortcut job completed');
+      await done(1);
+      assert.equal(latest.items.length, 1);
+      const [download] = await worker.evaluate(id => chrome.downloads.search({ id }), latest.items[0].downloadId);
+      assert.equal(download.state, 'complete'); assert.equal(download.url, expectedURL);
+      return latest;
+    };
+    await page.goto('https://www.instagram.com/p/BA/'); await single().waitFor();
+    await page.evaluate(() => {
+      window.fixtureArrowNavigation = 0;
+      document.addEventListener('keydown', event => { if (event.key === 'ArrowDown') window.fixtureArrowNavigation++; });
+    });
+    await page.evaluate(() => document.body.insertAdjacentHTML('afterbegin', '<article style="position:fixed;left:8px;top:170px;width:200px;height:240px"><a href="/p/BC/"></a><img src="https://scontent.cdninstagram.com/landscape.png" style="width:200px;height:200px;object-fit:cover"></article>'));
+    await page.waitForFunction(() => document.querySelector('#igmd-root').shadowRoot.querySelectorAll('.tools:not(.hidden)').length === 2);
+    const keyPost = await keyboardDownload(`${cdn}portrait.png`);
+    const [keyFile] = await worker.evaluate(id => chrome.downloads.search({ id }), keyPost.items[0].downloadId);
+    assert.deepEqual(fs.readFileSync(keyFile.filename), portrait);
+    assert.equal(await page.evaluate(() => window.fixtureArrowNavigation), 0);
+    assert.equal(await keyEvent({ repeat: true }), true);
+    await page.waitForTimeout(200);
+    assert.equal((await state()).at(-1).id, keyPost.id);
+    assert.equal(await page.evaluate(() => window.fixtureArrowNavigation), 0);
+    checks.push('↓キーは推薦投稿を除いた投稿詳細の現在画像1件を実保存し、長押し再保存と次項目移動を抑止');
+    for (const modifier of ['altKey', 'ctrlKey', 'metaKey', 'shiftKey', 'isComposing']) assert.equal(await keyEvent({ [modifier]: true }), false, modifier);
+    await page.evaluate(() => {
+      document.body.insertAdjacentHTML('afterbegin', '<input id="key-input"><textarea id="key-textarea"></textarea><select id="key-select"><option>1</option></select><div id="key-editor" contenteditable="true"><span>コメント</span></div><div id="key-textbox" role="textbox" tabindex="0"></div>');
+    });
+    for (const id of ['key-input', 'key-textarea', 'key-select', 'key-editor', 'key-textbox']) {
+      await page.locator(`#${id}`).focus(); assert.equal(await keyEvent({}), false, id);
+    }
+    await page.waitForTimeout(200); assert.equal((await state()).at(-1).id, keyPost.id);
+    checks.push('入力欄・選択欄・コメント編集・修飾キー・変換中は↓保存を実行しない');
+    await page.goto('https://www.instagram.com/'); await single().waitFor();
+    assert.equal(await keyEvent({}), false);
+    await page.goto('https://www.instagram.com/alice/'); await all().waitFor();
+    assert.equal(await keyEvent({}), false);
+    await page.waitForTimeout(200); assert.equal((await state()).at(-1).id, keyPost.id);
+    checks.push('ホームのフィードとプロフィール一覧では↓キーを横取りしない');
+    await page.goto('https://www.instagram.com/'); await single().waitFor();
+    await page.evaluate(() => {
+      document.querySelector('#media').removeAttribute('id');
+      document.body.insertAdjacentHTML('beforeend', '<div id="key-post-dialog" role="dialog" style="position:fixed;inset:0;z-index:100;background:#111;display:grid;place-items:center"><article><a href="/p/BA/"></a><img id="media" src="https://scontent.cdninstagram.com/landscape.png" style="width:600px;height:400px;object-fit:contain"></article></div>');
+    });
+    await page.locator('#media').evaluate(el => el.decode());
+    await page.waitForFunction(() => document.querySelector('#igmd-root').shadowRoot.querySelectorAll('.tools:not(.hidden)').length === 1);
+    await keyboardDownload(`${cdn}landscape.png`);
+    assert.equal(new URL(page.url()).pathname, '/');
+    checks.push('ホームURLのまま開いた投稿詳細ダイアログでは背景を保存せず現在画像1件を保存');
+    await page.goto(`https://www.instagram.com/p/${longCode}/?img_index=1`); await single().waitFor();
+    await page.locator('#permalink').evaluate(el => el.href = '/p/BA/');
+    await keyboardDownload(`${cdn}portrait.png`);
+    checks.push('長い投稿URLで短い正規投稿リンクが返っても↓キーで個別保存');
+    await page.goto('https://www.instagram.com/reel/BB/'); await single().waitFor();
+    await keyboardDownload(`${cdn}clip.mp4`);
+    await page.goto('https://www.instagram.com/reels/BB/'); await single().waitFor();
+    await keyboardDownload(`${cdn}clip.mp4`);
+    await page.evaluate(() => {
+      document.querySelector('#reel-overlay').setAttribute('role', 'dialog');
+      document.querySelector('#reel-overlay').insertAdjacentHTML('afterbegin', '<a href="/reel/BB/"></a>');
+      history.replaceState({}, '', '/reels/');
+    });
+    await single().waitFor(); await keyboardDownload(`${cdn}clip.mp4`);
+    await page.evaluate(() => history.replaceState({}, '', '/'));
+    await keyboardDownload(`${cdn}clip.mp4`);
+    checks.push('通常リール・全画面リール・IDなしリール画面・ホームから開いた全画面リールで↓キーからMP4保存');
+    await page.goto('https://www.instagram.com/stories/alice/101/'); await storySingle().waitFor();
+    await keyboardDownload(`${cdn}portrait.png`);
+    const keyStory = (await state()).at(-1).id;
+    await page.evaluate(() => document.body.insertAdjacentHTML('beforeend', '<div role="dialog" style="position:fixed;inset:0;background:#222;z-index:1000">別の画面</div>'));
+    assert.equal(await keyEvent({}), false);
+    await page.waitForTimeout(200); assert.equal((await state()).at(-1).id, keyStory);
+    checks.push('↓キーで現在ストーリー1件を保存し、別画面に覆われている間は保存しない');
+    await page.goto('https://www.instagram.com/alice/');
+    await page.evaluate(() => {
+      history.pushState({}, '', '/p/BA/');
+      document.body.insertAdjacentHTML('beforeend', `<div role="dialog" id="carousel-dialog" style="position:fixed;inset:0;z-index:100;background:#111"><div style="position:absolute;left:250px;top:100px;width:600px;height:400px"><img id="carousel-media" src="https://scontent.cdninstagram.com/portrait.png" style="width:600px;height:400px;display:block"><button id="carousel-prev" style="position:absolute;left:10px;top:190px" hidden><svg aria-label="戻る" width="16" height="16"></svg></button><button id="carousel-next" aria-label="次へ" style="position:absolute;right:10px;top:190px">›</button></div><button aria-label="次へ" style="position:absolute;right:10px;top:290px" id="post-next">›</button><input id="carousel-input"></div>`);
+      window.slide = 0; window.postMoves = 0;
+      const prev = document.querySelector('#carousel-prev'), next = document.querySelector('#carousel-next');
+      function update() { prev.hidden = window.slide === 0; next.hidden = window.slide === 2; }
+      prev.onclick = () => { window.slide--; update(); }; next.onclick = () => { window.slide++; update(); };
+      document.addEventListener('keydown', event => { if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') window.postMoves++; });
+    });
+    await page.locator('#carousel-media').evaluate(el => el.decode());
+    await page.keyboard.press('ArrowRight'); assert.deepEqual(await page.evaluate(() => [window.slide, window.postMoves]), [1, 0]);
+    await page.keyboard.press('ArrowRight'); assert.deepEqual(await page.evaluate(() => [window.slide, window.postMoves]), [2, 0]);
+    await page.keyboard.press('ArrowRight'); assert.deepEqual(await page.evaluate(() => [window.slide, window.postMoves]), [2, 1]);
+    await page.keyboard.press('ArrowLeft'); await page.keyboard.press('ArrowLeft');
+    assert.deepEqual(await page.evaluate(() => [window.slide, window.postMoves]), [0, 1]);
+    await page.keyboard.press('ArrowLeft'); assert.deepEqual(await page.evaluate(() => [window.slide, window.postMoves]), [0, 2]);
+    await page.locator('#carousel-input').focus(); await page.keyboard.press('ArrowRight');
+    assert.equal(await page.evaluate(() => window.slide), 0);
+    await page.locator('#carousel-input').blur();
+    await page.evaluate(() => document.querySelectorAll('a[href]').forEach(a => { if (/^\/alice\/p\//.test(a.pathname)) a.href = '/p/BA/'; }));
+    const previousMoves = await page.evaluate(() => window.postMoves);
+    await page.keyboard.press('ArrowRight');
+    assert.deepEqual(await page.evaluate(() => [window.slide, window.postMoves]), [0, previousMoves + 1]);
+    checks.push('プロフィール投稿の左右キーで画像を優先し端では既存の投稿移動へ渡す');
     const popup = await context.newPage(); await popup.goto(`chrome-extension://${extensionId}/popup.html`);
+    const exportButton = popup.getByRole('button', { name: '保存履歴を書き出す', exact: true });
+    await exportButton.waitFor();
+    const exportDownload = popup.waitForEvent('download');
+    await exportButton.click();
+    const exported = await exportDownload;
+    assert.equal(exported.suggestedFilename(), 'my-tools-instagram-history.json');
+    const transfer = JSON.parse(fs.readFileSync(await exported.path(), 'utf8'));
+    assert.deepEqual(Object.keys(transfer).sort(), ['format', 'instagram', 'version']);
+    assert.equal(transfer.format, 'nematatu-tools'); assert.equal(transfer.version, 1);
+    assert.deepEqual(Object.keys(transfer.instagram), ['savedMedia']);
+    assert.deepEqual(transfer.instagram.savedMedia, await worker.evaluate(() => globalThis.IGMediaHistory.read()));
+    c.validateHistory(transfer.instagram.savedMedia);
+    assert.equal(JSON.stringify(transfer).includes('fixture-signed-url-canary'), false);
+    assert.equal(JSON.stringify(transfer).includes('https://'), false);
+    checks.push('旧単独版ポップアップから安全な履歴JSONだけを書き出す');
     await popup.locator('body').screenshot({ path: path.join(output, 'popup.png') });
     assert.deepEqual(errors, []);
     fs.writeFileSync(path.join(output, 'verification.json'), JSON.stringify({ surface: 'isolated Chromium with synthetic Instagram and local CDN', liveInstagram: 'not verified', checks }, null, 2));

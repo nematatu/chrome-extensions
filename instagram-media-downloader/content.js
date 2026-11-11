@@ -3,6 +3,7 @@
   if (document.getElementById("igmd-root")) return;
   const c = globalThis.IGMediaCore;
   const cache = new Map();
+  let downloadEnabled = false;
   let savedMedia = {}, historyLoaded = false, historyRevision = 0;
   const historyDigests = new Map(), storyCoverage = new Map(), historyLookups = new Set();
   const buttonIcons = new WeakMap();
@@ -11,28 +12,28 @@
   host.style.cssText = "all:initial!important;position:fixed!important;inset:0 auto auto 0!important;width:0!important;height:0!important;z-index:2147483646!important;pointer-events:none!important";
   const shadow = host.attachShadow({ mode: "open" });
   const style = document.createElement("style");
-  style.textContent = `
-    :host{color-scheme:dark;font:13px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#fff}
-    *{box-sizing:border-box;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button{font:inherit;cursor:pointer;color:inherit;pointer-events:auto;touch-action:manipulation}
-    button:focus-visible{outline:3px solid #fff;outline-offset:3px}button:disabled{cursor:wait;opacity:.65}
+  style.textContent = MyToolsUI.css + `
+    :host{font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--mt-gray-12)}
+    *{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button{font:inherit;cursor:pointer;color:inherit;pointer-events:auto;touch-action:manipulation}
+    button:focus-visible{outline:2px solid var(--mt-indigo-8);outline-offset:3px}button:disabled{cursor:wait;opacity:.65}
     .tools{position:fixed;display:flex;gap:10px;align-items:center;pointer-events:none}
-    .round{border:1px solid #ffffff59;border-radius:50%;width:38px;height:38px;display:grid;place-items:center;background:linear-gradient(145deg,#d62470 15%,#d9234f 60%,#ff843a);box-shadow:0 2px 9px #0007,inset 0 1px 1px #ffffff30;transition:filter .15s,transform .15s}
-    .round:hover{filter:brightness(1.18);transform:translateY(-1px)}svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
-    .bulk{position:fixed;border:1px solid #ffffff30;border-radius:24px;padding:9px 14px;background:#181818e8;box-shadow:0 3px 15px #0004;display:flex;gap:8px;align-items:center;font-size:12px;font-weight:600;backdrop-filter:blur(12px)}
-    .round.saved{background:linear-gradient(145deg,#148863,#116b60);border-color:#85e4ba}
-    .bulk.saved{background:#125341f2;border-color:#85e4ba88}.bulk.saved:hover{background:#196f55}
-    .bulk:hover{background:#333}.bulk svg{width:17px;height:17px}
-    .panel{position:fixed;right:24px;bottom:24px;width:326px;max-width:calc(100vw - 32px);padding:18px 20px;border:1px solid #ffffff20;border-radius:17px;background:#1a1a1af5;box-shadow:0 6px 30px #0006;pointer-events:auto;backdrop-filter:blur(18px)}
-    .row{display:flex;align-items:center;gap:8px}.message{flex:1;font-weight:650;font-size:13px;line-height:1.6;overflow-wrap:anywhere}.quiet{border:0;border-radius:50%;width:29px;height:29px;background:#ffffff12;display:grid;place-items:center;color:#bbb;font-size:17px}.quiet:hover{background:#ffffff25;color:#fff}.quiet svg{width:14px;height:14px}
-    .track{height:5px;background:#ffffff17;border-radius:8px;overflow:hidden;margin-top:15px}.fill{height:100%;width:0;background:linear-gradient(90deg,#3296ff,#47d4ef);transition:width .2s}.detail{color:#aaa;font-size:11px;line-height:1.6;margin-top:8px}.hidden{display:none!important}
+    .round{border:0.5px solid var(--mt-gray-7);border-radius:50%;width:38px;height:38px;display:grid;place-items:center;background:var(--mt-indigo-9);color:var(--mt-on-accent)}
+    .round:hover{background:var(--mt-indigo-10)}svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+    .bulk{position:fixed;border:0.5px solid var(--mt-gray-7);border-radius:50%;width:38px;height:38px;padding:0;background:var(--mt-gray-2);color:var(--mt-gray-12);display:grid;place-items:center}
+    .round.saved{background:var(--mt-green-9);color:var(--mt-on-accent);border-color:var(--mt-green-8)}
+    .bulk.saved{color:var(--mt-green-11);background:var(--mt-green-3);border-color:var(--mt-green-7)}.bulk.saved:hover{background:var(--mt-green-4)}
+    .bulk:hover{background:var(--mt-gray-4)}.bulk svg{width:22px;height:22px}
+    .panel{position:fixed;right:24px;bottom:24px;width:326px;max-width:calc(100vw - 32px);padding:18px 20px;border:0.5px solid var(--mt-gray-7);border-radius:8px;background:var(--mt-gray-1);pointer-events:auto;}
+    .row{display:flex;align-items:center;gap:8px}.message{flex:1;font-weight:650;font-size:14px;line-height:1.6;overflow-wrap:anywhere}.quiet{border:0;border-radius:50%;width:29px;height:29px;background:var(--mt-gray-7);display:grid;place-items:center;color:var(--mt-gray-11);font-size:14px}.quiet:hover{background:var(--mt-gray-4);color:var(--mt-gray-12)}.quiet svg{width:14px;height:14px}
+    .track{height:5px;background:var(--mt-gray-7);border-radius:8px;overflow:hidden;margin-top:15px}.fill{height:100%;width:0;background:var(--mt-indigo-9);}.detail{color:var(--mt-gray-11);font-size:12px;line-height:1.6;margin-top:8px}.hidden{display:none!important}
     @media(max-width:600px){.panel{right:16px;bottom:72px}.round{width:34px;height:34px}}
-    @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+
   `;
   shadow.append(style);
-  const downloadIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 16v4h14v-4"/></svg>';
-  const checkIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>';
-  const bulkIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V3h13M7 7h14v14H7zM14 10v8m-3-3 3 3 3-3"/></svg>';
-  const pauseIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6v12M15 6v12"/></svg>';
+  const downloadIcon = MyToolsUI.icon("download");
+  const checkIcon = MyToolsUI.icon("check");
+  const bulkIcon = MyToolsUI.icon("downloads");
+  const pauseIcon = MyToolsUI.icon("pause");
   function button(label, icon, className, callback) {
     const el = document.createElement("button");
     el.type = "button"; el.className = className; el.title = label; el.setAttribute("aria-label", label);
@@ -55,7 +56,7 @@
   const pause = button("次の保存を一時停止", pauseIcon, "quiet", async () => {
     if (activeJob) await command("ig-download-pause", { id: activeJob.id });
   });
-  const close = button("ダウンロードを中止", "×", "quiet", async () => {
+  const close = button("ダウンロードを中止", MyToolsUI.icon("x"), "quiet", async () => {
     if (preparing) { preparation.controller.abort(); show("取得を中止しました"); }
     else if (activeJob && (activeJob.pending || activeJob.active)) await command("ig-download-cancel", { id: activeJob.id });
     else panel.classList.add("hidden");
@@ -70,13 +71,13 @@
     if (activeJob && activeJob.id !== job.id && (activeJob.active || activeJob.pending)) return;
     activeJob = job;
     const finished = !job.active && !job.pending;
-    let text = job.canceled ? `中止しました · 保存済み ${job.complete}/${job.total}` :
-      finished ? (job.failed ? `保存 ${job.complete}/${job.total} · 失敗 ${job.failed}件` : `ダウンロード完了 ${job.complete}/${job.total}`) :
+    let text = job.canceled ? `中止しました　保存済み ${job.complete}/${job.total}` :
+      finished ? (job.failed ? `保存 ${job.complete}/${job.total}　失敗 ${job.failed}件` : `ダウンロード完了 ${job.complete}/${job.total}`) :
       job.paused ? `一時停止中 ${job.complete}/${job.total}` : `ダウンロード中 ${job.complete}/${job.total}`;
     show(text, job.failed ? job.error : job.historyError || (job.paused ? "開始済みのファイルは保存を続けます。" : ""));
     pause.classList.toggle("hidden", finished || job.canceled);
     pause.title = job.paused ? "保存を再開" : "次の保存を一時停止";
-    pause.setAttribute("aria-label", pause.title); pause.innerHTML = job.paused ? "▶" : pauseIcon;
+    pause.setAttribute("aria-label", pause.title); pause.innerHTML = job.paused ? MyToolsUI.icon("play") : pauseIcon;
     close.title = finished || job.canceled ? "進捗を閉じる" : "ダウンロードを中止"; close.setAttribute("aria-label", close.title);
     panel.querySelector(".fill").style.width = `${(job.complete + job.failed) / job.total * 100}%`;
     const track = panel.querySelector(".track");
@@ -89,6 +90,7 @@
     return response;
   }
   chrome.runtime.onMessage.addListener(msg => {
+    if (msg?.type === "ig-download-history-changed") { void refreshHistory(); }
     if (msg?.type === "ig-download-progress" && msg.job) progress(msg.job);
     if (msg?.type === "ig-download-page") { void start({ kind: "page" }); }
   });
@@ -156,8 +158,10 @@
     if (!code) throw new Error("投稿の識別情報がありません。投稿を開いて保存してください。");
     const known = cache.get(code);
     if (!activeJob?.failed && known?.complete && Date.now() - known.cachedAt < 60000) return known;
-    await client.post(code);
-    const group = cache.get(code) || (code.length <= 20 ? cache.get(c.shortcodeID(code)) : null);
+    const received = c.groups(await client.post(code));
+    const aliases = code.length > 20 ? received.filter(group => group.code && code.startsWith(group.code)) : [];
+    const group = cache.get(code) || (code.length <= 20 ? cache.get(c.shortcodeID(code)) :
+      aliases.length === 1 ? cache.get(aliases[0].code) : null);
     if (!group?.complete) throw new Error("投稿の全メディアを取得できませんでした。部分的な一括保存は行いません。");
     return group;
   }
@@ -258,6 +262,7 @@
     return [{ ...group, media: [visible], complete: false }];
   }
   async function start(request) {
+    if (!downloadEnabled) { show("保存機能はオフです。"); return; }
     if (preparing) return;
     if (activeJob && !activeJob.canceled && (activeJob.pending || activeJob.active)) {
       progress(activeJob); return;
@@ -345,12 +350,10 @@
     if (el.dataset.saved === String(saved)) return;
     el.dataset.saved = String(saved); el.classList.toggle("saved", saved);
     const label = el.dataset.label;
-    el.title = saved ? `保存済み · ${label}（再保存）` : label;
+    el.title = saved ? `保存済み　${label}（再保存）` : label;
     el.setAttribute("aria-label", label);
     el.setAttribute("aria-description", saved ? "保存済みです。もう一度押すと再保存します。" : "");
-    const text = el.querySelector("span");
     el.innerHTML = saved ? checkIcon : buttonIcons.get(el);
-    if (text) el.append(text);
   }
   function updateSaved(el, entry, route) {
     const group = route ? cache.get(route.id) || [...new Set(cache.values())].find(g => g.username === route.username && matchMedia(g, el)) : cache.get(scopeCode(el));
@@ -386,12 +389,55 @@
     savedMedia = Object.fromEntries(Object.entries(value || {}).filter(([key, at]) => c.validHistoryKey(key) && Number.isFinite(at) && at > 0));
     historyLoaded = true; schedule(); loadStoryHistory();
   }
-  chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === "local" && changes.savedMedia) { historyRevision++; readSaved(changes.savedMedia.newValue); }
-  });
-  const initialRevision = historyRevision;
-  chrome.storage.local.get("savedMedia").then(result => { if (initialRevision === historyRevision) readSaved(result.savedMedia); }).catch(() => {});
+  async function refreshHistory() {
+    const revision = ++historyRevision;
+    try {
+      const result = await command("ig-download-history");
+      if (revision === historyRevision) readSaved(result.savedMedia);
+    } catch {}
+  }
+  void refreshHistory();
   const entries = new Map();
+  const bookmarkLabels = /^(保存|保存する|保存済み|保存を解除|save|saved|remove)$/i;
+  const likeLabels = /^(いいね[！!]?|いいねを取り消す|いいね！を取り消す|like|unlike)$/i;
+  const reelPath = /^\/(?:reel|reels)\//;
+  function reelContext(el) {
+    return reelPath.test(location.pathname) || (el.tagName === "VIDEO" && !el.closest('article,[role="dialog"]'));
+  }
+  function reelLikeRect(el) {
+    if (!reelContext(el)) return null;
+    const media = el.getBoundingClientRect(), found = [];
+    for (const candidate of document.querySelectorAll('button[aria-label],button[title],[role="button"][aria-label],[role="button"][title],svg[aria-label],svg[title]')) {
+      const control = candidate.closest('button,[role="button"]') || candidate;
+      const labels = [candidate, control].flatMap(node => [node.getAttribute("aria-label"), node.getAttribute("title"), node.textContent]);
+      if (!labels.some(label => label && likeLabels.test(label.trim()))) continue;
+      const box = control.getBoundingClientRect();
+      const computed = getComputedStyle(control);
+      if (box.width < 8 || box.height < 8 || computed.display === "none" || computed.visibility === "hidden" || Number(computed.opacity) === 0) continue;
+      const centerX = box.left + box.width / 2, centerY = box.top + box.height / 2;
+      if (centerX < media.left + media.width / 2 || centerX > media.right + 180) continue;
+      if (centerY < media.top || centerY > media.bottom) continue;
+      const hit = document.elementFromPoint(centerX, centerY);
+      if (!hit || (hit !== control && !control.contains(hit) && !hit.contains(control))) continue;
+      found.push(box);
+    }
+    found.sort((a, b) => Math.abs(a.left + a.width / 2 - media.right) - Math.abs(b.left + b.width / 2 - media.right));
+    return found[0] || null;
+  }
+  function bookmarkRect(el) {
+    const scope = el.closest('article,[role="dialog"]');
+    if (!scope) return null;
+    for (const candidate of scope.querySelectorAll('button[aria-label],button[title],[role="button"][aria-label],[role="button"][title],svg[aria-label],svg[title]')) {
+      const control = candidate.closest('button,[role="button"]') || candidate;
+      const labels = [candidate, control].flatMap(node => [node.getAttribute("aria-label"), node.getAttribute("title"), node.textContent]);
+      if (!labels.some(label => label && bookmarkLabels.test(label.trim()))) continue;
+      const box = control.getBoundingClientRect();
+      const computed = getComputedStyle(control);
+      if (box.width < 8 || box.height < 8 || computed.display === "none" || computed.visibility === "hidden" || Number(computed.opacity) === 0) continue;
+      return box;
+    }
+    return null;
+  }
   function clippedRect(el) {
     const box = el.getBoundingClientRect();
     const computed = getComputedStyle(el);
@@ -426,7 +472,7 @@
     for (const [el, entry] of entries) {
       const rect = el.isConnected ? clippedRect(el) : null;
       entry.tools.classList.add("hidden"); entry.bulk.classList.add("hidden");
-      if (!rect) continue;
+      if (!downloadEnabled || !rect) continue;
       candidates.push({ el, entry, rect });
     }
     if (story) candidates.sort((a, b) => Math.abs((a.rect.left + a.rect.right) / 2 - innerWidth / 2) - Math.abs((b.rect.left + b.rect.right) / 2 - innerWidth / 2));
@@ -449,8 +495,13 @@
       occupied.push({ left, top });
       entry.tools.style.left = `${left}px`; entry.tools.style.top = `${top}px`; entry.tools.classList.remove("hidden");
       if (!story && entry.tools.dataset.mode !== "profile" && scopeCode(el)) {
-        entry.bulk.style.left = `${Math.max(rect.left + 8, rect.right - 148)}px`;
-        entry.bulk.style.top = `${rect.bottom - 43}px`;
+        const reel = reelContext(el);
+        const reelLike = reel ? reelLikeRect(el) : null;
+        const bookmark = reel ? null : bookmarkRect(el);
+        // Reels have a vertical action rail; anchor the bulk icon above its like/heart button.
+        entry.bulk.style.transform = reelLike ? "translate(-50%, -100%)" : bookmark ? "translate(-100%, -50%)" : "none";
+        entry.bulk.style.left = `${Math.max(rect.left + 8, reelLike ? reelLike.left + reelLike.width / 2 : bookmark ? bookmark.left - 8 : rect.right - 46)}px`;
+        entry.bulk.style.top = `${reelLike ? reelLike.top - 12 : bookmark ? bookmark.top + bookmark.height / 2 : rect.bottom - 43}px`;
         entry.bulk.classList.remove("hidden");
       }
     }
@@ -480,7 +531,6 @@
         profilePost ? bulkIcon : downloadIcon, "round", () => request(profilePost ? "all" : "single")));
       if (story) tools.append(button("このアカウントのストーリーを一括保存", bulkIcon, "round", () => request("all")));
       const bulk = button("この投稿の全画像・動画を保存", bulkIcon, "bulk hidden", () => request("all"));
-      const label = document.createElement("span"); label.textContent = "投稿を一括保存"; bulk.append(label);
       shadow.append(tools, bulk); entries.set(el, { tools, bulk }); resize.observe(el);
     }
     schedule(); loadStoryHistory();
@@ -490,6 +540,57 @@
   });
   observer.observe(document.documentElement, { subtree: true, childList: true, attributes: true,
     attributeFilter: ["src", "srcset", "poster", "style", "class", "aria-hidden"] });
+  window.addEventListener("keydown", event => {
+    if (!["ArrowLeft", "ArrowRight"].includes(event.key) || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.isComposing) return;
+    if (event.composedPath().some(node => node instanceof HTMLElement &&
+        (node.isContentEditable || node.matches('input,textarea,select,[role="textbox"],[role="combobox"]')))) return;
+    const dialog = [...document.querySelectorAll('[role="dialog"]')].find(node => {
+      const box = node.getBoundingClientRect();
+      return box.width > 0 && box.height > 0 && codeFromURL(location.href) &&
+        [...document.querySelectorAll('a[href]')].some(anchor => !node.contains(anchor) &&
+          /^\/[A-Za-z0-9_.]+\/p\/[A-Za-z0-9_-]+\/?$/.test(anchor.pathname));
+    });
+    if (!dialog) return;
+    const media = [...dialog.querySelectorAll('img,video')].map(el => ({ el, rect: clippedRect(el) }))
+      .filter(item => item.rect).sort((a, b) => (b.rect.right-b.rect.left)*(b.rect.bottom-b.rect.top) - (a.rect.right-a.rect.left)*(a.rect.bottom-a.rect.top))[0];
+    if (!media) return;
+    const label = event.key === "ArrowRight" ? /^(次へ|next)$/i : /^(前へ|戻る|previous|prev)$/i;
+    const box = media.el.getBoundingClientRect();
+    const control = [...dialog.querySelectorAll('button,[role="button"]')].find(node => {
+      const labels = [node, ...node.querySelectorAll("svg[aria-label],svg[title]")].flatMap(el => [el.getAttribute("aria-label"), el.getAttribute("title")]);
+      if (!labels.some(text => text && label.test(text.trim())) || node.disabled || node.getAttribute("aria-disabled") === "true") return false;
+      const rect = node.getBoundingClientRect(), css = getComputedStyle(node);
+      const x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
+      return rect.width > 0 && rect.height > 0 && css.visibility === "visible" && css.display !== "none" &&
+        x >= box.left && x <= box.right && y >= box.top && y <= box.bottom;
+    });
+    if (!control) return;
+    event.preventDefault(); event.stopImmediatePropagation();
+    control.click();
+  }, true);
+  window.addEventListener("keydown", event => {
+    if (!downloadEnabled || event.key !== "ArrowDown" || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.isComposing) return;
+    if (event.composedPath().some(node => node instanceof HTMLElement &&
+        (node.isContentEditable || node.matches('input,textarea,select,[role="textbox"],[role="combobox"]')))) return;
+    layout();
+    const routeCode = codeFromURL(location.href), story = storyRoute();
+    let candidates = [...entries].filter(([el, entry]) => {
+      if (entry.tools.classList.contains("hidden") || entry.tools.dataset.mode === "profile") return false;
+      const code = scopeCode(el), dialog = el.closest('[role="dialog"]');
+      if (routeCode) return code === routeCode || (routeCode.length > 20 && code && routeCode.startsWith(code));
+      return story || (dialog && code) || reelPath.test(location.pathname) ||
+        (el.tagName === "VIDEO" && !el.closest("article") && reelLikeRect(el));
+    });
+    if (candidates.some(([el]) => el.closest('[role="dialog"]'))) candidates = candidates.filter(([el]) => el.closest('[role="dialog"]'));
+    candidates.sort(([a], [b]) => {
+      const distance = el => { const rect = el.getBoundingClientRect(); return Math.hypot((rect.left + rect.right) / 2 - innerWidth / 2, (rect.top + rect.bottom) / 2 - innerHeight / 2); };
+      return distance(a) - distance(b);
+    });
+    const primary = candidates[0]?.[1].tools.querySelector("button");
+    if (!primary) return;
+    event.preventDefault(); event.stopImmediatePropagation();
+    if (!event.repeat) primary.click();
+  }, true);
   document.addEventListener("scroll", schedule, true);
   window.addEventListener("resize", schedule);
   document.addEventListener("load", refresh, true);
@@ -502,6 +603,12 @@
       entries.clear(); resize.disconnect(); refresh();
     } else schedule();
   }, 500);
+  chrome.storage.sync.get({ downloadEnabled: true }, values => { downloadEnabled = values.downloadEnabled !== false; refresh(); });
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== "sync" || !changes.downloadEnabled) return;
+    downloadEnabled = changes.downloadEnabled.newValue !== false;
+    schedule();
+  });
   refresh();
   command("ig-download-status").catch(() => {});
 })();
