@@ -4,10 +4,8 @@
   "version": "0.1.0",
   "description": "寿司打のX共有テキストから結果を保存します。",
   "permissions": [
-    "activeTab",
     "downloads",
     "storage",
-    "tabs",
     "webRequest"
   ],
   "host_permissions": [
