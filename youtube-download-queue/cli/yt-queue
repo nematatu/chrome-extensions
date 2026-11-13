@@ -36,6 +36,7 @@ BROWSER_DIRS = [Path.home() / 'Library' / 'Application Support' / name / 'Native
 JOB_FILE = Path.home() / 'Library' / 'LaunchAgents' / f'{JOB_LABEL}.plist'
 JOB_LOG = Path.home() / 'Library' / 'Logs' / 'yt-queue.log'
 JOB_INTERVAL = 600
+PLAYLIST_TIMEOUT = 300  # launchd never overlaps runs, so a hung yt-dlp would stop every later import
 LINKS, ARCHIVE, LOCK = 'links.txt', 'download_archive.txt', '.yt-queue.lock'
 VIDEO_ID = re.compile(r'^[A-Za-z0-9_-]{11}$')
 LINK_ID = re.compile(r'(?:[?&]v=|youtu\.be/|/shorts/|/live/)([A-Za-z0-9_-]{11})(?![A-Za-z0-9_-])')
@@ -121,7 +122,10 @@ def video_ids(argument):
 def playlist_videos(url):
     if not shutil.which('yt-dlp'):
         raise Failure('再生リストの取得には yt-dlp が必要です。brew install yt-dlp でインストールしてください。')
-    result = subprocess.run(['yt-dlp', '--flat-playlist', '--no-warnings', '--print', 'id', '--', url], stdout=subprocess.PIPE, text=True)
+    try:
+        result = subprocess.run(['yt-dlp', '--flat-playlist', '--no-warnings', '--print', 'id', '--', url], stdout=subprocess.PIPE, text=True, timeout=PLAYLIST_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        raise Failure(f'再生リストの取得が終わらないため、{PLAYLIST_TIMEOUT}秒で打ち切りました: {url}')
     if result.returncode != 0:
         raise Failure(f'再生リストを取得できませんでした: {url}')
     return [line for line in result.stdout.split() if VIDEO_ID.match(line)]
