@@ -1,0 +1,12 @@
+{
+  "name": "sushida-log",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "test": "node test-parser.js",
+    "test:browser": "node tests/browser.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}

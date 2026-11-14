@@ -109,7 +109,7 @@ npm --prefix instagram-media-downloader test
 node --test gofile-bulk-video-downloader/*.test.cjs
 ```
 
-ブラウザ検証には Playwright と Chromium、ローカル HTTPS 用の OpenSSL が必要です。全機能の動画検証では、テスト素材の映像・音声分離と保存ファイルの検査に ffmpeg / ffprobe も使います。拡張本体の動作にはこれらの外部ツールは不要です。この作業環境では既存の Playwright を使い、以下を実行しました。
+ブラウザ検証には Playwright と Chromium、ローカル HTTPS 用の OpenSSL が必要です。全機能の動画検証では、保存ファイルの検査に ffmpeg / ffprobe も使います。拡張本体の動作にはこれらの外部ツールは不要です。この作業環境では既存の Playwright を使い、以下を実行しました。
 
 ```sh
 cd unified-tools
@@ -122,7 +122,14 @@ NODE_PATH=../instagram-media-downloader/node_modules node tests/repair-all-brows
 
 `tests/repair-browser.cjs` は、動的登録を解除した状態で開いた Instagram タブをポップアップから修復し、二重UIを作らずに1回だけ注入されることを確認します。
 
-`tests/repair-all-browser.cjs` は、同じ停止状態を18のページ機能で再現します。各機能のページを開く前にコンテンツスクリプト登録をすべて解除し、ポップアップからの修復で機能DOMが復元されること、2回目の修復では追加注入されないことを確認します。対象は Instagram、Gofile、Google Photos、Badspi、Inhigh Links、Inhigh Skip、KLTRA、Koutairen、Momoniji、R2、Smashnet、Instagram HQ、Sushida、YouTube、Tweetfile、Page Media、Stripchat、X Hashtags です。KLTRA は既に開いている Cbox フレームへチャットスクリプトが入り、新着メッセージが弾幕になることも確認します。
+`tests/repair-all-browser.cjs` は、同じ停止状態を17のページ機能で再現します。各機能のページを開く前にコンテンツスクリプト登録をすべて解除し、ポップアップからの修復で機能DOMが復元されること、2回目の修復では追加注入されないことを確認します。対象は Instagram、Gofile、Google Photos、Badspi、Inhigh Links、Inhigh Skip、KLTRA、Koutairen、Momoniji、R2、Smashnet、Sushida、YouTube ダウンロードキュー、Tweetfile、Page Media、Stripchat、X Hashtags です。KLTRA は既に開いている Cbox フレームへチャットスクリプトが入り、新着メッセージが弾幕になることも確認します。
+
+検証結果（2026-11-14）:
+
+- `tests/all-browser-run.cjs` の21項目が成功しました。削除済みの YouTube 5秒クリップの確認は、YouTube ダウンロードキューが動画ページのタイトルに印を出す確認に置き換えました。オフスクリーン処理の同時保存は Tweetfile と Page Media の2つで確認します。Media Saver のオフスクリーン処理は `tests/media-browser.cjs` で確認します。
+- `tests/repair-all-browser.cjs` で、17のページ機能すべての修復が成功しました。
+
+以下は、以前の構成（YouTube 5秒クリップを含む20機能）での記録です。
 
 検証結果（2026-10-26）:
 

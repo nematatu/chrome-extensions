@@ -2,7 +2,7 @@
 
 ## 対象
 
-共通の `popup.html` をポップアップと設定タブで共有します。管理RPCの送信元URL、20機能の登録、保存領域、ダウンロード処理は変更しません。各機能の元のポップアップはiframeで開き、専用の設定ページがある場合はそのページを新しいタブで開きます。
+共通の `popup.html` をポップアップと設定タブで共有します。管理RPCの送信元URL、19機能の登録、保存領域、ダウンロード処理は変更しません。各機能の元のポップアップはiframeで開き、専用の設定ページがある場合はそのページを新しいタブで開きます。
 
 画面の状態は、選択中の画面、検索語、ワーカーから取得した設定・通知・保存履歴件数、処理中の状態と結果で表します。設定の正本は既存ワーカーです。画面独自の永続設定は増やしません。
 
@@ -30,13 +30,13 @@ KumoはBase UIを基盤に持ち、別のアイコン集・チャート・構文
 
 ## 確認方法
 
-`npm ci --prefix unified-tools`、`node unified-tools/build.mjs`、`node --test unified-tools/tests/*.test.cjs` を実行します。ブラウザーでの確認はREADMEの隔離Chromiumテストを使います。狭幅と広幅、ライトとダーク、タブのキーボード操作、20機能の切り替え、11個別画面、保存とJSON移行を確認します。Media Saver はフレーム内の狭幅表示、専用設定タブ、HLS/DASH処理を含めて確認します。
+`npm ci --prefix unified-tools`、`node unified-tools/build.mjs`、`node --test unified-tools/tests/*.test.cjs` を実行します。ブラウザーでの確認はREADMEの隔離Chromiumテストを使います。狭幅と広幅、ライトとダーク、タブのキーボード操作、19機能の切り替え、11個別画面、保存とJSON移行を確認します。Media Saver はフレーム内の狭幅表示、専用設定タブ、HLS/DASH処理を含めて確認します。
 
 固定幅のタブ検証では実ポップアップの自動サイズを確認できなかったため、`tests/native-popup.cjs` を追加しました。幅の不具合は隔離した実ポップアップで55pxまで縮むことを再現し、HTMLの最小幅指定で解消しました。修正後は利用中Chromeのアイコンからも正常表示を確認しています。commit、push、外部へのデプロイは行っていません。
 
 ## 単独版とサイト内UI
 
-全20拡張のpopup/options、注入ボタン、進捗、画像・漫画ビューアも共有の配色・アイコンへ揃えます。[共有UI](../shared-ui/README.md)に生成方法、参照、検証範囲をまとめています。共有資材を変更した場合は `node shared-ui/build.mjs` を先に実行してからMy Toolsをビルドします。
+全19拡張のpopup/options、注入ボタン、進捗、画像・漫画ビューアも共有の配色・アイコンへ揃えます。[共有UI](../shared-ui/README.md)に生成方法、参照、検証範囲をまとめています。共有資材を変更した場合は `node shared-ui/build.mjs` を先に実行してからMy Toolsをビルドします。
 
 ## better-ig
 

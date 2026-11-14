@@ -14,7 +14,7 @@
 
 1. Chrome で `chrome://extensions/` を開きます。
 2. 「デベロッパー モード」を有効にします。
-3. 「パッケージ化されていない拡張機能を読み込む」から、このリポジトリのフォルダを選びます。
+3. 「パッケージ化されていない拡張機能を読み込む」から、`sushida-log` フォルダを選びます。
 4. `https://sushida.net/` で寿司打をプレイします。
 5. 終了後、X 共有ボタンが生成またはクリックされると結果が保存されます。
 
@@ -37,6 +37,28 @@ CSVへ自動保存するのは、X共有URLの共有テキストを取得でき�
 ★7,700円分 お得でした！（速度：5.9key/秒、ミス：18key）
 https://sushida.net/ #寿司打
 ```
+
+拡張機能を更新したら、`chrome://extensions/` で再読み込みし、開いている寿司打のタブも再読み込みしてください。
+
+## 権限
+
+| 権限 | 理由 |
+| --- | --- |
+| `storage` | 結果と設定を保存する |
+| `downloads` | 結果の CSV・JSON を `~/Downloads/sushida-log/` に保存する |
+| `webRequest` | 寿司打の結果送信（`php/r.php`）と X 共有 URL を読み取る |
+| `sushida.net`、`x.com`、`twitter.com` | 結果の検出。X は共有画面（`intent/tweet`）だけで動きます |
+
+## テスト
+
+```sh
+cd sushida-log
+npm test              # 共有テキストの解析
+npm ci && npx playwright install chromium
+npm run test:browser  # Chromium に読み込み、sushida.net の代わりのページで保存とダウンロードを確認
+```
+
+`test:browser` は実際の sushida.net には接続しません。
 
 ## 注意
 

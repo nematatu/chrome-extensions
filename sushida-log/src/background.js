@@ -35,7 +35,7 @@ chrome.webRequest.onBeforeRequest.addListener(
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "SUSHIDA_RESULT_DETECTED") {
-    saveDetectedResult(message.result, sender.tab)
+    saveDetectedResult(message.result)
       .then((result) => sendResponse({ ok: true, result }))
       .catch((error) => sendResponse({ ok: false, error: error.message }));
     return true;
@@ -180,13 +180,9 @@ function requestBodyToText(requestBody) {
   return "";
 }
 
-async function saveDetectedResult(result, tab) {
+async function saveDetectedResult(result) {
   const saved = await saveResult(result);
   const settings = await getSettings();
-
-  if (settings.autoDownloadCsv) {
-    await downloadText(resultsToCsv((await chrome.storage.local.get("results")).results || []), "sushida-log.csv", "text/csv");
-  }
 
   if (settings.autoDownloadJson !== false) {
     await downloadJson(saved, resultFileName(saved, "share"));

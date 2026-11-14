@@ -149,7 +149,7 @@ async function main() {
     assert.equal(await manager.getByRole('switch').count(), 19);
     assert.equal(await manager.locator('#mediasaver').getAttribute('aria-checked'), 'true');
     await manager.getByRole('button', { name: 'Media Saverの画面を開く', exact: true }).isEnabled();
-    check('My Tools exposes Media Saver as the twentieth enabled module');
+    check('My Tools exposes Media Saver as one of its 19 enabled modules');
 
     const page = await context.newPage();
     await page.goto(`${base}/gallery.html`);

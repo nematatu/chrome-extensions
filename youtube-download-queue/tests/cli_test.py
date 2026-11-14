@@ -1,4 +1,8 @@
 """Tests for cli/yt-queue. A fake yt-dlp and launchctl on PATH stand in for YouTube and launchd."""
+import contextlib
+import importlib.machinery
+import importlib.util
+import io
 import json
 import os
 import plistlib
@@ -6,14 +10,16 @@ import struct
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
+from unittest import mock
 
 CLI = Path(__file__).resolve().parent.parent / 'cli' / 'yt-queue'
 A, B, C, D = 'AAAAAAAAAAA', 'BBBBBBBBBBB', 'CCCCCCCCCCC', 'DDDDDDDDDDD'
 PLAYLIST = 'https://www.youtube.com/playlist?list=PLinbox0123456789'
 FAKES = {
-    'yt-dlp': '#!/bin/sh\necho "$@" > "$HOME/ytdlp-args"\n[ -f "$HOME/offline" ] && exit 1\ncat "$HOME/playlist"\n',
+    'yt-dlp': '#!/bin/sh\necho "$@" > "$HOME/ytdlp-args"\n[ -f "$HOME/offline" ] && exit 1\n[ -f "$HOME/hang" ] && exec sleep 30\ncat "$HOME/playlist"\n',
     'launchctl': '#!/bin/sh\necho "$@" >> "$HOME/launchctl-args"\n',
 }
 
@@ -158,6 +164,22 @@ class CliTest(unittest.TestCase):
         (self.queue / 'links.txt').chmod(0o444)
         self.assertIn('links.txt に書き込めませんでした。', self.run_cli('sync').stdout)
         self.assertEqual(self.links(), 'keep\n')
+
+    def test_job_gives_up_on_a_hung_yt_dlp(self):
+        # launchd never starts the job while its last run is alive, so one hung yt-dlp would stop every later import.
+        self.setup_local('--playlist', PLAYLIST)
+        (self.home / 'hang').write_text('')
+        with mock.patch.dict(os.environ, self.env):
+            loader = importlib.machinery.SourceFileLoader('yt_queue', str(CLI))
+            cli = importlib.util.module_from_spec(importlib.util.spec_from_loader('yt_queue', loader))
+            loader.exec_module(cli)
+            cli.PLAYLIST_TIMEOUT = 1
+            output, started = io.StringIO(), time.monotonic()
+            with contextlib.redirect_stdout(output):
+                cli.sync(None)
+        self.assertLess(time.monotonic() - started, 10)
+        self.assertIn(f'再生リストの取得が終わらないため、1秒で打ち切りました: {PLAYLIST}', output.getvalue())
+        self.assertFalse((self.queue / 'links.txt').exists())
 
     def test_uninstall_removes_everything_it_created(self):
         self.setup_local('--playlist', PLAYLIST)

@@ -10,7 +10,6 @@ const root = path.resolve(__dirname, '../..');
 const extension = path.join(root, 'dist/my-tools');
 const output = path.join(root, 'unified-tools/test-results/all');
 const config = vm.runInNewContext(fs.readFileSync(path.join(extension, 'config.js'), 'utf8') + ';MyToolsConfig');
-const clip = fs.readFileSync(path.join(root, 'instagram-media-downloader/tests/fixtures/clip.mp4'));
 const image = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl2nGQAAAAASUVORK5CYII=', 'base64');
 (async () => {
   fs.mkdirSync(output, { recursive: true });
@@ -26,9 +25,6 @@ const image = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQ
     res.writeHead(200, { 'Content-Type': contentType, 'Access-Control-Allow-Origin': '*' }); res.end(data);
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-  execFileSync('ffmpeg',['-hide_banner','-loglevel','error','-i',path.join(root,'instagram-media-downloader/tests/fixtures/clip.mp4'),'-map','0:v','-c','copy',path.join(temp,'video.mp4')]);
-  execFileSync('ffmpeg',['-hide_banner','-loglevel','error','-i',path.join(root,'instagram-media-downloader/tests/fixtures/clip.mp4'),'-map','0:a','-c','copy',path.join(temp,'audio.mp4')]);
-  const tracks=[fs.readFileSync(path.join(temp,'video.mp4')),fs.readFileSync(path.join(temp,'audio.mp4'))];
   fs.mkdirSync(path.join(temp,'profile','Default'),{recursive:true}); fs.writeFileSync(path.join(temp,'profile','Default','Preferences'), JSON.stringify({download:{default_directory:path.join(output,'downloads'),prompt_for_download:false}}));
   let context;
   try {
@@ -38,7 +34,7 @@ const image = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQ
     const extensionId = new URL(worker.url()).host;
     const manager = await context.newPage(); const cdp = await context.newCDPSession(manager); await cdp.send('Browser.setDownloadBehavior', {behavior:'default'}); await manager.goto(`chrome-extension://${extensionId}/popup.html`); await manager.locator('#instagram:not([disabled])').waitFor();
     const checks = [];
-    await require('./all-browser.cjs')({ context, worker, manager, config, check: name => { checks.push(name); console.log('PASS ' + name); }, root, extensionId, image, clip, tracks, output });
+    await require('./all-browser.cjs')({ context, worker, manager, config, check: name => { checks.push(name); console.log('PASS ' + name); }, root, extensionId, image, output });
     console.log('PASS ' + checks.length + ' all-module browser checks');
   } finally { await context?.close(); await new Promise(resolve => server.close(resolve)); fs.rmSync(temp, { recursive: true, force: true }); }
 })().catch(error => { console.error(error); process.exitCode = 1; });
