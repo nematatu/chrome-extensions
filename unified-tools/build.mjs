@@ -122,7 +122,7 @@ try {
   await writeFile(resolve(staging, 'config.js'), `globalThis.MyToolsConfig = ${JSON.stringify(config)};\n`);
   await writeFile(resolve(staging, 'worker.js'), `importScripts("config.js", "client.js", "runtime.js", "portable.js", "transfer.js");\nglobalThis.MyToolsRuntime.boot(globalThis.MyToolsConfig);\nimportScripts(${modules.filter(module => module.worker).map(module => JSON.stringify(asset(module.id, module.worker))).join(', ')});\n`);
   await writeFile(resolve(staging, 'offscreen.html'), `<!doctype html><html><head><meta charset="utf-8"><script src="config.js"></script><script src="offscreen-host.js"></script></head><body>${modules.filter(module => module.offscreen).map(module => `<iframe src="${asset(module.id, module.offscreen)}"></iframe>`).join('')}</body></html>\n`);
-  await writeFile(resolve(staging, 'manifest.json'), JSON.stringify({ manifest_version: 3, name: 'My Tools', version: '2.1.0', description: 'このリポジトリの20機能をまとめて管理します。', key: identity.key, minimum_chrome_version: '120', permissions: [...permissions].sort(), host_permissions: [...hosts].sort(),
+  await writeFile(resolve(staging, 'manifest.json'), JSON.stringify({ manifest_version: 3, name: 'My Tools', version: '2.1.0', description: 'このリポジトリの19機能をまとめて管理します。', key: identity.key, minimum_chrome_version: '120', permissions: [...permissions].sort(), host_permissions: [...hosts].sort(),
     ...(optionalPermissions.size && { optional_permissions: [...optionalPermissions].filter(value => !permissions.has(value)).sort() }),
     ...(optionalHosts.size && { optional_host_permissions: [...optionalHosts].sort() }),
     ...(resources.length && { web_accessible_resources: resources }), ...(Object.keys(commands).length && { commands }),
