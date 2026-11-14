@@ -2,11 +2,10 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const crypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
 const { workHtml } = require('../../momoniji-manga-viewer/tests/fixtures.cjs');
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
-module.exports = async function verifyAll({ context, worker, manager, config, check, root, extensionId, image, clip, tracks, output }) {
+module.exports = async function verifyAll({ context, worker, manager, config, check, root, extensionId, image, output }) {
   const rpc = message => manager.evaluate(message => chrome.runtime.sendMessage(message), message);
   assert.equal(await worker.evaluate(() => chrome.downloads.onDeterminingFilename.hasListeners()), false, 'My Tools must never register a native filename listener');
   const tabRPC = async (page, id, payload) => {
@@ -109,22 +108,15 @@ module.exports = async function verifyAll({ context, worker, manager, config, ch
     const saved = await worker.evaluate(async () => (await MyToolsRuntime.moduleChrome('sushida').storage.local.get('results')).results);
     assert.equal(saved[0].amountYen, 1000); assert.equal(saved[0].speedKeyPerSec, 4.2);
   });
-  const yt = await fixture('youtube', 'https://www.youtube.com/watch?v=abcdefghijk', '<div id="movie_player"><video></video></div><div id="top-level-buttons-computed"></div>', '#youtube-five-second-clip');
+  // Without yt-queue installed the mark stays an add button, which is enough to show the content script runs.
+  await fixture('ytqueue', 'https://www.youtube.com/watch?v=abcdefghijk', '<ytd-watch-metadata><div id="title"><h1><yt-formatted-string>Fixture</yt-formatted-string></h1></div></ytd-watch-metadata>', '.ypq-mark--title[data-video-id="abcdefghijk"][data-status="add"]');
   const tweet = await fixture('tweetfile', 'https://cdn.tweetfile.com/test-extension', '<div id="app"></div>', '#tweetfile-downloader');
   const media = await fixture('pagemedia', 'https://twfiles.com/fixturecode', '<div id="app"><div class="app-page--content"><div class="landing-content"><div class="content-list"><button class="video-row"><span class="video-copy"><strong>fixture.mp4</strong></span></button></div></div></div></div>', '#page-media-bulk-button-host');
-  const youtubeId = crypto.randomUUID();
-  const youtubeStart = async () => {
-    const message = { type: 'clip', id: youtubeId, videoId: 'abcdefghijk', title: 'Unified fixture', start: 0, end: 0.4, tracks: [{ mime: 'video/mp4', size: tracks[0].length, offset: 0 }, { mime: 'audio/mp4', size: tracks[1].length, offset: 0 }] };
-    const start = await tabRPC(yt, 'youtube', message); assert.equal(start.ok, true, JSON.stringify(start));
-    for (let track = 0; track < 2; track++) assert.equal((await tabRPC(yt, 'youtube', { type: 'chunk', id: youtubeId, track, offset: 0, data: tracks[track].toString('base64') })).ok, true);
-    assert.equal((await tabRPC(yt, 'youtube', { type: 'finish', id: youtubeId })).ok, true);
-  };
-  const session = await context.newCDPSession(yt); await session.send('Browser.setDownloadBehavior',{behavior:'default'});
+  const session = await context.newCDPSession(tweet); await session.send('Browser.setDownloadBehavior',{behavior:'default'});
   const baseline = (await worker.evaluate(() => chrome.downloads.search({ state: 'complete' }))).map(item => item.id);
   const starts = await Promise.all([
     tabRPC(tweet, 'tweetfile', { type: 'tweetfile-download', items: [{ name: 'Unified HLS', url: 'https://vid.fun800.click/tweet/list.m3u8' }] }),
-    tabRPC(media, 'pagemedia', { type: 'page-media-bulk:start' }),
-    youtubeStart()
+    tabRPC(media, 'pagemedia', { type: 'page-media-bulk:start' })
   ]);
   assert.equal(starts[0].queued, 1, JSON.stringify(starts[0])); assert.equal(starts[1].ok, true, JSON.stringify(starts[1]));
   assert.equal(await worker.evaluate(() => chrome.downloads.onDeterminingFilename.hasListeners()), false, 'My Tools must not register a filename listener during downloads');
@@ -133,19 +125,18 @@ module.exports = async function verifyAll({ context, worker, manager, config, ch
     audio: (await AudioEncoder.isConfigSupported({codec:'mp4a.40.2',sampleRate:44100,numberOfChannels:2,bitrate:128000})).supported
   }));
   assert.ok(codec.video && codec.audio, 'The verification browser must support AVC and AAC encoding');
-  const expectedDownloads = 3;
+  const expectedDownloads = 2;
   let downloads;
   for (let attempt = 0; attempt < 200; attempt++) {
     downloads = (await worker.evaluate(() => chrome.downloads.search({ state: 'complete' }))).filter(item => !baseline.includes(item.id));
     if (downloads.length === expectedDownloads) break;
     await wait(150);
   }
-  for (let attempt=0;attempt<50;attempt++) { const y=await tabRPC(yt,'youtube',{type:'list'}); const p=await tabRPC(media,'pagemedia',{type:'page-media-bulk:status'}); if(y.jobs[0]?.state==='done' && p.batch?.status==='complete') break; if(y.jobs[0]?.state==='error' || p.batch?.status==='completed_with_errors') break; await wait(100); }
-  const youtubeJobs = await tabRPC(yt, 'youtube', {type:'list'});
+  for (let attempt=0;attempt<50;attempt++) { const p=await tabRPC(media,'pagemedia',{type:'page-media-bulk:status'}); if(p.batch?.status==='complete' || p.batch?.status==='completed_with_errors') break; await wait(100); }
   const pageJobs = await tabRPC(media, 'pagemedia', {type:'page-media-bulk:status'});
-  assert.equal(downloads.length, expectedDownloads, JSON.stringify({codec,downloads:downloads.map(x=>x.filename),youtubeJobs,pageJobs}));
+  assert.equal(downloads.length, expectedDownloads, JSON.stringify({codec,downloads:downloads.map(x=>x.filename),pageJobs}));
   assert.equal(pageJobs.batch.status, 'complete', JSON.stringify({pageJobs,downloads:downloads.map(x=>({filename:x.filename,url:x.url,byExtensionId:x.byExtensionId})),errors:(await rpc({type:'my-tools:get'})).errors}));
-  for (const prefix of ['/Tweetfile/001_Unified HLS', '/PageMedia/Fixture/fixture', '/YouTube_Unified fixture_abcdefghijk_0.00-0.40s']) assert.ok(downloads.some(item=>item.filename.includes(prefix)), prefix);
+  for (const prefix of ['/Tweetfile/001_Unified HLS', '/PageMedia/Fixture/fixture']) assert.ok(downloads.some(item=>item.filename.includes(prefix)), prefix);
   for (const item of downloads) {
     assert.equal(fs.readFileSync(item.filename).toString('ascii', 4, 8), 'ftyp');
     assert.ok(item.fileSize > 1000);
@@ -154,13 +145,11 @@ module.exports = async function verifyAll({ context, worker, manager, config, ch
     assert.ok(probe.streams.some(stream => stream.codec_type === 'audio'));
     assert.ok(Number(probe.format.duration) > 0);
     execFileSync('ffmpeg', ['-v', 'error', '-i', item.filename, '-f', 'null', '-'], { stdio: 'pipe' });
-    if (item.filename.includes('YouTube_')) assert.ok(Math.abs(Number(probe.format.duration) - 0.4) < 0.15);
   }
-  const contexts = await worker.evaluate(() => chrome.runtime.getContexts({ contextTypes: ['OFFSCREEN_DOCUMENT'] })); assert.equal(contexts.filter(value=>value.documentUrl===`chrome-extension://${extensionId}/offscreen.html`).length,1); for(const id of ['tweetfile','pagemedia','youtube']) assert.ok(contexts.some(value=>value.documentUrl===`chrome-extension://${extensionId}/modules/${id}/offscreen.html`),id);
+  // Media Saver's offscreen processing is covered by tests/media-browser.cjs.
+  const contexts = await worker.evaluate(() => chrome.runtime.getContexts({ contextTypes: ['OFFSCREEN_DOCUMENT'] })); assert.equal(contexts.filter(value=>value.documentUrl===`chrome-extension://${extensionId}/offscreen.html`).length,1); for(const id of ['tweetfile','pagemedia']) assert.ok(contexts.some(value=>value.documentUrl===`chrome-extension://${extensionId}/modules/${id}/offscreen.html`),id);
   evidence.tweetfile = evidence.pagemedia = 'concurrent original worker + separate offscreen processor + actual MP4 download passed';
-  assert.equal(youtubeJobs.jobs[0].state, 'done');
-  evidence.youtube = 'concurrent original offscreen processor and real MP4 conversion passed';
-  check('All three original offscreen processors concurrently save playable MP4 files under their intended filenames');
+  check('Both original offscreen processors concurrently save playable MP4 files under their intended filenames');
   await fixture('stripchat', 'https://ja.stripchat.com/fixture', '<div style="width:250px;height:200px"><a href="/fixturemodel" data-model-list-link="true" data-model-id="123" style="display:block;width:250px;height:200px"><div class="live-thumb"><video></video></div></a></div>', null, async page => {
     await page.bringToFront(); await page.waitForTimeout(150); await page.locator('a').hover();
     await page.locator('.sc-live-hover-badge').waitFor({ state: 'attached' });
